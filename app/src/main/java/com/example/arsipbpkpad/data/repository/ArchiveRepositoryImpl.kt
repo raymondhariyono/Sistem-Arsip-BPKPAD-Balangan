@@ -1,13 +1,12 @@
 package com.example.arsipbpkpad.data.repository
 
-import com.example.arsipbpkpad.domain.model.ArchiveDocument
-import com.example.arsipbpkpad.domain.repository.ArchiveRepository
-import com.example.arsipbpkpad.utils.ResultState
+import com.example.arsipbpkpad.domain.archive.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.archive.repository.ArchiveRepository
+import com.example.arsipbpkpad.core.common.ResultState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import javax.inject.Inject
 
-class ArchiveRepositoryImpl @Inject constructor() : ArchiveRepository {
+class ArchiveRepositoryImpl : ArchiveRepository {
     override fun getArchives(): Flow<ResultState<List<ArchiveDocument>>> = flow {
         emit(ResultState.Loading)
         // Implementation will fetch from API or Local DB
