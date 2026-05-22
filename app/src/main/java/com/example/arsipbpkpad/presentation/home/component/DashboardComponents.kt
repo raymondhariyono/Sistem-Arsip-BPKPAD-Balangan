@@ -1,6 +1,8 @@
 package com.example.arsipbpkpad.presentation.home.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -166,10 +169,11 @@ fun SectionHeader(title: String, actionText: String, onActionClick: () -> Unit) 
 }
 
 @Composable
-fun RecentArchiveItem(item: RecentArchive) {
+fun RecentArchiveItem(item: RecentArchive, onClick: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick(item.id) }
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -225,6 +229,68 @@ fun RecentArchiveItem(item: RecentArchive) {
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary
             )
+        }
+    }
+
+    @Composable
+    fun RecentArchiveTable(items: List<RecentArchive>) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+            elevation = CardDefaults.cardElevation(0.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                // Header Tabel
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFE3F2FD)) // Biru muda yang sangat soft
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = stringResource(R.string.header_id), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF616161), modifier = Modifier.weight(0.2f))
+                    Text(text = stringResource(R.string.header_title), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF616161), modifier = Modifier.weight(0.4f))
+                    Text(text = stringResource(R.string.header_type), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF616161), modifier = Modifier.weight(0.15f))
+                    Text(text = stringResource(R.string.header_status), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF616161), modifier = Modifier.weight(0.25f))
+                }
+
+                // Baris Data Tabel
+                items.forEachIndexed { index, item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = item.id, fontSize = 11.sp, color = Color(0xFF757575), modifier = Modifier.weight(0.2f), maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        Text(text = item.title, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFF212121), modifier = Modifier.weight(0.4f).padding(end = 8.dp), maxLines = 3, overflow = TextOverflow.Ellipsis)
+
+                        Box(modifier = Modifier.weight(0.15f)) {
+                            Text(
+                                text = item.type,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1565C0),
+                                modifier = Modifier.background(Color(0xFFE3F2FD), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+
+                        Row(modifier = Modifier.weight(0.25f), verticalAlignment = Alignment.CenterVertically) {
+                            val statusColor = if (item.isAvailable) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+                            val statusText = if (item.isAvailable) "di Gudang" else "Perlu Verifikasi"
+
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(statusColor))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = statusText, fontSize = 10.sp, color = Color(0xFF616161))
+                        }
+                    }
+                    if (index < items.size - 1) {
+                        HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 1.dp)
+                    }
+                }
+            }
         }
     }
 }

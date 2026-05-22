@@ -41,4 +41,72 @@
     <string name="label_box">BOX</string>
     <string name="status_in_warehouse">di Gudang</string>
     <string name="status_borrowed">di Pinjam</string>
+
+    //add archive
+    <string name="add_archive_title">Tambah Arsip Baru</string>
+    <string name="add_archive_subtitle">Pilih metode yang sesuai untuk menambahkan dokumen ke dalam sistem arsip.</string>
+
+    <string name="method_scan_title">Scan OCR</string>
+    <string name="method_scan_desc">Pindai dokumen fisik menggunakan kamera atau scanner. Sistem akan otomatis mengekstrak teks dari gambar.</string>
+    <string name="method_scan_action">Mulai Scan \u2192</string>
+
+    <string name="method_manual_title">Tambah Manual</string>
+    <string name="method_manual_desc">Isi formulir secara manual dan unggah file PDF atau gambar dokumen ke dalam sistem.</string>
+
+    <string name="method_import_title">Impor Spreadsheet</string>
+    <string name="method_import_desc">Unggah file Excel (.xlsx) atau CSV yang berisi daftar metadata arsip untuk dimasukkan secara massal.</string>
+
+    //manual add archive
+    <string name="manual_add_title">Menambahkan Arsip Baru</string>
+    <string name="manual_add_subtitle">Tambahkan detail dokumen baru ke dalam sistem arsip.</string>
+
+    <string name="section_doc_detail">Detail Dokumen</string>
+    <string name="label_doc_type">Tipe Dokumen</string>
+    <string name="hint_doc_type">Pilih tipe...</string>
+    <string name="label_doc_name">Nama Dokumen</string>
+    <string name="hint_doc_name">e.x. Surat Non-keuangan</string>
+    <string name="label_doc_number">Nomor Dokumen</string>
+    <string name="hint_doc_number">e.x. 123/BPKPAD/2023</string>
+    <string name="label_department">Dinas</string>
+    <string name="hint_department">Pilih Dinas...</string>
+    <string name="label_year">Tahun</string>
+    <string name="hint_year">YYYY</string>
+    <string name="label_validity">Masa Berlaku</string>
+    <string name="hint_validity">DD/MM/YYYY</string>
+    <string name="label_subject">Perihal</string>
+    <string name="hint_subject">Deskripsi tentang dokumen...</string>
+
+    <string name="section_location">Lokasi Gudang</string>
+    <string name="label_warehouse">Gudang</string>
+    <string name="hint_warehouse">Pilih Gudang...</string>
+<!--    <string name="label_rack">Rak No</string>-->
+    <string name="hint_rack">e.x. R-12</string>
+<!--string name="label_box">Box No</string>-->
+    <string name="hint_box">e.x. B-05</string>
+
+    <string name="btn_save_archive">Simpan Arsip</string>
+    <string name="nav_back_content_desc">back\n</string>
+
+    //archive detail
+    <string name="header_id">ID</string>
+    <string name="header_title">TITLE</string>
+    <string name="header_type">TIPE</string>
+    <string name="header_status">STATUS</string>
+
+<!--    <string name="archive_detail_title">Detail Dokumen</string>-->
+    <string name="status_verified">Verified</string>
+    <string name="uploaded_info">Uploaded on %1$s by %2$s</string>
+    <string name="btn_edit_detail">Edit Detail</string>
+    <string name="btn_export">Export</string>
+
+    <string name="section_digital_scan">Digital Scan</string>
+    <string name="section_metadata">Dokumen Metadata</string>
+    <string name="section_physical_location">Lokasi Berkas Fisik</string>
+
+    <string name="label_doc_date">Tanggal Dokumen</string>
+    <string name="label_nama_dokumen">NAMA DOKUMEN</string>
+    <string name="label_nomor_dokumen">NOMOR DOKUMEN</string>
+    <string name="label_dinas">DINAS</string>
+    <string name="label_tanggal_dokumen">TANGGAL DOKUMEN</string>
+    <string name="label_masa_berlaku">MASA BERLAKU</string>
 </resources>

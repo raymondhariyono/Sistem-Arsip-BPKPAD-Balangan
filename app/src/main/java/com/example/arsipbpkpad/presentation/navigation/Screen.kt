@@ -8,4 +8,6 @@ sealed class Screen(val route: String) {
     }
     data object ArchiveReview : Screen("archive_review")
     data object Scan : Screen("scan")
+    data object AddArchive : Screen("add_archive")
+    data object ManualAdd : Screen("manual_add")
 }

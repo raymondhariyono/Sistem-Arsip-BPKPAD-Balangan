@@ -52,10 +52,24 @@ data class RecentArchive(
 
 @Composable
 fun HomeScreen(
-    uiState: DashboardUiModel = DashboardUiModel(),
+    uiState: DashboardUiModel = DashboardUiModel(
+        totalDocuments = "1,240",
+        expiredDocuments = "12",
+        sp2dCount = "850",
+        spmCount = "240",
+        sp3bCount = "105",
+        dsbCount = "45",
+        recentItems = listOf(
+            RecentArchive("ID-001", "SP2D-2023-11-0045", "SP2D", true),
+            RecentArchive("ID-002", "SPM-2023-10-0122", "SPM", false),
+            RecentArchive("ID-003", "SP2D-2023-11-0046", "SP2D", true),
+            RecentArchive("ID-004", "SP3B-2023-09-0010", "SP3B", true),
+        )
+    ),
     onNavigateToScan: () -> Unit,
     onNavigateToArchiveList: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNavigateToDetail: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -170,7 +184,7 @@ fun HomeScreen(
             }
 
             items(uiState.recentItems) { item ->
-                RecentArchiveItem(item = item)
+                RecentArchiveItem(item = item, onClick = onNavigateToDetail)
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     thickness = 1.dp
