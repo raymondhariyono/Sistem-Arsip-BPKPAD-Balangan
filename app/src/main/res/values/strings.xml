@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">arsipBPKPAD</string>
+    <string name="archive_list_title">Daftar Arsip</string>
+    <string name="archive_detail_title">Detail Arsip</string>
+    <string name="archive_review_title">Review Arsip</string>
+    <string name="scan_title">Scan Dokumen</string>
 </resources>
