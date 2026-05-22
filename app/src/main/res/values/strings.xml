@@ -4,4 +4,41 @@
     <string name="archive_detail_title">Detail Arsip</string>
     <string name="archive_review_title">Review Arsip</string>
     <string name="scan_title">Scan Dokumen</string>
+    <string name="back">Kembali</string>
+    <string name="scan_feature_coming_soon">Fitur Scan akan segera hadir</string>
+
+    //dashboard page
+    <string name="app_name_full">BPKPAD Balangan</string>
+    <string name="logo_desc">Logo BPKPAD</string>
+    <string name="profile">Profil</string>
+    <string name="status_gudang">Gudang</string>
+    <string name="status_keluar">Keluar</string>
+    <string name="add_document">Tambah Dokumen</string>
+    <string name="overview">Overview</string>
+    <string name="dashboard_subtitle">Dashboard Sistem Arsip Non-Keuangan</string>
+    <string name="total_documents">Total Dokumen</string>
+    <string name="expired_documents">Dokumen Expired</string>
+    <string name="type_sp2d">SP2D</string>
+    <string name="type_spm">SPM</string>
+    <string name="type_sp3b">SP3B</string>
+    <string name="type_dsb">DSB</string>
+    <string name="recently_added">Baru ditambahkan</string>
+    <string name="view_all">View All</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_archive">Archive</string>
+    <string name="nav_add">Add</string>
+    <string name="nav_profile">Profile</string>
+
+    //archive list
+    <string name="search_hint">Cari nomor dokumen, jenis...</string>
+    <string name="search_results">Hasil Pencarian</string>
+    <string name="files_found">%1$s berkas ditemukan</string>
+    <string name="filter_year">Tahun: 2024</string>
+    <string name="filter_type">Tipe Dok: SP2D</string>
+    <string name="filter_location">Lokasi</string>
+    <string name="label_building">BUILDING</string>
+    <string name="label_rack">RACK</string>
+    <string name="label_box">BOX</string>
+    <string name="status_in_warehouse">di Gudang</string>
+    <string name="status_borrowed">di Pinjam</string>
 </resources>

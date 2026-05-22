@@ -82,3 +82,15 @@ When asked to write tests, follow these guidelines:
 - **Error Handling:** Never swallow exceptions. Always catch them in Repository/UseCase and emit `ResultState.Error` with meaningful messages.
 - **Hardcoding:** No hardcoded strings in Compose. Use `stringResource(R.string.x)`.
 - **Secrets:** API endpoints or keys must not be hardcoded. Retrieve them from `BuildConfig`.
+
+## 🎨 6. Design System & Theming
+When generating or updating UI components, strictly adhere to the following design system:
+
+- **Typography:** Use **Poppins** as the primary font family for all text elements.
+- **Color Palette:**
+   - Primary Green: `#2E7D32`
+   - Light Green: `#CBFFC2`
+   - Light Blue/Background: `#F3FAFF`
+   - Pure White: `#FFFFFF`
+
+**Implementation Rule:** Ensure these colors and typography are defined in `ui/theme/Color.kt` and `ui/theme/Type.kt` respectively, and applied properly through the Material 3 `ColorScheme` in `Theme.kt`. Avoid hardcoding these hex values directly in Composable functions.

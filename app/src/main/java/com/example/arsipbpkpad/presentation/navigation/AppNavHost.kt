@@ -9,7 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
 import com.example.arsipbpkpad.presentation.archive.review.ArchiveReviewScreen
-import com.example.arsipbpkpad.presentation.home.HomeScreen
+import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
 
 @Composable
@@ -30,6 +30,9 @@ fun AppNavHost(
                 },
                 onNavigateToScan = {
                     navController.navigate(Screen.Scan.route)
+                },
+                onNavigateToProfile = {
+                    // TODO: Navigate to Profile
                 }
             )
         }
@@ -38,7 +41,17 @@ fun AppNavHost(
                 onNavigateToDetail = { archiveId ->
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToBottomNav = { item ->
+                    when (item.route) {
+                        "home" -> navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                        "archive" -> { /* Already here */ }
+                        "add" -> navController.navigate(Screen.Scan.route)
+                        "profile" -> { /* TODO */ }
+                    }
+                }
             )
         }
         composable(Screen.ArchiveDetail.route) { backStackEntry ->
