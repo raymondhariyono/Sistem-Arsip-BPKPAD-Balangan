@@ -6,5 +6,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface ArchiveRepository {
     fun getArchives(): Flow<ResultState<List<ArchiveDocument>>>
+    fun getArchiveDetail(id: String): Flow<ResultState<ArchiveDocument>>
     suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit>
 }

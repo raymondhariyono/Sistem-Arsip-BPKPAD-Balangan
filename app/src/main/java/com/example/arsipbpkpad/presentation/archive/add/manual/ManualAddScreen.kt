@@ -17,8 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -29,7 +29,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -45,78 +44,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 
-// --- STATE & EVENTS ---
-data class ManualAddUiState(
-    val docType: String = "",
-    val docName: String = "",
-    val docNumber: String = "",
-    val department: String = "",
-    val year: String = "",
-    val validity: String = "",
-    val subject: String = "",
-    val warehouse: String = "",
-    val rackNo: String = "",
-    val boxNo: String = ""
-)
-
-sealed class ManualAddUiEvent {
-    data class OnDocTypeChange(val value: String) : ManualAddUiEvent()
-    data class OnDocNameChange(val value: String) : ManualAddUiEvent()
-    data class OnDocNumberChange(val value: String) : ManualAddUiEvent()
-    data class OnDepartmentChange(val value: String) : ManualAddUiEvent()
-    data class OnYearChange(val value: String) : ManualAddUiEvent()
-    data class OnValidityChange(val value: String) : ManualAddUiEvent()
-    data class OnSubjectChange(val value: String) : ManualAddUiEvent()
-    data class OnWarehouseChange(val value: String) : ManualAddUiEvent()
-    data class OnRackNoChange(val value: String) : ManualAddUiEvent()
-    data class OnBoxNoChange(val value: String) : ManualAddUiEvent()
-    data object OnSaveClick : ManualAddUiEvent()
-}
-
-// --- 1. STATEFUL COMPONENT ---
 @Composable
 fun ManualAddScreen(
     onNavigateBack: () -> Unit,
-    // viewModel: ManualAddViewModel = hiltViewModel() // Nanti kita pasang ViewModel
+    viewModel: ManualAddViewModel = hiltViewModel()
 ) {
-    // Mock State (Ganti dengan viewModel.uiState.collectAsState() nanti)
-    var uiState by remember { mutableStateOf(ManualAddUiState()) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     ManualAddContent(
         uiState = uiState,
-        onEvent = { event ->
-            // Mock Event Handler
-            uiState = when (event) {
-                is ManualAddUiEvent.OnDocTypeChange -> uiState.copy(docType = event.value)
-                is ManualAddUiEvent.OnDocNameChange -> uiState.copy(docName = event.value)
-                is ManualAddUiEvent.OnDocNumberChange -> uiState.copy(docNumber = event.value)
-                is ManualAddUiEvent.OnDepartmentChange -> uiState.copy(department = event.value)
-                is ManualAddUiEvent.OnYearChange -> uiState.copy(year = event.value)
-                is ManualAddUiEvent.OnValidityChange -> uiState.copy(validity = event.value)
-                is ManualAddUiEvent.OnSubjectChange -> uiState.copy(subject = event.value)
-                is ManualAddUiEvent.OnWarehouseChange -> uiState.copy(warehouse = event.value)
-                is ManualAddUiEvent.OnRackNoChange -> uiState.copy(rackNo = event.value)
-                is ManualAddUiEvent.OnBoxNoChange -> uiState.copy(boxNo = event.value)
-                is ManualAddUiEvent.OnSaveClick -> {
-                    // Handle simpan
-                    uiState
-                }
-            }
-        },
+        onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack
     )
 }
 
-// --- 2. STATELESS COMPONENT ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualAddContent(
@@ -127,8 +77,8 @@ fun ManualAddContent(
     val scrollState = rememberScrollState()
 
     Scaffold(
-        topBar = { ManualAddTopAppBar() },
-        containerColor = Color.White
+        topBar = { ManualAddTopAppBar(onNavigateBack) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -139,23 +89,21 @@ fun ManualAddContent(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Header Halaman
             Text(
                 text = stringResource(R.string.manual_add_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF212121)
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.manual_add_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF757575)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Card 1: Detail Dokumen
             FormSectionCard(title = stringResource(R.string.section_doc_detail)) {
                 FormDropdownField(
                     label = stringResource(R.string.label_doc_type),
@@ -185,7 +133,7 @@ fun ManualAddContent(
                 )
                 FormTextField(
                     label = stringResource(R.string.label_year),
-                    placeholder = stringResource(R.string.hint_year),
+                    placeholder = stringResource(R.string.hint_year_format),
                     value = uiState.year,
                     onValueChange = { onEvent(ManualAddUiEvent.OnYearChange(it)) }
                 )
@@ -207,7 +155,6 @@ fun ManualAddContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Card 2: Lokasi Gudang
             FormSectionCard(title = stringResource(R.string.section_location)) {
                 FormDropdownField(
                     label = stringResource(R.string.label_warehouse),
@@ -232,50 +179,58 @@ fun ManualAddContent(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Tombol Simpan
             Button(
                 onClick = { onEvent(ManualAddUiEvent.OnSaveClick) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = stringResource(R.string.btn_save_archive),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
-            Spacer(modifier = Modifier.height(88.dp)) // Jarak untuk Bottom Nav
+            Spacer(modifier = Modifier.height(88.dp))
         }
     }
 }
 
-// --- 3. MICRO-COMPONENTS (REUSABLE FORM) ---
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManualAddTopAppBar() {
+fun ManualAddTopAppBar(onNavigateBack: () -> Unit) {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Done, contentDescription = "Logo", tint = Color(0xFF2E7D32), modifier = Modifier.size(28.dp))
+                Icon(
+                    imageVector = Icons.Default.Done, 
+                    contentDescription = stringResource(R.string.logo_desc), 
+                    tint = MaterialTheme.colorScheme.primary, 
+                    modifier = Modifier.size(28.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "BPKPAD Balangan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1B5E20))
+                Text(
+                    text = stringResource(R.string.app_name_full), 
+                    style = MaterialTheme.typography.titleMedium, 
+                    fontWeight = FontWeight.ExtraBold, 
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         },
-        actions = {
-            IconButton(
-                onClick = { },
-                modifier = Modifier.padding(end = 16.dp).clip(CircleShape).background(Color(0xFFE8F5E9)).size(36.dp)
-            ) {
-                Icon(Icons.Default.Person, contentDescription = "Profil", tint = Color(0xFF2E7D32), modifier = Modifier.size(20.dp))
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
     )
 }
 
@@ -286,17 +241,17 @@ fun FormSectionCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-        elevation = CardDefaults.cardElevation(0.dp)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF212121)
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(16.dp))
             content()
@@ -314,23 +269,34 @@ fun FormTextField(
     minLines: Int = 1
 ) {
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color(0xFF424242))
+        Text(
+            text = label, 
+            style = MaterialTheme.typography.labelMedium, 
+            fontWeight = FontWeight.SemiBold, 
+            color = MaterialTheme.colorScheme.onSurface
+        )
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(text = placeholder, color = Color.LightGray, fontSize = 14.sp) },
+            placeholder = { 
+                Text(
+                    text = placeholder, 
+                    color = MaterialTheme.colorScheme.outline, 
+                    style = MaterialTheme.typography.bodyMedium
+                ) 
+            },
             modifier = Modifier.fillMaxWidth(),
             singleLine = singleLine,
             minLines = minLines,
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF2E7D32),
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
             ),
-            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface)
         )
     }
 }
@@ -347,7 +313,12 @@ fun FormDropdownField(
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color(0xFF424242))
+        Text(
+            text = label, 
+            style = MaterialTheme.typography.labelMedium, 
+            fontWeight = FontWeight.SemiBold, 
+            color = MaterialTheme.colorScheme.onSurface
+        )
         Spacer(modifier = Modifier.height(6.dp))
 
         ExposedDropdownMenuBox(
@@ -357,30 +328,42 @@ fun FormDropdownField(
             OutlinedTextField(
                 value = value,
                 onValueChange = {},
-                readOnly = true, // Supaya tidak bisa diketik manual
-                placeholder = { Text(text = placeholder, color = Color.LightGray, fontSize = 14.sp) },
+                readOnly = true,
+                placeholder = { 
+                    Text(
+                        text = placeholder, 
+                        color = MaterialTheme.colorScheme.outline, 
+                        style = MaterialTheme.typography.bodyMedium
+                    ) 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF2E7D32),
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                 ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface)
             )
 
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                modifier = Modifier.background(Color.White)
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(text = option, fontSize = 14.sp) },
+                        text = { 
+                            Text(
+                                text = option, 
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ) 
+                        },
                         onClick = {
                             onOptionSelected(option)
                             expanded = false
@@ -392,7 +375,6 @@ fun FormDropdownField(
     }
 }
 
-// --- 4. PREVIEW ---
 @Preview(showBackground = true, device = "id:pixel_7")
 @Composable
 fun ManualAddScreenPreview() {

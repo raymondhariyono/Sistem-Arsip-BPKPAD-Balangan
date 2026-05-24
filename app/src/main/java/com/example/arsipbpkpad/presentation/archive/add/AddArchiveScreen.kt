@@ -27,8 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,14 +40,10 @@ import androidx.compose.ui.unit.sp
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
+import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
-import com.example.arsipbpkpad.ui.theme.BackgroundBlue
 import com.example.arsipbpkpad.ui.theme.LightGreen
-import com.example.arsipbpkpad.ui.theme.PrimaryGreen
-import com.example.arsipbpkpad.ui.theme.TextPrimary
-import com.example.arsipbpkpad.ui.theme.TextSecondary
 
-// 1. STATEFUL COMPONENT (Wrapper untuk Navigasi & Event)
 @Composable
 fun AddArchiveScreen(
     onNavigateBack: () -> Unit,
@@ -67,7 +61,6 @@ fun AddArchiveScreen(
     )
 }
 
-// 2. STATELESS COMPONENT (Murni Render Layout)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddArchiveContent(
@@ -80,20 +73,16 @@ fun AddArchiveContent(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {},
+            BpkpadTopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.nav_back_content_desc),
-                            tint = PrimaryGreen
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundBlue
-                )
+                }
             )
         },
         bottomBar = {
@@ -102,7 +91,7 @@ fun AddArchiveContent(
                 onNavigate = onNavigateToBottomNav
             )
         },
-        containerColor = BackgroundBlue,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
     ) { paddingValues ->
         Column(
@@ -114,31 +103,28 @@ fun AddArchiveContent(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Judul Halaman
             Text(
                 text = stringResource(R.string.add_archive_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Subtitel Deskripsi
             Text(
                 text = stringResource(R.string.add_archive_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Pilihan 1: Scan OCR
             MethodSelectionCard(
                 icon = Icons.Default.Add,
                 iconBgColor = LightGreen,
-                iconTintColor = PrimaryGreen,
+                iconTintColor = MaterialTheme.colorScheme.primary,
                 title = stringResource(R.string.method_scan_title),
                 description = stringResource(R.string.method_scan_desc),
                 actionText = stringResource(R.string.method_scan_action),
@@ -147,11 +133,10 @@ fun AddArchiveContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Pilihan 2: Tambah Manual
             MethodSelectionCard(
                 icon = Icons.Default.Menu,
                 iconBgColor = LightGreen,
-                iconTintColor = PrimaryGreen,
+                iconTintColor = MaterialTheme.colorScheme.primary,
                 title = stringResource(R.string.method_manual_title),
                 description = stringResource(R.string.method_manual_desc),
                 onClick = onNavigateToManualAdd
@@ -159,11 +144,10 @@ fun AddArchiveContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Pilihan 3: Impor Spreadsheet
             MethodSelectionCard(
                 icon = Icons.Default.Create,
                 iconBgColor = LightGreen,
-                iconTintColor = PrimaryGreen,
+                iconTintColor = MaterialTheme.colorScheme.primary,
                 title = stringResource(R.string.method_import_title),
                 description = stringResource(R.string.method_import_desc),
                 onClick = onNavigateToImportSpreadsheet
@@ -174,7 +158,6 @@ fun AddArchiveContent(
     }
 }
 
-// 3. MICRO-COMPONENT (Reusable Card Component)
 @Composable
 fun MethodSelectionCard(
     icon: ImageVector,
@@ -191,16 +174,15 @@ fun MethodSelectionCard(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(24.dp)
         ) {
-            // Container Icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -217,39 +199,35 @@ fun MethodSelectionCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Judul Metode
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Deskripsi Metode
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF616161),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp
             )
 
-            // Tombol Aksi Tambahan
             if (actionText != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = actionText,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = PrimaryGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
 
-// 4. PREVIEW COMPONENT
 @Preview(showBackground = true, device = "id:pixel_7")
 @Composable
 fun AddArchiveScreenPreview() {

@@ -8,84 +8,70 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.home.HomeUiState
+import com.example.arsipbpkpad.presentation.home.HomeViewModel
 import com.example.arsipbpkpad.presentation.home.component.HeaderSection
 import com.example.arsipbpkpad.presentation.home.component.PrimaryStatCard
-import com.example.arsipbpkpad.presentation.home.component.RecentArchiveItem
+import com.example.arsipbpkpad.presentation.home.component.RecentArchiveTable
 import com.example.arsipbpkpad.presentation.home.component.SecondaryStatCard
 import com.example.arsipbpkpad.presentation.home.component.SectionHeader
 
-
-data class DashboardUiModel(
-    val totalDocuments: String = "0",
-    val expiredDocuments: String = "0",
-    val sp2dCount: String = "0",
-    val spmCount: String = "0",
-    val sp3bCount: String = "0",
-    val dsbCount: String = "0",
-    val recentItems: List<RecentArchive> = emptyList()
-)
-
-data class RecentArchive(
-    val id: String,
-    val title: String,
-    val type: String,
-    val isAvailable: Boolean
-)
-
 @Composable
 fun HomeScreen(
-    uiState: DashboardUiModel = DashboardUiModel(
-        totalDocuments = "1,240",
-        expiredDocuments = "12",
-        sp2dCount = "850",
-        spmCount = "240",
-        sp3bCount = "105",
-        dsbCount = "45",
-        recentItems = listOf(
-            RecentArchive("ID-001", "SP2D-2023-11-0045", "SP2D", true),
-            RecentArchive("ID-002", "SPM-2023-10-0122", "SPM", false),
-            RecentArchive("ID-003", "SP2D-2023-11-0046", "SP2D", true),
-            RecentArchive("ID-004", "SP3B-2023-09-0010", "SP3B", true),
-        )
-    ),
     onNavigateToScan: () -> Unit,
     onNavigateToArchiveList: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToDetail: (String) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    HomeContent(
+        uiState = uiState,
+        onNavigateToScan = onNavigateToScan,
+        onNavigateToArchiveList = onNavigateToArchiveList,
+        onNavigateToDetail = onNavigateToDetail
+    )
+}
+
+@Composable
+fun HomeContent(
+    uiState: HomeUiState,
+    onNavigateToScan: () -> Unit,
+    onNavigateToArchiveList: () -> Unit,
     onNavigateToDetail: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
-            BpkpadTopAppBar(
-                onProfileClick = onNavigateToProfile
-            )
+            BpkpadTopAppBar()
         },
         bottomBar = {
             BpkpadBottomNavigation(
-                currentRoute = "home",
+                currentRoute = BottomNavItem.HOME.route,
                 onNavigate = { item ->
-                    when (item.route) {
-                        "home" -> { /* Already here */ }
-                        "archive" -> onNavigateToArchiveList()
-                        "add" -> onNavigateToScan()
-                        "profile" -> onNavigateToProfile()
+                    when (item) {
+                        BottomNavItem.HOME -> { /* Already here */ }
+                        BottomNavItem.ARCHIVE -> onNavigateToArchiveList()
+                        BottomNavItem.ADD -> onNavigateToScan()
                     }
                 }
             )
@@ -134,7 +120,7 @@ fun HomeScreen(
                 )
             }
 
-            // Grid Layout menggunakan Row dan Weight
+            // Grid Layout
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -183,15 +169,14 @@ fun HomeScreen(
                 )
             }
 
-            items(uiState.recentItems) { item ->
-                RecentArchiveItem(item = item, onClick = onNavigateToDetail)
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    thickness = 1.dp
+            item {
+                RecentArchiveTable(
+                    items = uiState.recentItems,
+                    onArchiveClick = onNavigateToDetail
                 )
             }
 
-            item { Spacer(modifier = Modifier.height(88.dp)) } // Padding ekstra untuk FAB
+            item { Spacer(modifier = Modifier.height(88.dp)) }
         }
     }
 }

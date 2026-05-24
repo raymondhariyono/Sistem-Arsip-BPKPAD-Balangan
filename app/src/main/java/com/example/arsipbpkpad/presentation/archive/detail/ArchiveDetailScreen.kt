@@ -28,11 +28,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,220 +44,240 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 
-// --- STATE MODEL ---
-data class ArchiveDetailUiModel(
-    val title: String = "SP2D-2023-11-0045",
-    val type: String = "SP2D",
-    val isVerified: Boolean = true,
-    val uploadDate: String = "Nov 12, 2023",
-    val uploaderName: String = "Admin",
-    val docName: String = "Surat Perintah Pencairan Dana (Dinas Pendidikan)",
-    val docNumber: String = "REF/PEND/2023/11/45",
-    val department: String = "Dinas Pendidikan dan Kebudayaan",
-    val docDate: String = "10 November 2023",
-    val validity: String = "10 Tahun (Expired 2033)",
-    val warehouse: String = "G1",
-    val rack: String = "12",
-    val box: String = "5"
-)
-
-// --- 1. STATEFUL COMPONENT ---
 @Composable
 fun ArchiveDetailScreen(
     archiveId: String,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: ArchiveDetailViewModel = hiltViewModel()
 ) {
-    // Mock State (Nanti diganti dengan ViewModel)
-    val uiState = ArchiveDetailUiModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     ArchiveDetailContent(
-        uiState = uiState,
+        state = state,
         onNavigateBack = onNavigateBack,
         onEditClick = { /* Handle Edit */ },
         onExportClick = { /* Handle Export */ }
     )
 }
 
-// --- 2. STATELESS COMPONENT ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArchiveDetailContent(
-    uiState: ArchiveDetailUiModel,
+    state: ArchiveDetailState,
     onNavigateBack: () -> Unit,
     onEditClick: () -> Unit,
     onExportClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.archive_detail_title), fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+            BpkpadTopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
-                },
-                actions = {
-                    IconButton(onClick = { /* Menu Option */ }) {
-                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8F9FA))
+                }
             )
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // --- HEADER: Badge, Title & Actions ---
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Tipe Badge
-                Text(
-                    text = uiState.type,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF424242),
-                    modifier = Modifier.background(Color(0xFFE0E0E0), RoundedCornerShape(16.dp)).padding(horizontal = 12.dp, vertical = 4.dp)
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (state.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                // Verified Badge
-                if (uiState.isVerified) {
-                    Row(
-                        modifier = Modifier.background(Color(0xFFCBFFC2), RoundedCornerShape(16.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF2E7D32)))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = stringResource(R.string.status_verified), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = uiState.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF212121))
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = stringResource(R.string.uploaded_info, uiState.uploadDate, uiState.uploaderName), fontSize = 12.sp, color = Color(0xFF757575))
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = onEditClick,
-                    border = BorderStroke(1.dp, Color(0xFF2E7D32)),
-                    shape = RoundedCornerShape(20.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.btn_edit_detail), color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Button(
-                    onClick = onExportClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                    shape = RoundedCornerShape(20.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Icon(Icons.Default.Done, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Export", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // --- KARTU 1: Digital Scan ---
-            DetailCardContainer(
-                title = stringResource(R.string.section_digital_scan),
-                icon = Icons.Default.AddCircle,
-                actionIcon = Icons.Default.Menu
-            ) {
-                // Placeholder Image Scan
-                Box(
+            } else if (state.archive != null) {
+                val archive = state.archive
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
-                        .background(Color.White, RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
                 ) {
-                    Text("(TABLE DATA)", color = Color.LightGray, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = archive.category,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        Row(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.status_verified), 
+                                style = MaterialTheme.typography.labelSmall, 
+                                fontWeight = FontWeight.Bold, 
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = archive.title, 
+                        style = MaterialTheme.typography.headlineSmall, 
+                        fontWeight = FontWeight.Bold, 
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.uploaded_info, archive.date, "Admin"), 
+                        style = MaterialTheme.typography.bodySmall, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = onEditClick,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.btn_edit_detail), 
+                                color = MaterialTheme.colorScheme.primary, 
+                                style = MaterialTheme.typography.labelMedium, 
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = onExportClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Icon(Icons.Default.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.btn_export), 
+                                color = MaterialTheme.colorScheme.onPrimary, 
+                                style = MaterialTheme.typography.labelMedium, 
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    DetailCardContainer(
+                        title = stringResource(R.string.section_digital_scan),
+                        icon = Icons.Default.AddCircle,
+                        actionIcon = Icons.Default.Menu
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "(SCAN PREVIEW)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    DetailCardContainer(
+                        title = stringResource(R.string.section_metadata),
+                        icon = Icons.Default.Info
+                    ) {
+                        MetadataRow(label = stringResource(R.string.label_nama_dokumen), value = archive.title)
+                        MetadataRow(label = stringResource(R.string.label_nomor_dokumen), value = "REF/BPKPAD/2023/11/45")
+                        MetadataRow(label = stringResource(R.string.label_dinas), value = archive.category)
+                        MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = archive.date)
+                        MetadataRow(label = stringResource(R.string.label_masa_berlaku), value = "10 Tahun", showDivider = false)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    DetailCardContainer(
+                        title = stringResource(R.string.section_physical_location),
+                        icon = Icons.Default.LocationOn
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            LocationBlock(modifier = Modifier.weight(1f), label = stringResource(R.string.label_gudang), value = "G1")
+                            LocationBlock(modifier = Modifier.weight(1f), label = stringResource(R.string.label_rak_caps), value = "12")
+                            LocationBlock(modifier = Modifier.weight(1f), label = stringResource(R.string.label_box_caps), value = "05", isHighlighted = true)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
+            } else if (state.errorMessage != null) {
+                Text(
+                    text = state.errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- KARTU 2: Metadata ---
-            DetailCardContainer(
-                title = stringResource(R.string.section_metadata),
-                icon = Icons.Default.Info
-            ) {
-                MetadataRow(label = stringResource(R.string.label_nama_dokumen), value = uiState.docName)
-                MetadataRow(label = stringResource(R.string.label_nomor_dokumen), value = uiState.docNumber)
-                MetadataRow(label = stringResource(R.string.label_dinas), value = uiState.department)
-                MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = uiState.docDate)
-                MetadataRow(label = stringResource(R.string.label_masa_berlaku), value = uiState.validity, showDivider = false)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- KARTU 3: Lokasi Fisik ---
-            DetailCardContainer(
-                title = stringResource(R.string.section_physical_location),
-                icon = Icons.Default.LocationOn
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    LocationBlock(modifier = Modifier.weight(1f), label = "GUDANG", value = uiState.warehouse)
-                    LocationBlock(modifier = Modifier.weight(1f), label = "RAK", value = uiState.rack)
-                    LocationBlock(modifier = Modifier.weight(1f), label = "BOX", value = uiState.box, isHighlighted = true)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
-// --- MICRO-COMPONENTS ---
-
 @Composable
 fun DetailCardContainer(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    actionIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    icon: ImageVector,
+    actionIcon: ImageVector? = null,
     content: @Composable () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-        elevation = CardDefaults.cardElevation(0.dp)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -266,12 +286,12 @@ fun DetailCardContainer(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = icon, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(18.dp))
+                    Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF424242))
+                    Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 if (actionIcon != null) {
-                    Icon(imageVector = actionIcon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    Icon(imageVector = actionIcon, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -283,20 +303,20 @@ fun DetailCardContainer(
 @Composable
 fun MetadataRow(label: String, value: String, showDivider: Boolean = true) {
     Column {
-        Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9E9E9E))
+        Text(text = label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = value, fontSize = 13.sp, color = Color(0xFF212121), lineHeight = 18.sp)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, lineHeight = 18.sp)
         if (showDivider) {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFEEEEEE), thickness = 1.dp)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
         }
     }
 }
 
 @Composable
 fun LocationBlock(modifier: Modifier = Modifier, label: String, value: String, isHighlighted: Boolean = false) {
-    val bgColor = if (isHighlighted) Color(0xFF1B5E20) else Color(0xFFE8F5E9)
-    val textColor = if (isHighlighted) Color.White else Color(0xFF2E7D32)
-    val labelColor = if (isHighlighted) Color(0xFFA5D6A7) else Color(0xFF757575)
+    val bgColor = if (isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+    val textColor = if (isHighlighted) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+    val labelColor = if (isHighlighted) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier
@@ -304,19 +324,18 @@ fun LocationBlock(modifier: Modifier = Modifier, label: String, value: String, i
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = labelColor)
+        Text(text = label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = labelColor)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = textColor)
+        Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = textColor)
     }
 }
 
-// --- PREVIEW ---
-@Preview(showBackground = true, device = "id:pixel_7")
+@Preview(showBackground = true)
 @Composable
 fun ArchiveDetailPreview() {
     ArsipBPKPADTheme {
         ArchiveDetailContent(
-            uiState = ArchiveDetailUiModel(),
+            state = ArchiveDetailState(),
             onNavigateBack = {},
             onEditClick = {},
             onExportClick = {}

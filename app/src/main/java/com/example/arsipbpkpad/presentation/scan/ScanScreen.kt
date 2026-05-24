@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -18,7 +17,6 @@ import androidx.compose.ui.res.stringResource
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(
     onNavigateBack: () -> Unit
@@ -30,13 +28,14 @@ fun ScanScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                },
-                showProfile = false
+                }
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -46,7 +45,8 @@ fun ScanScreen(
         ) {
             Text(
                 text = stringResource(R.string.scan_feature_coming_soon),
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }

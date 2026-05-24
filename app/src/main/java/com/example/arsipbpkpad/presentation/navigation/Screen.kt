@@ -10,4 +10,5 @@ sealed class Screen(val route: String) {
     data object Scan : Screen("scan")
     data object AddArchive : Screen("add_archive")
     data object ManualAdd : Screen("manual_add")
+    data object Import : Screen("import")
 }

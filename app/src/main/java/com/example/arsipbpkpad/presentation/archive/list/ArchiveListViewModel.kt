@@ -30,6 +30,9 @@ class ArchiveListViewModel @Inject constructor(
             is ArchiveListUiEvent.OnArchiveClick -> { 
                 /* Handle navigation if needed via side effect or state */ 
             }
+            is ArchiveListUiEvent.OnSearchQueryChange -> {
+                _uiState.update { it.copy(searchQuery = event.query) }
+            }
         }
     }
 

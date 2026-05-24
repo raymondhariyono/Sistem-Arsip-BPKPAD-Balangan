@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.arsipbpkpad.presentation.archive.add.AddArchiveScreen
+import com.example.arsipbpkpad.presentation.archive.add.excelimport.ImportScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.ManualAddScreen
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
@@ -33,9 +34,6 @@ fun AppNavHost(
                 onNavigateToScan = {
                     navController.navigate(Screen.AddArchive.route)
                 },
-                onNavigateToProfile = {
-                    // TODO: Navigate to Profile
-                },
                 onNavigateToDetail = { archiveId ->
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                 }
@@ -54,7 +52,6 @@ fun AppNavHost(
                         }
                         "archive" -> { /* Already here */ }
                         "add" -> navController.navigate(Screen.AddArchive.route)
-                        "profile" -> { /* TODO */ }
                     }
                 }
             )
@@ -68,7 +65,12 @@ fun AppNavHost(
         }
         composable(Screen.ArchiveReview.route) {
             ArchiveReviewScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.Scan.route) {
@@ -81,7 +83,7 @@ fun AppNavHost(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToScanOcr = { navController.navigate(Screen.Scan.route) },
                 onNavigateToManualAdd = { navController.navigate(Screen.ManualAdd.route) },
-                onNavigateToImportSpreadsheet = { /* TODO: Import Spreadsheet */ },
+                onNavigateToImportSpreadsheet = { navController.navigate(Screen.Import.route) },
                 onNavigateToBottomNav = { item ->
                     when (item.route) {
                         "home" -> navController.navigate(Screen.Home.route) {
@@ -89,7 +91,6 @@ fun AppNavHost(
                         }
                         "archive" -> navController.navigate(Screen.ArchiveList.route)
                         "add" -> { /* Already here */ }
-                        "profile" -> { /* TODO */ }
                     }
                 }
             )
@@ -97,6 +98,20 @@ fun AppNavHost(
         composable(Screen.ManualAdd.route) {
             ManualAddScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Import.route) {
+            ImportScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToBottomNav = { item ->
+                    when (item.route) {
+                        "home" -> navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                        "archive" -> navController.navigate(Screen.ArchiveList.route)
+                        "add" -> { /* Already here */ }
+                    }
+                }
             )
         }
     }

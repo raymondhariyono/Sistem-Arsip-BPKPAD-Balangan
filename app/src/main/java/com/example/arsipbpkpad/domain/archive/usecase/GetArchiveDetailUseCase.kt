@@ -3,13 +3,13 @@ package com.example.arsipbpkpad.domain.archive.usecase
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.archive.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.archive.repository.ArchiveRepository
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-
-class SaveArchiveUseCase @Inject constructor(
+class GetArchiveDetailUseCase @Inject constructor(
     private val repository: ArchiveRepository
 ) {
-    suspend operator fun invoke(archive: ArchiveDocument): ResultState<Unit> {
-        return repository.saveArchive(archive)
+    operator fun invoke(archiveId: String): Flow<ResultState<ArchiveDocument>> {
+        return repository.getArchiveDetail(archiveId)
     }
 }

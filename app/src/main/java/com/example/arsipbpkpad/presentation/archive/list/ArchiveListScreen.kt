@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,13 +43,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.archive.model.ArchiveDocument
@@ -58,13 +58,6 @@ import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
-import com.example.arsipbpkpad.ui.theme.ChipBlue
-import com.example.arsipbpkpad.ui.theme.ChipBlueBg
-import com.example.arsipbpkpad.ui.theme.SuccessGreen
-import com.example.arsipbpkpad.ui.theme.TextDark
-import com.example.arsipbpkpad.ui.theme.TextPrimary
-import com.example.arsipbpkpad.ui.theme.TextSecondary
-import com.example.arsipbpkpad.ui.theme.TextTertiary
 
 @Composable
 fun ArchiveListScreen(
@@ -77,7 +70,9 @@ fun ArchiveListScreen(
 
     ArchiveListContent(
         uiState = uiState,
-        onSearchQueryChange = { /* viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(it)) */ },
+        onSearchQueryChange = { query -> 
+            viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(query)) 
+        },
         onArchiveClick = onNavigateToDetail,
         onNavigateBack = onNavigateBack,
         onNavigateToBottomNav = onNavigateToBottomNav
@@ -99,12 +94,11 @@ fun ArchiveListContent(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                },
-                showProfile = true
+                }
             )
         },
         bottomBar = {
@@ -117,7 +111,10 @@ fun ArchiveListContent(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             LazyColumn(
@@ -137,29 +134,33 @@ fun ArchiveListContent(
                         placeholder = {
                             Text(
                                 text = stringResource(R.string.search_hint),
-                                color = TextTertiary,
+                                color = MaterialTheme.colorScheme.outline,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
                         leadingIcon = {
                             Icon(
-                                Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = TextTertiary
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline
                             )
                         },
                         trailingIcon = {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = "Clear",
-                                tint = TextTertiary
-                            )
+                            if (uiState.searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { onSearchQueryChange("") }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
                         },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                             focusedBorderColor = MaterialTheme.colorScheme.primary
                         ),
                         singleLine = true
@@ -174,9 +175,9 @@ fun ArchiveListContent(
                     ) {
                         item {
                             Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = "Filter",
-                                tint = TextSecondary,
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -199,12 +200,12 @@ fun ArchiveListContent(
                             text = stringResource(R.string.search_results),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
                             text = stringResource(R.string.files_found, uiState.archives.size),
                             style = MaterialTheme.typography.labelMedium,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -243,8 +244,8 @@ fun ActiveFilterChip(text: String) {
         )
         Spacer(modifier = Modifier.width(4.dp))
         Icon(
-            Icons.Default.Close,
-            contentDescription = "Remove",
+            imageVector = Icons.Default.Close,
+            contentDescription = null,
             tint = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.size(14.dp)
         )
@@ -255,21 +256,21 @@ fun ActiveFilterChip(text: String) {
 fun InactiveFilterChip(text: String) {
     Row(
         modifier = Modifier
-            .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = text,
-            color = TextDark,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.labelMedium
         )
         Spacer(modifier = Modifier.width(4.dp))
         Icon(
-            Icons.Default.ArrowDropDown,
-            contentDescription = "Dropdown",
-            tint = TextSecondary,
+            imageVector = Icons.Default.ArrowDropDown,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp)
         )
     }
@@ -283,8 +284,8 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(0.dp)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -295,26 +296,20 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "SP2D", // Placeholder for actual type if available in model
+                            text = item.category,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = ChipBlue,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .background(ChipBlueBg, RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = item.category,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextSecondary
                         )
                     }
 
-                    val isAvailable = true // Placeholder
-                    val statusBgColor = if (isAvailable) MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
-                    val statusTextColor = if (isAvailable) MaterialTheme.colorScheme.primary else TextSecondary
-                    val statusDotColor = if (isAvailable) SuccessGreen else TextTertiary
+                    val isAvailable = true // Placeholder logic
+                    val statusBgColor = if (isAvailable) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
+                    val statusTextColor = if (isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    val statusDotColor = if (isAvailable) Color(0xFF4CAF50) else MaterialTheme.colorScheme.outline
                     val statusText = if (isAvailable) stringResource(R.string.status_in_warehouse) else stringResource(R.string.status_borrowed)
 
                     Row(
@@ -345,7 +340,7 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -353,13 +348,13 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
                 Text(
                     text = item.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextTertiary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
 
             Row(
                 modifier = Modifier
@@ -387,7 +382,7 @@ fun LocationDetailItem(label: String, value: String, icon: ImageVector? = null) 
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = TextTertiary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.height(2.dp))
@@ -405,7 +400,7 @@ fun LocationDetailItem(label: String, value: String, icon: ImageVector? = null) 
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

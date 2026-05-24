@@ -22,4 +22,11 @@ class ArchiveRepositoryImpl @Inject constructor() : ArchiveRepository {
     override suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit> {
         return ResultState.Success(Unit)
     }
+
+    override fun getArchiveDetail(id: String): Flow<ResultState<ArchiveDocument>> = flow {
+        emit(ResultState.Loading)
+        // Simulate detail fetching
+        val mockDetail = ArchiveDocument(id, "SP2D-2023-11-0045", "Surat Perintah Pencairan Dana (Dinas Pendidikan)", "2023-11-12", "Dinas Pendidikan")
+        emit(ResultState.Success(mockDetail))
+    }
 }
