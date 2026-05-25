@@ -12,6 +12,9 @@ interface ArchiveDao {
     @Query("SELECT * FROM archives")
     fun getArchives(): Flow<List<ArchiveEntity>>
 
+    @Query("SELECT * FROM archives WHERE id = :id")
+    fun getArchiveById(id: String): Flow<ArchiveEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertArchive(archive: ArchiveEntity)
 

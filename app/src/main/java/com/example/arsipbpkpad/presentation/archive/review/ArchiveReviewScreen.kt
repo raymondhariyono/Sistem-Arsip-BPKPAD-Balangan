@@ -51,14 +51,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 
 // --- STATE & EVENTS ---
@@ -85,28 +87,22 @@ sealed class ArchiveReviewUiEvent {
 @Composable
 fun ArchiveReviewScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToHome: () -> Unit // Misal setelah simpan kembali ke Home
+    onNavigateToHome: () -> Unit, // Misal setelah simpan kembali ke Home
+    viewModel: ArchiveReviewViewModel = hiltViewModel()
 ) {
-    // Mock State (Ganti dengan ViewModel State nanti)
-    var uiState by remember { mutableStateOf(ArchiveReviewUiState()) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val saveResult by viewModel.saveResult.collectAsStateWithLifecycle()
+
+    // Handle side effects for saving
+    androidx.compose.runtime.LaunchedEffect(saveResult) {
+        if (saveResult is ResultState.Success) {
+            onNavigateToHome()
+        }
+    }
 
     ArchiveReviewContent(
         uiState = uiState,
-        onEvent = { event ->
-            uiState = when (event) {
-                is ArchiveReviewUiEvent.OnDocNumberChange -> uiState.copy(docNumber = event.value)
-                is ArchiveReviewUiEvent.OnSubjectChange -> uiState.copy(subject = event.value)
-                is ArchiveReviewUiEvent.OnYearChange -> uiState.copy(year = event.value)
-                is ArchiveReviewUiEvent.OnWarehouseChange -> uiState.copy(warehouse = event.value)
-                is ArchiveReviewUiEvent.OnRackChange -> uiState.copy(rack = event.value)
-                is ArchiveReviewUiEvent.OnValidationToggle -> uiState.copy(isValidated = event.isValidated)
-                is ArchiveReviewUiEvent.OnSaveClick -> {
-                    // Lakukan aksi simpan (API/Room), lalu navigasi
-                    onNavigateToHome()
-                    uiState
-                }
-            }
-        },
+        onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack
     )
 }
