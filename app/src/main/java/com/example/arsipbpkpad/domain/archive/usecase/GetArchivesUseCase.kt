@@ -10,7 +10,7 @@ import javax.inject.Inject
 class GetArchivesUseCase @Inject constructor(
     private val repository: ArchiveRepository
 ) {
-    operator fun invoke(): Flow<ResultState<List<ArchiveDocument>>> {
-        return repository.getArchives()
+    operator fun invoke(query: String? = null): Flow<ResultState<List<ArchiveDocument>>> {
+        return repository.getArchives(query)
     }
 }

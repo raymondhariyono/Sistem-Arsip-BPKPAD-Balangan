@@ -69,7 +69,25 @@ When working on the "Scan to Autofill" feature, enforce this pipeline:
 4. Navigates to `ReviewScreen` and populates the form using the parsed Domain Model.
 5. User edits/verifies. On submit, call `UploadCoverImageUseCase` (Firebase) then `SaveArchiveUseCase` (Backend/Room).
 
-### Phase 6: Testing Strategy
+### Phase 6: AI Pipeline Resilience & Error Handling
+To ensure a robust "Scan to Autofill" experience, the `ParseMetadataWithAiUseCase` must handle the following failure scenarios:
+
+1. **Failure Scenarios & States:**
+   - **Timeout Koneksi:** Jika API backend tidak merespons dalam waktu tertentu (misal 30 detik) $\rightarrow$ Emisi `ResultState.Error` dengan kode `AiProcessingFailed.Timeout`.
+   - **Request Dibatalkan:** Jika user menavigasi keluar saat proses berlangsung $\rightarrow$ Batalkan job coroutine.
+   - **Respons Kosong/Null:** Jika AI tidak berhasil mengekstrak data apapun $\rightarrow$ Tampilkan state `AiProcessingFailed.NoData`.
+   - **Respons AI Tidak Valid:** Jika format JSON dari backend korup atau tidak sesuai skema $\rightarrow$ Tampilkan state `AiProcessingFailed.InvalidFormat`.
+
+2. **Resilience Policy:**
+   - **Retry Policy:** Lakukan percobaan ulang otomatis maksimal 3 kali untuk error yang bersifat transien (seperti timeout atau network failure).
+   - **Fallback Mechanism:** Jika semua percobaan gagal, aplikasi harus melakukan fallback ke **Local/Manual Parsing** atau membiarkan user mengisi form secara manual sepenuhnya dari hasil raw text OCR.
+
+3. **User Communication (Localized Strings):**
+   - **Timeout:** `"Proses analisis AI gagal karena koneksi timeout. Silakan coba kembali."`
+   - **General Error:** `"Gagal memproses dokumen. Silakan periksa koneksi internet Anda atau isi data secara manual."`
+   - **Invalid Format:** `"Format dokumen tidak dikenali oleh sistem AI."`
+
+### Phase 7: Testing Strategy
 When asked to write tests, follow these guidelines:
 1. **Domain/UseCases:** Write pure JUnit tests. Mock repositories using `MockK`. Verify business rules.
 2. **ViewModels:** Test Coroutines using `runTest` and `TestDispatcher`. Assert `StateFlow` emissions using tools like Turbine.

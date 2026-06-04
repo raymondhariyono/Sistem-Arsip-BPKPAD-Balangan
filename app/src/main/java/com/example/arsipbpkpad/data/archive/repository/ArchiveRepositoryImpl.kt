@@ -8,7 +8,6 @@ import com.example.arsipbpkpad.domain.archive.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.archive.repository.ArchiveRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
@@ -16,8 +15,9 @@ import javax.inject.Inject
 class ArchiveRepositoryImpl @Inject constructor(
     private val archiveDao: ArchiveDao
 ) : ArchiveRepository {
-    override fun getArchives(): Flow<ResultState<List<ArchiveDocument>>> {
-        return archiveDao.getArchives()
+    override fun getArchives(query: String?): Flow<ResultState<List<ArchiveDocument>>> {
+        val searchQuery = if (query.isNullOrBlank()) null else query
+        return archiveDao.getArchives(searchQuery)
             .map { entities ->
                 val documents = entities.map { it.toDomain() }
                 ResultState.Success(documents) as ResultState<List<ArchiveDocument>>

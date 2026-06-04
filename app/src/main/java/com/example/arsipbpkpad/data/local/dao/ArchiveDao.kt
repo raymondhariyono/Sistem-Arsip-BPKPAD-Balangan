@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ArchiveDao {
-    @Query("SELECT * FROM archives")
-    fun getArchives(): Flow<List<ArchiveEntity>>
+    @Query("SELECT * FROM archives WHERE :query IS NULL OR title LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR category LIKE '%' || :query || '%'")
+    fun getArchives(query: String?): Flow<List<ArchiveEntity>>
 
     @Query("SELECT * FROM archives WHERE id = :id")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>

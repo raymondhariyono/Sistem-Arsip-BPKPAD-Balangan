@@ -123,9 +123,11 @@
     <string name="step2_title">2. Upload File</string>
     <string name="step2_desc">Pilih file spreadsheet yang telah diisi sesuai template.</string>
 
-    <string name="drag_drop_title">Tarik &amp; Lepas file di sini</string>
-    <string name="drag_drop_subtitle">atau klik untuk menelusuri dari perangkat</string>
-    <string name="drag_drop_format">Mendukung .xlsx, .xls (Maks. 10MB)</string>
+    <string name="select_file_title">Pilih Berkas Spreadsheet</string>
+    <string name="select_file_subtitle">Klik untuk menelusuri dari perangkat</string>
+    <string name="select_file_format">Mendukung .xlsx, .xls (Maks. 10MB)</string>
+    <string name="file_selected_label">Berkas Terpilih</string>
+    <string name="btn_browse_file">Pilih Berkas</string>
 
     <string name="btn_cancel">Batal</string>
     <string name="btn_process_import">Proses Import</string>

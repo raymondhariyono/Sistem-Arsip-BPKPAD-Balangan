@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,11 +43,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -240,7 +236,7 @@ fun ImportContent(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    DashedDropZone(
+                    FilePickerBox(
                         fileName = uiState.selectedFileName,
                         onClick = { onEvent(ImportUiEvent.OnSelectFileClick) }
                     )
@@ -292,34 +288,27 @@ fun ImportContent(
 }
 
 @Composable
-fun DashedDropZone(
+fun FilePickerBox(
     fileName: String?,
     onClick: () -> Unit
 ) {
-    val dashColor = MaterialTheme.colorScheme.outline
-
-    Box(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
-            .drawBehind {
-                drawRoundRect(
-                    color = dashColor,
-                    style = Stroke(
-                        width = 4f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
-                    ),
-                    cornerRadius = CornerRadius(16.dp.toPx())
-                )
-            }
-            .clickable { onClick() }
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(56.dp)
                     .background(LightGreen, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -327,7 +316,7 @@ fun DashedDropZone(
                     imageVector = Icons.Default.KeyboardArrowUp, 
                     contentDescription = null, 
                     tint = MaterialTheme.colorScheme.primary, 
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
@@ -335,14 +324,28 @@ fun DashedDropZone(
 
             if (fileName != null) {
                 Text(
+                    text = stringResource(R.string.file_selected_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
                     text = fileName, 
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold, 
-                    color = MaterialTheme.colorScheme.primary, 
+                    color = MaterialTheme.colorScheme.onSurface, 
                     textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.select_file_subtitle),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
                 )
             } else {
                 Text(
-                    text = stringResource(R.string.drag_drop_title), 
+                    text = stringResource(R.string.select_file_title), 
                     style = MaterialTheme.typography.titleSmall, 
                     fontWeight = FontWeight.Bold, 
                     color = MaterialTheme.colorScheme.onSurface, 
@@ -350,18 +353,27 @@ fun DashedDropZone(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = stringResource(R.string.drag_drop_subtitle), 
+                    text = stringResource(R.string.select_file_subtitle), 
                     style = MaterialTheme.typography.bodySmall, 
                     color = MaterialTheme.colorScheme.onSurfaceVariant, 
                     textAlign = TextAlign.Center
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
+                ) {
+                    Text(text = stringResource(R.string.btn_browse_file))
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = stringResource(R.string.drag_drop_format),
+                    text = stringResource(R.string.select_file_format),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
