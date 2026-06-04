@@ -7,6 +7,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.arsipbpkpad.data.local.AppDatabase
 import com.example.arsipbpkpad.data.local.dao.ArchiveDao
 import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
+import com.example.arsipbpkpad.domain.model.DocStatus
+import com.example.arsipbpkpad.domain.model.DocType
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,7 +34,8 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
-        ).addCallback(object : RoomDatabase.Callback() {
+        ).fallbackToDestructiveMigration()
+        .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
                 CoroutineScope(Dispatchers.IO).launch {
@@ -53,43 +56,35 @@ object DatabaseModule {
         return listOf(
             ArchiveEntity(
                 id = "1",
-                title = "Surat Keputusan Bupati No. 123",
-                description = "SK Penetapan Lokasi Pembangunan Gedung Baru BPKPAD Balangan.",
-                date = "2024-01-15",
-                category = "SK Bupati",
-                imageUrl = "https://picsum.photos/200"
+                type = DocType.SP2D,
+                documentNumber = "SP2D-123",
+                nominal = 50000000.0,
+                thirdParty = "PT. Pembangunan Jaya",
+                year = 2024,
+                dateIssued = "2024-01-15",
+                status = DocStatus.AVAILABLE,
+                idStorageLocation = null,
+                metadata = null,
+                createdBy = null,
+                verifiedBy = null,
+                createdAt = "2024-01-15T00:00:00Z",
+                updatedAt = "2024-01-15T00:00:00Z"
             ),
             ArchiveEntity(
                 id = "2",
-                title = "Laporan Keuangan Tahunan 2023",
-                description = "Laporan realisasi anggaran dan neraca keuangan daerah tahun 2023.",
-                date = "2024-03-10",
-                category = "Laporan Keuangan",
-                imageUrl = "https://picsum.photos/201"
-            ),
-            ArchiveEntity(
-                id = "3",
-                title = "Sertifikat Aset Daerah Blok A",
-                description = "Dokumen kepemilikan tanah aset daerah di wilayah Balangan.",
-                date = "2023-11-20",
-                category = "Sertifikat",
-                imageUrl = "https://picsum.photos/202"
-            ),
-            ArchiveEntity(
-                id = "4",
-                title = "Nota Dinas Kepegawaian",
-                description = "Nota dinas terkait mutasi pegawai internal BPKPAD.",
-                date = "2024-02-05",
-                category = "Kepegawaian",
-                imageUrl = "https://picsum.photos/203"
-            ),
-            ArchiveEntity(
-                id = "5",
-                title = "Peraturan Daerah No. 45 Tahun 2023",
-                description = "Perda tentang Pengelolaan Barang Milik Daerah.",
-                date = "2023-12-28",
-                category = "Perda",
-                imageUrl = "https://picsum.photos/204"
+                type = DocType.SPM,
+                documentNumber = "SPM-456",
+                nominal = 25000000.0,
+                thirdParty = "CV. Berkah Utama",
+                year = 2024,
+                dateIssued = "2024-03-10",
+                status = DocStatus.AVAILABLE,
+                idStorageLocation = null,
+                metadata = null,
+                createdBy = null,
+                verifiedBy = null,
+                createdAt = "2024-03-10T00:00:00Z",
+                updatedAt = "2024-03-10T00:00:00Z"
             )
         )
     }

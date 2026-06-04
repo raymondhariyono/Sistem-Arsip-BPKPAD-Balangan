@@ -9,15 +9,24 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ArchiveDao {
-    @Query("SELECT * FROM archives WHERE :query IS NULL OR title LIKE '%' || :query || '%' OR id LIKE '%' || :query || '%' OR category LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM archives WHERE :query IS NULL OR documentNumber LIKE '%' || :query || '%' OR thirdParty LIKE '%' || :query || '%'")
     fun getArchives(query: String?): Flow<List<ArchiveEntity>>
 
     @Query("SELECT * FROM archives WHERE id = :id")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber)")
+    suspend fun existsByDocumentNumber(docNumber: String): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertArchive(archive: ArchiveEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertArchives(archives: List<ArchiveEntity>)
+
+    @Query("DELETE FROM archives WHERE id = :id")
+    suspend fun deleteArchiveById(id: String)
+
+    @Query("DELETE FROM archives")
+    suspend fun clearArchives()
 }

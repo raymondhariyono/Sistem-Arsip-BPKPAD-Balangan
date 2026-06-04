@@ -3,7 +3,8 @@ package com.example.arsipbpkpad.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
-import com.example.arsipbpkpad.domain.archive.usecase.GetArchivesUseCase
+import com.example.arsipbpkpad.domain.model.DocStatus
+import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,9 +41,9 @@ class HomeViewModel @Inject constructor(
                                 recentItems = archives.take(5).map {
                                     RecentArchive(
                                         id = it.id,
-                                        title = it.title,
-                                        type = it.category,
-                                        isAvailable = true
+                                        title = it.documentNumber,
+                                        type = it.type.name,
+                                        isAvailable = it.status == DocStatus.AVAILABLE
                                     )
                                 }
                             )

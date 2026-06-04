@@ -111,4 +111,28 @@ When generating or updating UI components, strictly adhere to the following desi
    - Light Blue/Background: `#F3FAFF`
    - Pure White: `#FFFFFF`
 
+## 🗄️ 7. Database & Offline-First Strategy (Room + Supabase)
+
+The application uses an **Offline-First** architecture. Room Database (SQLite) is the Single Source of Truth for the UI, while Supabase (PostgreSQL) acts as the remote backend.
+
+### 7.1. Database Responsibilities
+- **Local (Room):** Stores `ArchiveEntity`. Used directly by the Presentation layer via Flows. Must support fast local queries and offline access.
+- **Remote (Supabase):** Stores the actual records. Handles complex relations, ENUMs, and automated `Audit Logs` via PostgreSQL Triggers.
+- **NEVER** write manual audit log insertion code in the Android App (Kotlin). Audit logs are handled strictly by Supabase Database Triggers (`ON INSERT/UPDATE/DELETE`).
+
+### 7.2. Synchronization Pipeline
+When instructed to create or update data flows, strictly follow this pattern:
+1. **Fetch/Read:** UI requests data -> `ArchiveRepository` queries Room (`ArchiveDao.getArchives(query)`) -> returns `Flow<ResultState<List<ArchiveDocument>>>`.
+2. **Sync (Background):** `ArchiveRepository` fetches fresh data from Supabase -> Maps Supabase DTOs to Room Entities -> Updates Room (`ArchiveDao.insertAll()`). UI updates reactively.
+3. **Write/Insert:**
+    - User submits new Draft/Archive.
+    - App saves to Room as `status = DRAFT`.
+    - App attempts to push to Supabase.
+    - If network fails, keep in Room as DRAFT for later sync. If success, update Room status to `UNVERIFIED` or `AVAILABLE` based on Supabase response.
+
+### 7.3. Type Mapping & Conversion Rules
+When writing Entity and DTO classes, respect these type conversions:
+- **UUIDs:** Supabase uses `UUID`. Room and Kotlin Domain must use `String`.
+- **JSONB Metadata:** Supabase uses `JSONB`. In Kotlin, use a Data Class (`ArchiveMetadata`) and convert it to a JSON `String` using Room `@TypeConverter`.
+- **Enums:** Supabase `doc_type` and `doc_status` Enums should be mapped to Kotlin `enum class` in the Domain layer. 
 **Implementation Rule:** Ensure these colors and typography are defined in `ui/theme/Color.kt` and `ui/theme/Type.kt` respectively, and applied properly through the Material 3 `ColorScheme` in `Theme.kt`. Avoid hardcoding these hex values directly in Composable functions.

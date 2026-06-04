@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
@@ -41,10 +42,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,7 +74,12 @@ fun ArchiveDetailScreen(
         state = state,
         onNavigateBack = onNavigateBack,
         onEditClick = { /* Handle Edit */ },
-        onExportClick = { /* Handle Export */ }
+        onExportClick = { /* Handle Export */ },
+        onDeleteClick = {
+            viewModel.deleteArchive {
+                onNavigateBack()
+            }
+        }
     )
 }
 
@@ -82,8 +89,34 @@ fun ArchiveDetailContent(
     state: ArchiveDetailState,
     onNavigateBack: () -> Unit,
     onEditClick: () -> Unit,
-    onExportClick: () -> Unit
+    onExportClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        onDeleteClick()
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Hapus", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Batal")
+                }
+            },
+            title = { Text("Hapus Arsip") },
+            text = { Text("Apakah Anda yakin ingin menghapus arsip ini? Tindakan ini tidak dapat dibatalkan.") }
+        )
+    }
+
     Scaffold(
         topBar = {
             BpkpadTopAppBar(
@@ -118,7 +151,7 @@ fun ArchiveDetailContent(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = archive.category,
+                            text = archive.type.name,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -152,14 +185,14 @@ fun ArchiveDetailContent(
 
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = archive.title, 
+                        text = archive.documentNumber, 
                         style = MaterialTheme.typography.headlineSmall, 
                         fontWeight = FontWeight.Bold, 
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(R.string.uploaded_info, archive.date, "Admin"), 
+                        text = stringResource(R.string.uploaded_info, archive.dateIssued ?: "", "Admin"), 
                         style = MaterialTheme.typography.bodySmall, 
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -202,6 +235,20 @@ fun ArchiveDetailContent(
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                         }
+
+                        IconButton(
+                            onClick = { showDeleteDialog = true },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.errorContainer, CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Hapus",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -229,11 +276,11 @@ fun ArchiveDetailContent(
                         title = stringResource(R.string.section_metadata),
                         icon = Icons.Default.Info
                     ) {
-                        MetadataRow(label = stringResource(R.string.label_nama_dokumen), value = archive.title)
-                        MetadataRow(label = stringResource(R.string.label_nomor_dokumen), value = "REF/BPKPAD/2023/11/45")
-                        MetadataRow(label = stringResource(R.string.label_dinas), value = archive.category)
-                        MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = archive.date)
-                        MetadataRow(label = stringResource(R.string.label_masa_berlaku), value = "10 Tahun", showDivider = false)
+                        MetadataRow(label = stringResource(R.string.label_nama_dokumen), value = archive.documentNumber)
+                        MetadataRow(label = stringResource(R.string.label_nomor_dokumen), value = archive.documentNumber)
+                        MetadataRow(label = stringResource(R.string.label_dinas), value = archive.type.name)
+                        MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = archive.dateIssued ?: "")
+                        MetadataRow(label = "Nominal", value = archive.nominal?.toString() ?: "0", showDivider = false)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -338,7 +385,8 @@ fun ArchiveDetailPreview() {
             state = ArchiveDetailState(),
             onNavigateBack = {},
             onEditClick = {},
-            onExportClick = {}
+            onExportClick = {},
+            onDeleteClick = {}
         )
     }
 }

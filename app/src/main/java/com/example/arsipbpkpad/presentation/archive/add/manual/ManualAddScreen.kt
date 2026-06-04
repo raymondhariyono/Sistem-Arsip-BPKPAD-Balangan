@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -43,7 +42,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,6 +57,28 @@ fun ManualAddScreen(
     viewModel: ManualAddViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Handle navigation after success
+    androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            onNavigateBack() // Back to Archive List
+            viewModel.onEvent(ManualAddUiEvent.ResetState)
+        }
+    }
+
+    if (uiState.isSuccess) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { },
+            confirmButton = {
+                Button(onClick = { /* Handled by LaunchedEffect */ }) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Berhasil") },
+            text = { Text("Arsip berhasil ditambahkan secara manual.") },
+            icon = { Icon(Icons.Default.Done, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+        )
+    }
 
     ManualAddContent(
         uiState = uiState,
@@ -110,38 +130,50 @@ fun ManualAddContent(
                     placeholder = stringResource(R.string.hint_doc_type),
                     value = uiState.docType,
                     options = listOf("SP2D", "SPM", "SP3B", "DSB"),
-                    onOptionSelected = { onEvent(ManualAddUiEvent.OnDocTypeChange(it)) }
+                    onOptionSelected = { onEvent(ManualAddUiEvent.OnDocTypeChange(it)) },
+                    error = uiState.validationErrors["docType"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_doc_name),
                     placeholder = stringResource(R.string.hint_doc_name),
                     value = uiState.docName,
-                    onValueChange = { onEvent(ManualAddUiEvent.OnDocNameChange(it)) }
+                    onValueChange = { onEvent(ManualAddUiEvent.OnDocNameChange(it)) },
+                    error = uiState.validationErrors["docName"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_doc_number),
                     placeholder = stringResource(R.string.hint_doc_number),
                     value = uiState.docNumber,
-                    onValueChange = { onEvent(ManualAddUiEvent.OnDocNumberChange(it)) }
+                    onValueChange = { onEvent(ManualAddUiEvent.OnDocNumberChange(it)) },
+                    error = uiState.validationErrors["docNumber"]
                 )
                 FormDropdownField(
                     label = stringResource(R.string.label_department),
                     placeholder = stringResource(R.string.hint_department),
                     value = uiState.department,
                     options = listOf("Dinas Pendidikan", "Dinas Kesehatan", "Dinas PU"),
-                    onOptionSelected = { onEvent(ManualAddUiEvent.OnDepartmentChange(it)) }
+                    onOptionSelected = { onEvent(ManualAddUiEvent.OnDepartmentChange(it)) },
+                    error = uiState.validationErrors["department"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_year),
-                    placeholder = stringResource(R.string.hint_year_format),
+                    placeholder = "2024",
                     value = uiState.year,
-                    onValueChange = { onEvent(ManualAddUiEvent.OnYearChange(it)) }
+                    onValueChange = { onEvent(ManualAddUiEvent.OnYearChange(it)) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    error = uiState.validationErrors["year"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_validity),
-                    placeholder = stringResource(R.string.hint_validity),
+                    placeholder = "DD-MM-YYYY",
                     value = uiState.validity,
-                    onValueChange = { onEvent(ManualAddUiEvent.OnValidityChange(it)) }
+                    onValueChange = { onEvent(ManualAddUiEvent.OnValidityChange(it)) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    error = uiState.validationErrors["validity"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_subject),
@@ -149,7 +181,8 @@ fun ManualAddContent(
                     value = uiState.subject,
                     onValueChange = { onEvent(ManualAddUiEvent.OnSubjectChange(it)) },
                     singleLine = false,
-                    minLines = 3
+                    minLines = 3,
+                    error = uiState.validationErrors["subject"]
                 )
             }
 
@@ -161,19 +194,22 @@ fun ManualAddContent(
                     placeholder = stringResource(R.string.hint_warehouse),
                     value = uiState.warehouse,
                     options = listOf("Gudang Utama", "Gudang Arsip 2", "Gudang Sementara"),
-                    onOptionSelected = { onEvent(ManualAddUiEvent.OnWarehouseChange(it)) }
+                    onOptionSelected = { onEvent(ManualAddUiEvent.OnWarehouseChange(it)) },
+                    error = uiState.validationErrors["warehouse"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_rack),
                     placeholder = stringResource(R.string.hint_rack),
                     value = uiState.rackNo,
-                    onValueChange = { onEvent(ManualAddUiEvent.OnRackNoChange(it)) }
+                    onValueChange = { onEvent(ManualAddUiEvent.OnRackNoChange(it)) },
+                    error = uiState.validationErrors["rackNo"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_box),
                     placeholder = stringResource(R.string.hint_box),
                     value = uiState.boxNo,
-                    onValueChange = { onEvent(ManualAddUiEvent.OnBoxNoChange(it)) }
+                    onValueChange = { onEvent(ManualAddUiEvent.OnBoxNoChange(it)) },
+                    error = uiState.validationErrors["boxNo"]
                 )
             }
 
@@ -181,17 +217,37 @@ fun ManualAddContent(
 
             Button(
                 onClick = { onEvent(ManualAddUiEvent.OnSaveClick) },
+                enabled = !uiState.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(8.dp)
             ) {
+                if (uiState.isLoading) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.btn_save_archive),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            if (uiState.error != null) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.btn_save_archive),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    text = uiState.error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
 
@@ -266,7 +322,9 @@ fun FormTextField(
     value: String,
     onValueChange: (String) -> Unit,
     singleLine: Boolean = true,
-    minLines: Int = 1
+    minLines: Int = 1,
+    error: String? = null,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
 ) {
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Text(
@@ -289,6 +347,8 @@ fun FormTextField(
             modifier = Modifier.fillMaxWidth(),
             singleLine = singleLine,
             minLines = minLines,
+            isError = error != null,
+            keyboardOptions = keyboardOptions,
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -298,6 +358,14 @@ fun FormTextField(
             ),
             textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface)
         )
+        if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
+        }
     }
 }
 
@@ -308,7 +376,8 @@ fun FormDropdownField(
     placeholder: String,
     value: String,
     options: List<String>,
-    onOptionSelected: (String) -> Unit
+    onOptionSelected: (String) -> Unit,
+    error: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -340,6 +409,7 @@ fun FormDropdownField(
                     .fillMaxWidth()
                     .menuAnchor(),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                isError = error != null,
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -371,6 +441,14 @@ fun FormDropdownField(
                     )
                 }
             }
+        }
+        if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
         }
     }
 }

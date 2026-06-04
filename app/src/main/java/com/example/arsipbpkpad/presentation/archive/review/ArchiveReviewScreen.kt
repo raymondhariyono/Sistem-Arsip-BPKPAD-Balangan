@@ -26,16 +26,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -46,9 +42,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -60,7 +53,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
-import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 
 // --- STATE & EVENTS ---
@@ -70,7 +62,10 @@ data class ArchiveReviewUiState(
     val year: String = "2023",
     val warehouse: String = "Gudang A",
     val rack: String = "Rak-05-B",
-    val isValidated: Boolean = false
+    val isValidated: Boolean = false,
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val showSuccessDialog: Boolean = false
 )
 
 sealed class ArchiveReviewUiEvent {
@@ -81,6 +76,7 @@ sealed class ArchiveReviewUiEvent {
     data class OnRackChange(val value: String) : ArchiveReviewUiEvent()
     data class OnValidationToggle(val isValidated: Boolean) : ArchiveReviewUiEvent()
     data object OnSaveClick : ArchiveReviewUiEvent()
+    data object DismissSuccessDialog : ArchiveReviewUiEvent()
 }
 
 // --- 1. STATEFUL COMPONENT ---
@@ -91,14 +87,6 @@ fun ArchiveReviewScreen(
     viewModel: ArchiveReviewViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val saveResult by viewModel.saveResult.collectAsStateWithLifecycle()
-
-    // Handle side effects for saving
-    androidx.compose.runtime.LaunchedEffect(saveResult) {
-        if (saveResult is ResultState.Success) {
-            onNavigateToHome()
-        }
-    }
 
     ArchiveReviewContent(
         uiState = uiState,
@@ -115,6 +103,20 @@ fun ArchiveReviewContent(
     onEvent: (ArchiveReviewUiEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    if (uiState.showSuccessDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { onEvent(ArchiveReviewUiEvent.DismissSuccessDialog) },
+            confirmButton = {
+                Button(onClick = { onEvent(ArchiveReviewUiEvent.DismissSuccessDialog) }) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Berhasil") },
+            text = { Text("Arsip berhasil disimpan ke sistem.") },
+            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+        )
+    }
+
     Scaffold(
         topBar = { ReviewTopAppBar(onNavigateBack) },
         containerColor = MaterialTheme.colorScheme.background
@@ -229,7 +231,8 @@ fun ArchiveReviewContent(
                     ExtractionTextField(
                         label = stringResource(R.string.label_no_doc),
                         value = uiState.docNumber,
-                        onValueChange = { onEvent(ArchiveReviewUiEvent.OnDocNumberChange(it)) }
+                        onValueChange = { onEvent(ArchiveReviewUiEvent.OnDocNumberChange(it)) },
+                        error = uiState.error?.takeIf { it.contains("Nomor", ignoreCase = true) }
                     )
 
                     ExtractionTextField(
@@ -243,8 +246,7 @@ fun ArchiveReviewContent(
                     ExtractionDropdownField(
                         label = stringResource(R.string.label_tahun_anggaran),
                         value = uiState.year,
-                        options = listOf("2021", "2022", "2023", "2024"),
-                        onOptionSelected = { onEvent(ArchiveReviewUiEvent.OnYearChange(it)) }
+                        onValueChange = { onEvent(ArchiveReviewUiEvent.OnYearChange(it)) }
                     )
 
                     // Lokasi Fisik Row
@@ -287,7 +289,7 @@ fun ArchiveReviewContent(
 
                     Button(
                         onClick = { onEvent(ArchiveReviewUiEvent.OnSaveClick) },
-                        enabled = uiState.isValidated, // Tombol aktif HANYA JIKA switch divalidasi
+                        enabled = uiState.isValidated && !uiState.isLoading, // Tombol aktif HANYA JIKA switch divalidasi
                         modifier = Modifier.fillMaxWidth().height(44.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
@@ -295,11 +297,30 @@ fun ArchiveReviewContent(
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = stringResource(R.string.btn_simpan), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        if (uiState.isLoading) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = stringResource(R.string.btn_simpan), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
                     }
                 }
+            }
+
+            if (uiState.error != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = uiState.error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -315,7 +336,8 @@ fun ExtractionTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
-    minLines: Int = 1
+    minLines: Int = 1,
+    error: String? = null
 ) {
     Column(modifier = modifier.padding(bottom = 12.dp)) {
         if (label.isNotEmpty()) {
@@ -328,6 +350,7 @@ fun ExtractionTextField(
             modifier = Modifier.fillMaxWidth(),
             singleLine = singleLine,
             minLines = minLines,
+            isError = error != null,
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -337,61 +360,44 @@ fun ExtractionTextField(
             ),
             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
         )
+        if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
+        }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExtractionDropdownField(
     label: String,
     value: String,
-    options: List<String>,
-    onOptionSelected: (String) -> Unit
+    onValueChange: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Column(modifier = Modifier.padding(bottom = 12.dp)) {
         Text(text = label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         Spacer(modifier = Modifier.height(6.dp))
 
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text("DD-MM-YYYY", fontSize = 13.sp) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+            ),
+            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
             )
-
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(text = option, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface) },
-                        onClick = {
-                            onOptionSelected(option)
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
+        )
     }
 }
 

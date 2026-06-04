@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
@@ -53,7 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
-import com.example.arsipbpkpad.domain.archive.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.DocStatus
+import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
@@ -73,6 +74,9 @@ fun ArchiveListScreen(
         onSearchQueryChange = { query -> 
             viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(query)) 
         },
+        onFilterChange = { type ->
+            viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
+        },
         onArchiveClick = onNavigateToDetail,
         onNavigateBack = onNavigateBack,
         onNavigateToBottomNav = onNavigateToBottomNav
@@ -83,6 +87,7 @@ fun ArchiveListScreen(
 fun ArchiveListContent(
     uiState: ArchiveListUiState,
     onSearchQueryChange: (String) -> Unit,
+    onFilterChange: (String) -> Unit,
     onArchiveClick: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit
@@ -181,9 +186,14 @@ fun ArchiveListContent(
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        item { ActiveFilterChip(text = stringResource(R.string.filter_year)) }
-                        item { InactiveFilterChip(text = stringResource(R.string.filter_type)) }
-                        item { InactiveFilterChip(text = stringResource(R.string.filter_location)) }
+                        val filters = listOf("Semua", "SP2D", "SPM", "SP3B", "DSB")
+                        items(filters) { filter ->
+                            FilterChip(
+                                text = filter,
+                                isSelected = uiState.selectedFilter == filter,
+                                onClick = { onFilterChange(filter) }
+                            )
+                        }
                     }
                 }
 
@@ -230,49 +240,37 @@ fun ArchiveListContent(
 }
 
 @Composable
-fun ActiveFilterChip(text: String) {
-    Row(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.labelMedium
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Icon(
-            imageVector = Icons.Default.Close,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(14.dp)
-        )
-    }
-}
+fun FilterChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
 
-@Composable
-fun InactiveFilterChip(text: String) {
     Row(
         modifier = Modifier
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .background(containerColor, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = text,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = contentColor,
             style = MaterialTheme.typography.labelMedium
         )
-        Spacer(modifier = Modifier.width(4.dp))
-        Icon(
-            imageVector = Icons.Default.ArrowDropDown,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp)
-        )
+        if (isSelected) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(14.dp)
+            )
+        }
     }
 }
 
@@ -296,7 +294,7 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = item.category,
+                            text = item.type.name,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -306,7 +304,7 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
                         )
                     }
 
-                    val isAvailable = true // Placeholder logic
+                    val isAvailable = item.status == DocStatus.AVAILABLE
                     val statusBgColor = if (isAvailable) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
                     val statusTextColor = if (isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     val statusDotColor = if (isAvailable) Color(0xFF4CAF50) else MaterialTheme.colorScheme.outline
@@ -337,7 +335,7 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = item.title,
+                    text = item.documentNumber,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -346,7 +344,7 @@ fun ArchiveCard(item: ArchiveDocument, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = item.description,
+                    text = item.thirdParty ?: "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -413,10 +411,26 @@ fun ArchiveListScreenPreview() {
         ArchiveListContent(
             uiState = ArchiveListUiState(
                 archives = listOf(
-                    ArchiveDocument("1", "SP2D-1029", "Mock description", "2024-05-10", "Keuangan")
+                    ArchiveDocument(
+                        id = "1",
+                        type = DocType.SP2D,
+                        documentNumber = "SP2D-1029",
+                        nominal = 1000000.0,
+                        thirdParty = "PT. Maju Bersama",
+                        year = 2024,
+                        dateIssued = "2024-05-10",
+                        status = DocStatus.AVAILABLE,
+                        idStorageLocation = null,
+                        metadata = null,
+                        createdBy = null,
+                        verifiedBy = null,
+                        createdAt = null,
+                        updatedAt = null
+                    )
                 )
             ),
             onSearchQueryChange = {},
+            onFilterChange = {},
             onArchiveClick = {},
             onNavigateBack = {},
             onNavigateToBottomNav = {}

@@ -3,7 +3,7 @@ package com.example.arsipbpkpad.presentation.archive.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
-import com.example.arsipbpkpad.domain.archive.usecase.GetArchivesUseCase
+import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -30,30 +30,42 @@ class ArchiveListViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _selectedFilter = MutableStateFlow("Semua")
+
     init {
         observeArchives()
     }
 
     private fun observeArchives() {
-        _searchQuery
-            .debounce(300L)
-            .distinctUntilChanged()
-            .flatMapLatest { query ->
-                getArchivesUseCase(query)
-            }
-            .onEach { result ->
-                _uiState.update {
-                    when (result) {
-                        is ResultState.Loading -> it.copy(isLoading = true)
-                        is ResultState.Success -> it.copy(
-                            isLoading = false,
-                            archives = result.data
-                        )
-                        is ResultState.Error -> it.copy(
-                            isLoading = false,
-                            errorMessage = result.message
-                        )
-                        is ResultState.Idle -> it.copy(isLoading = false)
+        kotlinx.coroutines.flow.combine(_searchQuery.debounce(300L).distinctUntilChanged(), _selectedFilter) { query, filter ->
+            query to filter
+        }
+            .flatMapLatest { (query, filter) ->
+                getArchivesUseCase(query).onEach { result ->
+                    if (result is ResultState.Success) {
+                        val filteredData = if (filter == "Semua") {
+                            result.data
+                        } else {
+                            result.data.filter { it.type.name.equals(filter, ignoreCase = true) }
+                        }
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                archives = filteredData,
+                                selectedFilter = filter
+                            ) 
+                        }
+                    } else {
+                        _uiState.update {
+                            when (result) {
+                                is ResultState.Loading -> it.copy(isLoading = true)
+                                is ResultState.Error -> it.copy(
+                                    isLoading = false,
+                                    errorMessage = result.message
+                                )
+                                else -> it.copy(isLoading = false)
+                            }
+                        }
                     }
                 }
             }
@@ -63,7 +75,6 @@ class ArchiveListViewModel @Inject constructor(
     fun onEvent(event: ArchiveListUiEvent) {
         when (event) {
             is ArchiveListUiEvent.Refresh -> {
-                // To refresh, we can just re-trigger the flow with current query
                 val currentQuery = _searchQuery.value
                 _searchQuery.value = currentQuery
             }
@@ -73,6 +84,9 @@ class ArchiveListViewModel @Inject constructor(
             is ArchiveListUiEvent.OnSearchQueryChange -> {
                 _searchQuery.value = event.query
                 _uiState.update { it.copy(searchQuery = event.query) }
+            }
+            is ArchiveListUiEvent.OnFilterChange -> {
+                _selectedFilter.value = event.type
             }
         }
     }
