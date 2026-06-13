@@ -1,18 +1,7 @@
 package com.example.arsipbpkpad.presentation.archive.add.manual
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,32 +10,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.MenuAnchorType
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,13 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RapidInputScreen(
     onNavigateBack: () -> Unit,
@@ -115,24 +78,49 @@ fun RapidInputScreen(
                     shadowElevation = 8.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = { viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload) },
-                        enabled = !uiState.isLoading,
+                    Row(
                         modifier = Modifier
                             .padding(16.dp)
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                        shape = RoundedCornerShape(28.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        } else {
+                        OutlinedButton(
+                            onClick = { onNavigateBack() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            border = BorderStroke(1.dp, Color(0xFF2E7D32)),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
+                        ) {
                             Text(
-                                text = "Confirm & Upload ${uiState.stagedDocuments.size} Dokumen", 
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                text = "Keluar",
+                                fontWeight = FontWeight.Bold
                             )
+                        }
+
+                        Button(
+                            onClick = { 
+                                uiState.currentSessionId?.let { 
+                                    viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) 
+                                }
+                            },
+                            enabled = !uiState.isLoading,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                            shape = RoundedCornerShape(28.dp)
+                        ) {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                            } else {
+                                Text(
+                                    text = "Simpan Box", 
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -202,23 +190,46 @@ fun RapidInputScreen(
                         onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) }
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                        shape = RoundedCornerShape(24.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (uiState.editingId != null) "Perbarui Item" else "Tambah ke Box",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        OutlinedButton(
+                            onClick = { 
+                                // We keep the session but reset form
+                                viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(""))
+                                viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(""))
+                                viewModel.onEvent(RapidInputUiEvent.OnNominalChange(""))
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            border = BorderStroke(1.dp, Color(0xFF2E7D32)),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
+                        ) {
+                            Text(
+                                text = "Reset Form",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                            shape = RoundedCornerShape(28.dp)
+                        ) {
+                            Text(
+                                text = if (uiState.editingId != null) "Perbarui Record" else "Simpan Record",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                     
                     uiState.error?.let {

@@ -9,13 +9,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
+import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel
+import com.example.arsipbpkpad.presentation.archive.add.manual.StagingBoxListScreen
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
 import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
-import com.example.arsipbpkpad.presentation.archive.add.manual.BoxContextScreen
-import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
-import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel
 
 @Composable
 fun AppNavHost(
@@ -33,18 +33,14 @@ fun AppNavHost(
                 onNavigateToArchiveList = {
                     navController.navigate("archive_flow")
                 },
-                onNavigateToScan = {
-                    navController.navigate("archive_flow") {
-                        // When clicking ADD on Home, we want to go straight to initialization
-                        // But since ArchiveList handles it, we go to flow which lands on List.
-                        // Or we can navigate directly to BoxContext if we move it out.
-                    }
+                onNavigateToStagingBoxList = {
+                    navController.navigate(Screen.StagingBoxList.route)
                 },
                 onNavigateToDetail = { archiveId ->
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                 },
-                onNavigateToReview = {
-                    navController.navigate("archive_flow") // Shortcut to current session
+                onNavigateToRapidInput = { sessionId ->
+                    navController.navigate(Screen.RapidInput.createRoute(sessionId))
                 }
             )
         }
@@ -58,13 +54,15 @@ fun AppNavHost(
                 val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
                 
                 ArchiveListScreen(
-                    viewModel = hiltViewModel(),
                     stagingViewModel = rapidViewModel,
                     onNavigateToDetail = { archiveId ->
                         navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                     },
                     onNavigateToRapidInput = {
-                        navController.navigate(Screen.RapidInput.route)
+                        // This usually comes from the dialog which already set the session in VM
+                        // But let's be explicit and pass the current session from state
+                        val sessionId = rapidViewModel.uiState.value.currentSessionId ?: ""
+                        navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     },
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToBottomNav = { item ->
@@ -73,37 +71,36 @@ fun AppNavHost(
                                 popUpTo(Screen.Home.route) { inclusive = true }
                             }
                             "archive" -> { /* Already here */ }
-                            "add" -> navController.navigate(Screen.BoxContext.route)
+                            "add" -> navController.navigate(Screen.StagingBoxList.route)
                         }
                     }
                 )
             }
-            
-            composable(Screen.BoxContext.route) { entry ->
+
+            composable(Screen.StagingBoxList.route) { entry ->
                 val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
                 val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
 
-                BoxContextScreen(
+                StagingBoxListScreen(
                     viewModel = rapidViewModel,
-                    onNavigateToRapidInput = {
-                        navController.navigate(Screen.RapidInput.route)
+                    onNavigateToRapidInput = { sessionId ->
+                        navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     },
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToBottomNav = { item ->
-                        when (item.route) {
-                            "home" -> navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
-                            }
-                            "archive" -> navController.navigate(Screen.ArchiveList.route)
-                            "add" -> { /* Already here */ }
-                        }
-                    }
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             
             composable(Screen.RapidInput.route) { entry ->
+                val sessionId = entry.arguments?.getString("sessionId") ?: ""
                 val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
                 val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
+
+                // Ensure the session is set in the shared ViewModel
+                androidx.compose.runtime.LaunchedEffect(sessionId) {
+                    if (sessionId.isNotEmpty()) {
+                        rapidViewModel.onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.SetCurrentSession(sessionId))
+                    }
+                }
 
                 RapidInputScreen(
                     onNavigateBack = { navController.popBackStack() },

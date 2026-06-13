@@ -1,5 +1,7 @@
 package com.example.arsipbpkpad.presentation.home
 
+import com.example.arsipbpkpad.domain.model.StagedBox
+
 data class HomeUiState(
     val totalDocuments: String = "0",
     val expiredDocuments: String = "0",
@@ -8,8 +10,7 @@ data class HomeUiState(
     val sp3bCount: String = "0",
     val dsbCount: String = "0",
     val recentItems: List<RecentArchive> = emptyList(),
-    val stagedItemsCount: Int = 0,
-    val stagedBoxSummary: String? = null,
+    val activeStagingBoxes: List<StagedBox> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )

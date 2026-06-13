@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.DocStatus
+import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.usecase.GetArchivesListUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,16 +31,8 @@ class HomeViewModel @Inject constructor(
 
     private fun observeStagingData() {
         viewModelScope.launch {
-            stagingRepository.getAllStagingArchives().collect { docs ->
-                _uiState.update { state ->
-                    state.copy(
-                        stagedItemsCount = docs.size,
-                        stagedBoxSummary = if (docs.isNotEmpty()) {
-                            val firstDoc = docs.first()
-                            "Box: ${firstDoc.idStorageLocation ?: "N/A"}"
-                        } else null
-                    )
-                }
+            stagingRepository.getAllStagedBoxes().collect { boxes ->
+                _uiState.update { it.copy(activeStagingBoxes = boxes) }
             }
         }
     }

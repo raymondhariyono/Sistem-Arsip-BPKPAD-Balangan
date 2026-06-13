@@ -27,6 +27,7 @@ fun ArchiveDto.toDomain(): ArchiveDocument {
 fun ArchiveEntity.toDomain(): ArchiveDocument {
     return ArchiveDocument(
         id = id,
+        boxSessionId = boxSessionId,
         type = type,
         copyStatus = copyStatus,
         documentNumber = documentNumber,
@@ -47,6 +48,7 @@ fun ArchiveEntity.toDomain(): ArchiveDocument {
 fun ArchiveDocument.toEntity(syncStatus: String = "SYNCED"): ArchiveEntity {
     return ArchiveEntity(
         id = id,
+        boxSessionId = boxSessionId,
         type = type,
         copyStatus = copyStatus,
         documentNumber = documentNumber,

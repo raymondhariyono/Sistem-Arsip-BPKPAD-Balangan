@@ -39,7 +39,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +74,7 @@ import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
+import com.example.arsipbpkpad.presentation.components.BpkpadExpandableFAB
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import kotlinx.coroutines.flow.flowOf
 
@@ -106,19 +106,15 @@ fun ArchiveListScreen(
         },
         floatingActionButton = {
             if (uiState.isFilterConfirmed) {
-                FloatingActionButton(
-                    onClick = { 
-                        // Navigate to Box Context initialization screen
+                BpkpadExpandableFAB(
+                    onManualInputClick = { 
+                        // Navigate to Staging Area
                         onNavigateToBottomNav(BottomNavItem.ADD)
                     },
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_document),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                    onOcrScanClick = {
+                        // Placeholder for OCR
+                    }
+                )
             }
         }
     ) { paddingValues ->
@@ -869,5 +865,13 @@ fun FormTextField(
                 unfocusedContainerColor = Color(0xFFF9F9F9)
             )
         )
+        error?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
     }
 }

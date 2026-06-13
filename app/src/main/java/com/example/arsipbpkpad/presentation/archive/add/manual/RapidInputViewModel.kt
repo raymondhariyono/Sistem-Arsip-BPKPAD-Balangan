@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.domain.model.DocCopyStatus
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DocType
@@ -11,10 +12,7 @@ import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.usecase.BulkInsertArchivesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -26,15 +24,8 @@ data class BoxContext(
     val year: String = ""
 )
 
-data class StagedBox(
-    val warehouse: String,
-    val rack: String,
-    val box: String,
-    val year: String,
-    val itemCount: Int
-)
-
 data class RapidInputUiState(
+    val currentSessionId: String? = null,
     val boxContext: BoxContext = BoxContext(),
     val isBoxContextSet: Boolean = false,
     val stagedDocuments: List<ArchiveDocument> = emptyList(),
@@ -53,13 +44,16 @@ data class RapidInputUiState(
 )
 
 sealed class RapidInputUiEvent {
+    // Session Management
+    data class SetCurrentSession(val sessionId: String) : RapidInputUiEvent()
+    data object CreateNewSession : RapidInputUiEvent()
+
     // Box Context
     data class OnWarehouseChange(val value: String) : RapidInputUiEvent()
     data class OnRackChange(val value: String) : RapidInputUiEvent()
     data class OnBoxChange(val value: String) : RapidInputUiEvent()
     data class OnYearChange(val value: String) : RapidInputUiEvent()
     data object OnConfirmBoxContext : RapidInputUiEvent()
-    data class OnSelectExistingBox(val box: StagedBox) : RapidInputUiEvent()
 
     // Form
     data class OnDocTypeChange(val value: String) : RapidInputUiEvent()
@@ -74,9 +68,10 @@ sealed class RapidInputUiEvent {
     data class OnEditStagedDoc(val doc: ArchiveDocument) : RapidInputUiEvent()
     
     // Bulk Actions
-    data object OnConfirmUpload : RapidInputUiEvent()
     data object ResetState : RapidInputUiEvent()
-    data object ResetBoxContext : RapidInputUiEvent()
+    data class OnDeleteBoxSession(val sessionId: String) : RapidInputUiEvent()
+    data class OnConfirmUpload(val sessionId: String) : RapidInputUiEvent()
+    data object OnHandledNavigation : RapidInputUiEvent()
 }
 
 @HiltViewModel
@@ -89,50 +84,66 @@ class RapidInputViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RapidInputUiState())
     val uiState: StateFlow<RapidInputUiState> = _uiState.asStateFlow()
 
+    private var stagingJob: kotlinx.coroutines.Job? = null
+
     init {
-        observeStaging()
+        observeAllStaging()
     }
 
-    private fun observeStaging() {
+    private fun observeAllStaging() {
         viewModelScope.launch {
-            stagingRepository.getAllStagingArchives().collect { docs ->
-                val boxes = docs.groupBy { it.idStorageLocation }.map { (location, items) ->
-                    val parts = location?.split("-") ?: emptyList()
-                    StagedBox(
-                        warehouse = parts.getOrNull(0) ?: "N/A",
-                        rack = parts.getOrNull(1) ?: "N/A",
-                        box = parts.getOrNull(2) ?: "N/A",
-                        year = items.firstOrNull()?.year?.toString() ?: "N/A",
-                        itemCount = items.size
-                    )
-                }
-                
+            stagingRepository.getAllStagedBoxes().collect { boxes ->
+                _uiState.update { it.copy(existingStagedBoxes = boxes) }
+            }
+        }
+    }
+
+    private fun observeSessionStaging(sessionId: String) {
+        stagingJob?.cancel()
+        stagingJob = viewModelScope.launch {
+            // Fetch box metadata first
+            val box = stagingRepository.getStagedBoxById(sessionId)
+            if (box != null) {
                 _uiState.update { it.copy(
-                    stagedDocuments = docs,
-                    existingStagedBoxes = boxes
+                    boxContext = BoxContext(
+                        warehouse = box.warehouse,
+                        rack = box.rack,
+                        box = box.box,
+                        year = box.year
+                    ),
+                    isBoxContextSet = true
                 ) }
+            }
+
+            stagingRepository.getStagingArchivesBySession(sessionId).collect { docs ->
+                _uiState.update { it.copy(stagedDocuments = docs) }
             }
         }
     }
 
     fun onEvent(event: RapidInputUiEvent) {
         when (event) {
+            is RapidInputUiEvent.SetCurrentSession -> {
+                _uiState.update { it.copy(currentSessionId = event.sessionId, isBoxContextSet = false) }
+                observeSessionStaging(event.sessionId)
+            }
+            is RapidInputUiEvent.CreateNewSession -> {
+                val newId = UUID.randomUUID().toString()
+                _uiState.update { it.copy(
+                    currentSessionId = newId,
+                    boxContext = BoxContext(),
+                    isBoxContextSet = false,
+                    stagedDocuments = emptyList(),
+                    validationErrors = emptyMap(),
+                    error = null
+                ) }
+                observeSessionStaging(newId)
+            }
             is RapidInputUiEvent.OnWarehouseChange -> _uiState.update { it.copy(boxContext = it.boxContext.copy(warehouse = event.value)) }
             is RapidInputUiEvent.OnRackChange -> _uiState.update { it.copy(boxContext = it.boxContext.copy(rack = event.value)) }
             is RapidInputUiEvent.OnBoxChange -> _uiState.update { it.copy(boxContext = it.boxContext.copy(box = event.value)) }
             is RapidInputUiEvent.OnYearChange -> _uiState.update { it.copy(boxContext = it.boxContext.copy(year = event.value)) }
             is RapidInputUiEvent.OnConfirmBoxContext -> validateBoxContext()
-            is RapidInputUiEvent.OnSelectExistingBox -> {
-                _uiState.update { it.copy(
-                    boxContext = BoxContext(
-                        warehouse = event.box.warehouse,
-                        rack = event.box.rack,
-                        box = event.box.box,
-                        year = event.box.year
-                    ),
-                    isBoxContextSet = true
-                ) }
-            }
             
             is RapidInputUiEvent.OnDocTypeChange -> _uiState.update { it.copy(docType = event.value) }
             is RapidInputUiEvent.OnCopyStatusChange -> _uiState.update { it.copy(copyStatus = event.value) }
@@ -143,30 +154,59 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnAddToBoxClick -> addToStaging()
             is RapidInputUiEvent.OnDeleteStagedDoc -> deleteFromStaging(event.id)
             is RapidInputUiEvent.OnEditStagedDoc -> startEditing(event.doc)
-            is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload()
+            is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload(event.sessionId)
+            is RapidInputUiEvent.OnDeleteBoxSession -> deleteBoxSession(event.sessionId)
+            is RapidInputUiEvent.OnHandledNavigation -> _uiState.update { it.copy(isBoxContextSet = false) }
             is RapidInputUiEvent.ResetState -> _uiState.value = RapidInputUiState()
-            is RapidInputUiEvent.ResetBoxContext -> _uiState.update { it.copy(isBoxContextSet = false) }
+        }
+    }
+
+    private fun deleteBoxSession(sessionId: String) {
+        viewModelScope.launch {
+            stagingRepository.deleteStagedBox(sessionId)
         }
     }
 
     private fun validateBoxContext() {
-        val ctx = _uiState.value.boxContext
-        val errors = mutableMapOf<String, String>()
-        if (ctx.warehouse.isBlank()) errors["warehouse"] = "Wajib diisi"
-        if (ctx.rack.isBlank()) errors["rack"] = "Wajib diisi"
-        if (ctx.box.isBlank()) errors["box"] = "Wajib diisi"
-        if (ctx.year.length != 4) errors["year"] = "Tahun tidak valid"
-        
-        if (errors.isEmpty()) {
-            _uiState.update { it.copy(isBoxContextSet = true, validationErrors = emptyMap()) }
-        } else {
-            _uiState.update { it.copy(validationErrors = errors) }
+        viewModelScope.launch {
+            val ctx = _uiState.value.boxContext
+            val errors = mutableMapOf<String, String>()
+            if (ctx.warehouse.isBlank()) errors["warehouse"] = "Wajib diisi"
+            if (ctx.rack.isBlank()) errors["rack"] = "Wajib diisi"
+            if (ctx.box.isBlank()) errors["box"] = "Wajib diisi"
+            if (ctx.year.length != 4) errors["year"] = "Tahun tidak valid"
+            
+            if (errors.isEmpty()) {
+                val newId = _uiState.value.currentSessionId ?: UUID.randomUUID().toString()
+                
+                // Persistence: Save the box metadata immediately
+                stagingRepository.saveStagedBox(
+                    StagedBox(
+                        sessionId = newId,
+                        warehouse = ctx.warehouse,
+                        rack = ctx.rack,
+                        box = ctx.box,
+                        year = ctx.year
+                    )
+                )
+
+                _uiState.update { it.copy(
+                    currentSessionId = newId,
+                    isBoxContextSet = true, 
+                    validationErrors = emptyMap()
+                ) }
+                observeSessionStaging(newId)
+            } else {
+                _uiState.update { it.copy(validationErrors = errors) }
+            }
         }
     }
 
     private fun addToStaging() {
         viewModelScope.launch {
             val state = _uiState.value
+            val sessionId = state.currentSessionId ?: return@launch
+            
             val errors = mutableMapOf<String, String>()
             if (state.documentNumber.isBlank()) errors["docNumber"] = "Wajib diisi"
             if (state.subject.isBlank()) errors["subject"] = "Wajib diisi"
@@ -186,6 +226,7 @@ class RapidInputViewModel @Inject constructor(
             val docYear = state.boxContext.year.toIntOrNull() ?: 2026
             val doc = ArchiveDocument(
                 id = state.editingId ?: UUID.randomUUID().toString(),
+                boxSessionId = sessionId,
                 type = DocType.valueOf(state.docType),
                 copyStatus = DocCopyStatus.valueOf(state.copyStatus),
                 documentNumber = state.documentNumber,
@@ -204,7 +245,6 @@ class RapidInputViewModel @Inject constructor(
 
             stagingRepository.insertToStaging(doc)
             
-            // Reset form but keep box context
             _uiState.update { it.copy(
                 documentNumber = "",
                 subject = "",
@@ -233,11 +273,10 @@ class RapidInputViewModel @Inject constructor(
         ) }
     }
 
-    private fun executeBulkUpload() {
+    private fun executeBulkUpload(sessionId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val ctx = _uiState.value.boxContext
-            val result = bulkInsertArchivesUseCase(ctx.warehouse, ctx.rack, ctx.box)
+            val result = bulkInsertArchivesUseCase(sessionId)
             
             when (result) {
                 is ResultState.Success -> {

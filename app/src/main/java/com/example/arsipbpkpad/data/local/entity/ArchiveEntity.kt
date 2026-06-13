@@ -11,6 +11,7 @@ import com.example.arsipbpkpad.domain.model.DocType
 data class ArchiveEntity(
     @PrimaryKey
     val id: String,
+    val boxSessionId: String? = null,
     val type: DocType,
     val copyStatus: DocCopyStatus,
     val documentNumber: String,

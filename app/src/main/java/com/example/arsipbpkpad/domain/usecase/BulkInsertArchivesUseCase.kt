@@ -1,9 +1,9 @@
 package com.example.arsipbpkpad.domain.usecase
 
 import com.example.arsipbpkpad.core.common.ResultState
-import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class BulkInsertArchivesUseCase @Inject constructor(
@@ -11,26 +11,18 @@ class BulkInsertArchivesUseCase @Inject constructor(
     private val stagingRepository: StagingRepository
 ) {
     suspend operator fun invoke(
-        warehouse: String,
-        rack: String,
-        box: String
+        sessionId: String
     ): ResultState<Unit> {
         return try {
-            val stagedDocs = mutableListOf<ArchiveDocument>()
-            stagingRepository.getAllStagingArchives().collect { docs ->
-                stagedDocs.addAll(docs)
-            }
+            val stagedDocs = stagingRepository.getStagingArchivesBySession(sessionId).first()
             
-            if (stagedDocs.isEmpty()) return ResultState.Error("Staging area kosong")
+            if (stagedDocs.isEmpty()) return ResultState.Error("Staging session kosong atau tidak ditemukan")
 
-            val locationId = "$warehouse-$rack-$box"
-            
             stagedDocs.forEach { doc ->
-                val updatedDoc = doc.copy(idStorageLocation = locationId)
-                archiveRepository.saveArchive(updatedDoc)
+                archiveRepository.saveArchive(doc)
             }
             
-            stagingRepository.clearStaging()
+            stagingRepository.deleteStagedBox(sessionId)
             ResultState.Success(Unit)
         } catch (e: Exception) {
             ResultState.Error(e.message ?: "Gagal melakukan bulk insert")

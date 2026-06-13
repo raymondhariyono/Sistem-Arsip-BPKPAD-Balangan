@@ -7,6 +7,8 @@ sealed class Screen(val route: String) {
         fun createRoute(archiveId: String) = "archive_detail/$archiveId"
     }
     data object Scan : Screen("scan")
-    data object BoxContext : Screen("box_context")
-    data object RapidInput : Screen("rapid_input")
+    data object StagingBoxList : Screen("staging_box_list")
+    data object RapidInput : Screen("rapid_input/{sessionId}") {
+        fun createRoute(sessionId: String) = "rapid_input/$sessionId"
+    }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,7 +27,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -43,8 +43,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
+import com.example.arsipbpkpad.presentation.components.BpkpadExpandableFAB
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.home.HomeUiState
 import com.example.arsipbpkpad.presentation.home.HomeViewModel
@@ -56,30 +58,30 @@ import com.example.arsipbpkpad.presentation.home.component.SectionHeader
 
 @Composable
 fun HomeScreen(
-    onNavigateToScan: () -> Unit,
     onNavigateToArchiveList: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
-    onNavigateToReview: () -> Unit,
+    onNavigateToStagingBoxList: () -> Unit,
+    onNavigateToRapidInput: (String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     HomeContent(
         uiState = uiState,
-        onNavigateToScan = onNavigateToScan,
         onNavigateToArchiveList = onNavigateToArchiveList,
         onNavigateToDetail = onNavigateToDetail,
-        onNavigateToRapidInput = onNavigateToReview // Dashboard card goes to Rapid Input
+        onNavigateToStagingBoxList = onNavigateToStagingBoxList,
+        onNavigateToRapidInput = onNavigateToRapidInput
     )
 }
 
 @Composable
 fun HomeContent(
     uiState: HomeUiState,
-    onNavigateToScan: () -> Unit,
     onNavigateToArchiveList: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
-    onNavigateToRapidInput: () -> Unit
+    onNavigateToStagingBoxList: () -> Unit,
+    onNavigateToRapidInput: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -92,22 +94,18 @@ fun HomeContent(
                     when (item) {
                         BottomNavItem.HOME -> { /* Already here */ }
                         BottomNavItem.ARCHIVE -> onNavigateToArchiveList()
-                        BottomNavItem.ADD -> onNavigateToScan()
+                        BottomNavItem.ADD -> onNavigateToStagingBoxList()
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToScan,
-                containerColor = MaterialTheme.colorScheme.primary,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.add_document),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
+            BpkpadExpandableFAB(
+                onManualInputClick = onNavigateToStagingBoxList,
+                onOcrScanClick = {
+                    // Placeholder for OCR
+                }
+            )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
@@ -121,12 +119,23 @@ fun HomeContent(
         ) {
             item { HeaderSection() }
 
-            if (uiState.stagedItemsCount > 0) {
+            if (uiState.activeStagingBoxes.isNotEmpty()) {
                 item {
+                    Text(
+                        text = "Staging Status",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                
+                // Show all boxes instead of using LazyRow for better visibility if they are few
+                items(uiState.activeStagingBoxes) { box ->
                     StagingStatusCard(
-                        count = uiState.stagedItemsCount,
-                        summary = uiState.stagedBoxSummary ?: "",
-                        onClick = onNavigateToRapidInput
+                        count = box.itemCount,
+                        summary = "Box ${box.box} (${box.year})",
+                        onClick = { onNavigateToRapidInput(box.sessionId) },
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
             }
@@ -140,7 +149,6 @@ fun HomeContent(
                     contentColor = MaterialTheme.colorScheme.primary
                 )
             }
-// ... rest of the file ...
 
             item {
                 PrimaryStatCard(

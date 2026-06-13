@@ -2,6 +2,7 @@ package com.example.arsipbpkpad.domain.model
 
 data class ArchiveDocument(
     val id: String,
+    val boxSessionId: String? = null,
     val type: DocType,
     val copyStatus: DocCopyStatus = DocCopyStatus.ORIGINAL,
     val documentNumber: String,
