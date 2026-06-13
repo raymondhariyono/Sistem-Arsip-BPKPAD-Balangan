@@ -3,6 +3,7 @@ package com.example.arsipbpkpad.domain.model
 data class ArchiveDocument(
     val id: String,
     val type: DocType,
+    val copyStatus: DocCopyStatus = DocCopyStatus.ORIGINAL,
     val documentNumber: String,
     val nominal: Double?,
     val thirdParty: String?,

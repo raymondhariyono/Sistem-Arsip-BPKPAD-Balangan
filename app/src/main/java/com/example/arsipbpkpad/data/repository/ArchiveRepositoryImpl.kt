@@ -1,5 +1,9 @@
 package com.example.arsipbpkpad.data.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.data.local.dao.ArchiveDao
 import com.example.arsipbpkpad.data.mapper.toDomain
@@ -13,6 +17,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 
@@ -21,8 +26,25 @@ class ArchiveRepositoryImpl @Inject constructor(
     private val supabaseClient: SupabaseClient
 ) : ArchiveRepository {
 
-    override fun getArchives(query: String?): Flow<ResultState<List<ArchiveDocument>>> {
-        return archiveDao.getArchives(query)
+    override fun getArchives(query: String?, years: List<Int>): Flow<PagingData<ArchiveDocument>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { archiveDao.getArchives(query, years) }
+        ).flow
+            .map { pagingData ->
+                pagingData.map { it.toDomain() }
+            }
+            .onEach {
+                // Background sync
+                syncArchives()
+            }
+    }
+
+    override fun getArchivesList(query: String?, years: List<Int>): Flow<ResultState<List<ArchiveDocument>>> {
+        return archiveDao.getArchivesList(query, years)
             .map { entities ->
                 val documents = entities.map { it.toDomain() }
                 ResultState.Success(documents) as ResultState<List<ArchiveDocument>>
@@ -54,8 +76,8 @@ class ArchiveRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun checkDocumentNumberExists(docNumber: String): Boolean {
-        return archiveDao.existsByDocumentNumber(docNumber)
+    override suspend fun checkDocumentNumberAndStatusExists(docNumber: String, copyStatus: String): Boolean {
+        return archiveDao.existsByDocumentNumberAndStatus(docNumber, copyStatus)
     }
 
     override suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit> {

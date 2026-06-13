@@ -8,6 +8,8 @@ data class HomeUiState(
     val sp3bCount: String = "0",
     val dsbCount: String = "0",
     val recentItems: List<RecentArchive> = emptyList(),
+    val stagedItemsCount: Int = 0,
+    val stagedBoxSummary: String? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )

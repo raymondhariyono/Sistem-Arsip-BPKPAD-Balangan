@@ -1,6 +1,7 @@
 package com.example.arsipbpkpad.data.remote.dto
 
 import com.example.arsipbpkpad.domain.model.ArchiveMetadata
+import com.example.arsipbpkpad.domain.model.DocCopyStatus
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DocType
 import kotlinx.serialization.SerialName
@@ -10,6 +11,7 @@ import kotlinx.serialization.Serializable
 data class ArchiveDto(
     @SerialName("id") val id: String? = null,
     @SerialName("type") val type: DocType,
+    @SerialName("copy_status") val copyStatus: DocCopyStatus,
     @SerialName("document_number") val documentNumber: String,
     @SerialName("nominal") val nominal: Double? = null,
     @SerialName("third_party") val thirdParty: String? = null,

@@ -5,4 +5,8 @@ sealed class ArchiveListUiEvent {
     data class OnArchiveClick(val archiveId: String) : ArchiveListUiEvent()
     data class OnSearchQueryChange(val query: String) : ArchiveListUiEvent()
     data class OnFilterChange(val type: String) : ArchiveListUiEvent()
+    data class OnYearToggle(val year: Int) : ArchiveListUiEvent()
+    data object OnSelectAllYears : ArchiveListUiEvent()
+    data object OnConfirmFilter : ArchiveListUiEvent()
+    data object OnResetFilter : ArchiveListUiEvent()
 }

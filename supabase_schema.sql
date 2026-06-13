@@ -3,6 +3,7 @@
 -- 1. Enums
 CREATE TYPE doc_type AS ENUM ('SP2D', 'SPM', 'SPJ');
 CREATE TYPE doc_status AS ENUM ('AVAILABLE', 'BORROWED', 'DISPOSED', 'UNVERIFIED');
+CREATE TYPE doc_copy_status AS ENUM ('ORIGINAL', 'COPY');
 
 -- 2. Physical Storage Locations
 CREATE TABLE storage_locations (
@@ -16,6 +17,7 @@ CREATE TABLE storage_locations (
 CREATE TABLE arsip_keuangan (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type doc_type NOT NULL,
+    copy_status doc_copy_status DEFAULT 'ORIGINAL',
     document_number TEXT UNIQUE NOT NULL,
     nominal DECIMAL(15, 2),
     third_party TEXT,

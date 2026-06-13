@@ -133,7 +133,12 @@
     <string name="btn_process_import">Proses Import</string>
 
     <!--document verification-->
-    <string name="review_title">Verifikasi Dokumen</string>
+    <string name="filter_title">Filter Data Arsip</string>
+    <string name="filter_subtitle">Pilih Tahun dan Tipe Dokumen untuk melihat daftar arsip.</string>
+    <string name="select_year_label">Pilih Tahun</string>
+    <string name="select_all">Pilih Semua</string>
+    <string name="btn_show_archives">Tampilkan Arsip</string>
+    <string name="type_all">Semua Tipe</string>
     <string name="review_subtitle">Pastikan data pindaian sesuai dengan dokumen fisik SP2D sebelum disimpan.</string>
 
     <string name="preview_doc_title">Preview Dokumen</string>
@@ -147,17 +152,8 @@
 
     <string name="validation_switch_label">Validasi Data Sesuai Fisik</string>
     <string name="btn_simpan">Simpan</string>
+    <string name="review_title">Halaman Archive</string>
+    <string name="no_data_for_year">Tidak ada data arsip untuk filter yang dipilih.</string>
+    <string name="try_another_filter">Silakan coba filter atau tahun lain.</string>
 
-<!--Eksport Document-->
-    <string name="export_title">Ekspor Data Arsip</string>
-    <string name="export_subtitle">Pilih Tahun untuk Ekspor data ke format dokumen Microsoft Excel.</string>
-
-    <string name="select_year_title">Pilih Tahun\nuntuk Ekspor</string>
-    <string name="select_all">Pilih Semua</string>
-
-    <string name="export_summary_title">Ringkasan Ekspor</string>
-    <string name="export_summary_desc">%1$d Tahun terpilih (%2$s) - Estimasi %3$s baris data.</string>
-    <string name="export_summary_info">Proses ini mungkin memakan waktu beberapa detik.</string>
-
-    <string name="btn_export_excel">Export to Excel (.xlsx)</string>
 </resources>

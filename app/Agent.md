@@ -73,19 +73,19 @@ When working on the "Scan to Autofill" feature, enforce this pipeline:
 To ensure a robust "Scan to Autofill" experience, the `ParseMetadataWithAiUseCase` must handle the following failure scenarios:
 
 1. **Failure Scenarios & States:**
-   - **Timeout Koneksi:** Jika API backend tidak merespons dalam waktu tertentu (misal 30 detik) $\rightarrow$ Emisi `ResultState.Error` dengan kode `AiProcessingFailed.Timeout`.
-   - **Request Dibatalkan:** Jika user menavigasi keluar saat proses berlangsung $\rightarrow$ Batalkan job coroutine.
-   - **Respons Kosong/Null:** Jika AI tidak berhasil mengekstrak data apapun $\rightarrow$ Tampilkan state `AiProcessingFailed.NoData`.
-   - **Respons AI Tidak Valid:** Jika format JSON dari backend korup atau tidak sesuai skema $\rightarrow$ Tampilkan state `AiProcessingFailed.InvalidFormat`.
+    - **Timeout Koneksi:** Jika API backend tidak merespons dalam waktu tertentu (misal 30 detik) -> Emisi `ResultState.Error` dengan kode `AiProcessingFailed.Timeout`.
+    - **Request Dibatalkan:** Jika user menavigasi keluar saat proses berlangsung -> Batalkan job coroutine.
+    - **Respons Kosong/Null:** Jika AI tidak berhasil mengekstrak data apapun -> Tampilkan state `AiProcessingFailed.NoData`.
+    - **Respons AI Tidak Valid:** Jika format JSON dari backend korup atau tidak sesuai skema -> Tampilkan state `AiProcessingFailed.InvalidFormat`.
 
 2. **Resilience Policy:**
-   - **Retry Policy:** Lakukan percobaan ulang otomatis maksimal 3 kali untuk error yang bersifat transien (seperti timeout atau network failure).
-   - **Fallback Mechanism:** Jika semua percobaan gagal, aplikasi harus melakukan fallback ke **Local/Manual Parsing** atau membiarkan user mengisi form secara manual sepenuhnya dari hasil raw text OCR.
+    - **Retry Policy:** Lakukan percobaan ulang otomatis maksimal 3 kali untuk error yang bersifat transien (seperti timeout atau network failure).
+    - **Fallback Mechanism:** Jika semua percobaan gagal, aplikasi harus melakukan fallback ke **Local/Manual Parsing** atau membiarkan user mengisi form secara manual sepenuhnya dari hasil raw text OCR.
 
 3. **User Communication (Localized Strings):**
-   - **Timeout:** `"Proses analisis AI gagal karena koneksi timeout. Silakan coba kembali."`
-   - **General Error:** `"Gagal memproses dokumen. Silakan periksa koneksi internet Anda atau isi data secara manual."`
-   - **Invalid Format:** `"Format dokumen tidak dikenali oleh sistem AI."`
+    - **Timeout:** `"Proses analisis AI gagal karena koneksi timeout. Silakan coba kembali."`
+    - **General Error:** `"Gagal memproses dokumen. Silakan periksa koneksi internet Anda atau isi data secara manual."`
+    - **Invalid Format:** `"Format dokumen tidak dikenali oleh sistem AI."`
 
 ### Phase 7: Testing Strategy
 When asked to write tests, follow these guidelines:
@@ -106,10 +106,11 @@ When generating or updating UI components, strictly adhere to the following desi
 
 - **Typography:** Use **Poppins** as the primary font family for all text elements.
 - **Color Palette:**
-   - Primary Green: `#2E7D32`
-   - Light Green: `#CBFFC2`
-   - Light Blue/Background: `#F3FAFF`
-   - Pure White: `#FFFFFF`
+    - Primary Green: `#2E7D32`
+    - Light Green: `#CBFFC2`
+    - Light Blue/Background: `#F3FAFF`
+    - Pure White: `#FFFFFF`
+- **Implementation Rule:** Ensure these colors and typography are defined in `ui/theme/Color.kt` and `ui/theme/Type.kt` respectively, and applied properly through the Material 3 `ColorScheme` in `Theme.kt`. Avoid hardcoding these hex values directly in Composable functions.
 
 ## 🗄️ 7. Database & Offline-First Strategy (Room + Supabase)
 
@@ -134,5 +135,22 @@ When instructed to create or update data flows, strictly follow this pattern:
 When writing Entity and DTO classes, respect these type conversions:
 - **UUIDs:** Supabase uses `UUID`. Room and Kotlin Domain must use `String`.
 - **JSONB Metadata:** Supabase uses `JSONB`. In Kotlin, use a Data Class (`ArchiveMetadata`) and convert it to a JSON `String` using Room `@TypeConverter`.
-- **Enums:** Supabase `doc_type` and `doc_status` Enums should be mapped to Kotlin `enum class` in the Domain layer. 
-**Implementation Rule:** Ensure these colors and typography are defined in `ui/theme/Color.kt` and `ui/theme/Type.kt` respectively, and applied properly through the Material 3 `ColorScheme` in `Theme.kt`. Avoid hardcoding these hex values directly in Composable functions.
+- **Enums:** Supabase `doc_type` and `doc_status` Enums should be mapped to Kotlin `enum class` in the Domain layer.
+
+## 🔄 8. June 2026 Revision Rules (Must Follow)
+When modifying the Archive logic or UI, enforce these constraints derived from the latest stakeholder requirements:
+
+### 8.1. Input & Validation Logic
+- **Bypass Add Screen:** Delete the `AddArchiveScreen` navigation route[cite: 3]. Use a Floating Action Button (FAB) on the `ArchiveListScreen` to navigate directly to the `ManualAddScreen`[cite: 3].
+- **Auto-Validity:** Remove manual calendar inputs for the document validity period[cite: 3]. The system must auto-calculate the validity as `Document Year + 10 Years` in the ViewModel before saving[cite: 3].
+- **Document Status & Duplicates:** Introduce a `DocumentCopyStatus` (Original/Copy) selection[cite: 3]. Allow duplicate Document Numbers to be saved ONLY IF their physical status differs[cite: 3]. If a user enters an existing number with a different status, show a warning dialog before proceeding[cite: 3].
+
+### 8.2. Local Staging Area (Bulk Insert)
+- **Staging Pipeline:** Do not save single documents directly to the main database[cite: 3]. Store inputted data temporarily in a Local Staging Area (Room DB or ViewModel state)[cite: 3].
+- **Box Verification:** All documents added in one session belong to a single Box[cite: 3]. Route users to the `ArchiveReviewScreen` to review the staging list, and perform a **bulk insert** to the main database only when the user applies/verifies the list[cite: 3].
+
+### 8.3. Archive List Presentation
+- **Mandatory Year Filter:** Before displaying the archive list, force the user to select a Document Year (via dialog or transition screen)[cite: 3]. Fetch and cache data from Supabase strictly based on this selected year[cite: 3].
+- **Table View:** Replace the standard `LazyColumn` Card design with a **Dynamic Table Layout** using `LazyColumn` and `Row` with `Modifier.weight()`[cite: 3].
+- **Pagination:** Implement AndroidX `Paging3` (`androidx.paging:paging-compose`) to load the table rows lazily[cite: 3].
+- **Visual Cues (Destruction Policy):** If `Current Year > (Document Year + 10)`, highlight the specific table row in red (or display a specific icon) to visually indicate that the document's retention period has expired and it must be destroyed[cite: 3].

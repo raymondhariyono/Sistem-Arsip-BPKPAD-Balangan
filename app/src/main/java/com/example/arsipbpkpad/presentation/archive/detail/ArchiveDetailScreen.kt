@@ -22,7 +22,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
@@ -75,7 +74,6 @@ fun ArchiveDetailScreen(
         state = state,
         onNavigateBack = onNavigateBack,
         onEditClick = { /* Handle Edit */ },
-        onExportClick = { /* Handle Export */ },
         onDeleteClick = {
             viewModel.deleteArchive {
                 onNavigateBack()
@@ -90,7 +88,6 @@ fun ArchiveDetailContent(
     state: ArchiveDetailState,
     onNavigateBack: () -> Unit,
     onEditClick: () -> Unit,
-    onExportClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -216,25 +213,6 @@ fun ArchiveDetailContent(
                                 style = MaterialTheme.typography.labelMedium, 
                                 fontWeight = FontWeight.Bold
                             )
-                        }
-
-                        Button(
-                            onClick = onExportClick,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            shape = RoundedCornerShape(20.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            modifier = Modifier.height(36.dp)
-                        ) {
-                            Icon(Icons.Default.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = stringResource(R.string.btn_export), 
-                                color = MaterialTheme.colorScheme.onPrimary, 
-                                style = MaterialTheme.typography.labelMedium, 
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                         }
 
                         IconButton(
@@ -386,7 +364,6 @@ fun ArchiveDetailPreview() {
             state = ArchiveDetailState(),
             onNavigateBack = {},
             onEditClick = {},
-            onExportClick = {},
             onDeleteClick = {}
         )
     }

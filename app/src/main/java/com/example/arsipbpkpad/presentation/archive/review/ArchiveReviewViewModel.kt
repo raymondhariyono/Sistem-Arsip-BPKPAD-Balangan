@@ -4,109 +4,101 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
-import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
-import com.example.arsipbpkpad.domain.repository.ArchiveRepository
-import com.example.arsipbpkpad.domain.usecase.SaveArchiveUseCase
+import com.example.arsipbpkpad.domain.repository.StagingRepository
+import com.example.arsipbpkpad.domain.usecase.BulkInsertArchivesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
+
+data class ArchiveReviewUiState(
+    val stagedDocuments: List<ArchiveDocument> = emptyList(),
+    val warehouse: String = "",
+    val rack: String = "",
+    val box: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val showSuccessDialog: Boolean = false,
+    val validationErrors: Map<String, String> = emptyMap()
+)
+
+sealed class ArchiveReviewUiEvent {
+    data class OnWarehouseChange(val value: String) : ArchiveReviewUiEvent()
+    data class OnRackChange(val value: String) : ArchiveReviewUiEvent()
+    data class OnBoxChange(val value: String) : ArchiveReviewUiEvent()
+    data class OnDeleteStagedDoc(val id: String) : ArchiveReviewUiEvent()
+    data object OnApplyClick : ArchiveReviewUiEvent()
+    data object DismissSuccessDialog : ArchiveReviewUiEvent()
+}
 
 @HiltViewModel
 class ArchiveReviewViewModel @Inject constructor(
-    private val saveArchiveUseCase: SaveArchiveUseCase,
-    private val archiveRepository: ArchiveRepository
+    private val stagingRepository: StagingRepository,
+    private val bulkInsertArchivesUseCase: BulkInsertArchivesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArchiveReviewUiState())
     val uiState: StateFlow<ArchiveReviewUiState> = _uiState.asStateFlow()
 
-    fun onEvent(event: ArchiveReviewUiEvent) {
-        when (event) {
-            is ArchiveReviewUiEvent.OnDocNumberChange -> _uiState.update { it.copy(docNumber = event.value, error = null) }
-            is ArchiveReviewUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value) }
-            is ArchiveReviewUiEvent.OnYearChange -> _uiState.update { 
-                it.copy(year = event.value.filter { it.isDigit() }.take(4)) 
-            }
-            is ArchiveReviewUiEvent.OnDateIssuedChange -> {
-                val digitsOnly = event.value.filter { it.isDigit() }.take(8)
-                _uiState.update { it.copy(dateIssued = digitsOnly) }
-            }
-            is ArchiveReviewUiEvent.OnWarehouseChange -> _uiState.update { it.copy(warehouse = event.value) }
-            is ArchiveReviewUiEvent.OnRackChange -> _uiState.update { it.copy(rack = event.value) }
-            is ArchiveReviewUiEvent.OnValidationToggle -> _uiState.update { it.copy(isValidated = event.isValidated) }
-            is ArchiveReviewUiEvent.OnSaveClick -> saveArchive()
-            is ArchiveReviewUiEvent.DismissSuccessDialog -> _uiState.update { 
-                it.copy(showSuccessDialog = false) 
+    init {
+        observeStaging()
+    }
+
+    private fun observeStaging() {
+        viewModelScope.launch {
+            stagingRepository.getAllStagingArchives().collect { docs ->
+                _uiState.update { it.copy(stagedDocuments = docs) }
             }
         }
     }
 
-    private fun formatDigitsToDate(digits: String): String {
-        if (digits.length != 8) return digits
-        val day = digits.substring(0, 2)
-        val month = digits.substring(2, 4)
-        val year = digits.substring(4, 8)
-        return "$year-$month-$day"
+    fun onEvent(event: ArchiveReviewUiEvent) {
+        when (event) {
+            is ArchiveReviewUiEvent.OnWarehouseChange -> _uiState.update { it.copy(warehouse = event.value, validationErrors = it.validationErrors - "warehouse") }
+            is ArchiveReviewUiEvent.OnRackChange -> _uiState.update { it.copy(rack = event.value, validationErrors = it.validationErrors - "rack") }
+            is ArchiveReviewUiEvent.OnBoxChange -> _uiState.update { it.copy(box = event.value, validationErrors = it.validationErrors - "box") }
+            is ArchiveReviewUiEvent.OnDeleteStagedDoc -> {
+                viewModelScope.launch {
+                    stagingRepository.deleteFromStaging(event.id)
+                }
+            }
+            is ArchiveReviewUiEvent.OnApplyClick -> applyBulkInsert()
+            is ArchiveReviewUiEvent.DismissSuccessDialog -> _uiState.update { it.copy(showSuccessDialog = false) }
+        }
     }
 
-    private fun saveArchive() {
+    private fun applyBulkInsert() {
         viewModelScope.launch {
             val currentState = _uiState.value
+            val errors = mutableMapOf<String, String>()
+            if (currentState.warehouse.isBlank()) errors["warehouse"] = "Gudang wajib diisi"
+            if (currentState.rack.isBlank()) errors["rack"] = "Rak wajib diisi"
+            if (currentState.box.isBlank()) errors["box"] = "Box wajib diisi"
             
-            if (currentState.docNumber.isBlank()) {
-                _uiState.update { it.copy(error = "Nomor dokumen tidak boleh kosong") }
-                return@launch
-            }
-
-            if (currentState.year.length != 4) {
-                _uiState.update { it.copy(error = "Tahun harus 4 digit") }
+            if (errors.isNotEmpty()) {
+                _uiState.update { it.copy(validationErrors = errors) }
                 return@launch
             }
 
             _uiState.update { it.copy(isLoading = true, error = null) }
-
-            // Check for duplicate document number
-            val exists = archiveRepository.checkDocumentNumberExists(currentState.docNumber)
-            if (exists) {
-                _uiState.update { it.copy(isLoading = false, error = "Nomor dokumen sudah ada di sistem") }
-                return@launch
-            }
-
-            val archive = ArchiveDocument(
-                id = UUID.randomUUID().toString(),
-                type = DocType.SP2D,
-                documentNumber = currentState.docNumber,
-                nominal = null,
-                thirdParty = currentState.subject,
-                year = currentState.year.toIntOrNull() ?: 2024,
-                dateIssued = formatDigitsToDate(currentState.dateIssued),
-                status = DocStatus.UNVERIFIED,
-                idStorageLocation = null,
-                metadata = null,
-                createdBy = null,
-                verifiedBy = null,
-                createdAt = null,
-                updatedAt = null
-            )
             
-            val result = saveArchiveUseCase(archive)
+            val result = bulkInsertArchivesUseCase(
+                warehouse = currentState.warehouse,
+                rack = currentState.rack,
+                box = currentState.box
+            )
             
             when (result) {
                 is ResultState.Success -> {
-                    _uiState.value = ArchiveReviewUiState(showSuccessDialog = true)
+                    _uiState.update { it.copy(isLoading = false, showSuccessDialog = true) }
                 }
                 is ResultState.Error -> {
                     _uiState.update { it.copy(isLoading = false, error = result.message) }
                 }
-                else -> {
-                    _uiState.update { it.copy(isLoading = false) }
-                }
+                else -> _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

@@ -6,7 +6,9 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.arsipbpkpad.data.local.AppDatabase
 import com.example.arsipbpkpad.data.local.dao.ArchiveDao
+import com.example.arsipbpkpad.data.local.dao.StagingArchiveDao
 import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
+import com.example.arsipbpkpad.domain.model.DocCopyStatus
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DocType
 import dagger.Module
@@ -52,11 +54,18 @@ object DatabaseModule {
         return database.archiveDao()
     }
 
+    @Provides
+    @Singleton
+    fun provideStagingArchiveDao(database: AppDatabase): StagingArchiveDao {
+        return database.stagingArchiveDao()
+    }
+
     private fun getDummyArchives(): List<ArchiveEntity> {
         return listOf(
             ArchiveEntity(
                 id = "1",
                 type = DocType.SP2D,
+                copyStatus = DocCopyStatus.ORIGINAL,
                 documentNumber = "SP2D-123",
                 nominal = 50000000.0,
                 thirdParty = "PT. Pembangunan Jaya",
@@ -73,6 +82,7 @@ object DatabaseModule {
             ArchiveEntity(
                 id = "2",
                 type = DocType.SPM,
+                copyStatus = DocCopyStatus.ORIGINAL,
                 documentNumber = "SPM-456",
                 nominal = 25000000.0,
                 thirdParty = "CV. Berkah Utama",

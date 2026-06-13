@@ -8,6 +8,7 @@ fun ArchiveDto.toDomain(): ArchiveDocument {
     return ArchiveDocument(
         id = id ?: "",
         type = type,
+        copyStatus = copyStatus,
         documentNumber = documentNumber,
         nominal = nominal,
         thirdParty = thirdParty,
@@ -27,6 +28,7 @@ fun ArchiveEntity.toDomain(): ArchiveDocument {
     return ArchiveDocument(
         id = id,
         type = type,
+        copyStatus = copyStatus,
         documentNumber = documentNumber,
         nominal = nominal,
         thirdParty = thirdParty,
@@ -46,6 +48,7 @@ fun ArchiveDocument.toEntity(syncStatus: String = "SYNCED"): ArchiveEntity {
     return ArchiveEntity(
         id = id,
         type = type,
+        copyStatus = copyStatus,
         documentNumber = documentNumber,
         nominal = nominal,
         thirdParty = thirdParty,
@@ -66,6 +69,7 @@ fun ArchiveDocument.toDto(): ArchiveDto {
     return ArchiveDto(
         id = if (id.isEmpty()) null else id,
         type = type,
+        copyStatus = copyStatus,
         documentNumber = documentNumber,
         nominal = nominal,
         thirdParty = thirdParty,

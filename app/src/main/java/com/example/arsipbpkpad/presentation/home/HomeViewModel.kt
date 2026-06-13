@@ -4,7 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
+import com.example.arsipbpkpad.domain.repository.StagingRepository
+import com.example.arsipbpkpad.domain.usecase.GetArchivesListUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getArchivesUseCase: GetArchivesUseCase
+    private val getArchivesListUseCase: GetArchivesListUseCase,
+    private val stagingRepository: StagingRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -23,11 +25,28 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadDashboardData()
+        observeStagingData()
+    }
+
+    private fun observeStagingData() {
+        viewModelScope.launch {
+            stagingRepository.getAllStagingArchives().collect { docs ->
+                _uiState.update { state ->
+                    state.copy(
+                        stagedItemsCount = docs.size,
+                        stagedBoxSummary = if (docs.isNotEmpty()) {
+                            val firstDoc = docs.first()
+                            "Box: ${firstDoc.idStorageLocation ?: "N/A"}"
+                        } else null
+                    )
+                }
+            }
+        }
     }
 
     private fun loadDashboardData() {
         viewModelScope.launch {
-            getArchivesUseCase().collect { result ->
+            getArchivesListUseCase().collect { result ->
                 when (result) {
                     is ResultState.Loading -> {
                         _uiState.update { it.copy(isLoading = true) }

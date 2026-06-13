@@ -7,8 +7,8 @@ import com.example.arsipbpkpad.domain.model.DocCopyStatus
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DocType
 
-@Entity(tableName = "archives")
-data class ArchiveEntity(
+@Entity(tableName = "staging_archives")
+data class StagingArchiveEntity(
     @PrimaryKey
     val id: String,
     val type: DocType,
@@ -22,8 +22,5 @@ data class ArchiveEntity(
     val idStorageLocation: String?,
     val metadata: ArchiveMetadata?,
     val createdBy: String?,
-    val verifiedBy: String?,
-    val createdAt: String?,
-    val updatedAt: String?,
-    val syncStatus: String = "SYNCED" // DRAFT, SYNCED, ERROR
+    val verifiedBy: String?
 )
