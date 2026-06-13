@@ -26,10 +26,19 @@ data class BoxContext(
     val year: String = ""
 )
 
+data class StagedBox(
+    val warehouse: String,
+    val rack: String,
+    val box: String,
+    val year: String,
+    val itemCount: Int
+)
+
 data class RapidInputUiState(
     val boxContext: BoxContext = BoxContext(),
     val isBoxContextSet: Boolean = false,
     val stagedDocuments: List<ArchiveDocument> = emptyList(),
+    val existingStagedBoxes: List<StagedBox> = emptyList(),
     // Form fields
     val docType: String = "SP2D",
     val copyStatus: String = "ORIGINAL",
@@ -50,6 +59,7 @@ sealed class RapidInputUiEvent {
     data class OnBoxChange(val value: String) : RapidInputUiEvent()
     data class OnYearChange(val value: String) : RapidInputUiEvent()
     data object OnConfirmBoxContext : RapidInputUiEvent()
+    data class OnSelectExistingBox(val box: StagedBox) : RapidInputUiEvent()
 
     // Form
     data class OnDocTypeChange(val value: String) : RapidInputUiEvent()
@@ -66,6 +76,7 @@ sealed class RapidInputUiEvent {
     // Bulk Actions
     data object OnConfirmUpload : RapidInputUiEvent()
     data object ResetState : RapidInputUiEvent()
+    data object ResetBoxContext : RapidInputUiEvent()
 }
 
 @HiltViewModel
@@ -85,7 +96,21 @@ class RapidInputViewModel @Inject constructor(
     private fun observeStaging() {
         viewModelScope.launch {
             stagingRepository.getAllStagingArchives().collect { docs ->
-                _uiState.update { it.copy(stagedDocuments = docs) }
+                val boxes = docs.groupBy { it.idStorageLocation }.map { (location, items) ->
+                    val parts = location?.split("-") ?: emptyList()
+                    StagedBox(
+                        warehouse = parts.getOrNull(0) ?: "N/A",
+                        rack = parts.getOrNull(1) ?: "N/A",
+                        box = parts.getOrNull(2) ?: "N/A",
+                        year = items.firstOrNull()?.year?.toString() ?: "N/A",
+                        itemCount = items.size
+                    )
+                }
+                
+                _uiState.update { it.copy(
+                    stagedDocuments = docs,
+                    existingStagedBoxes = boxes
+                ) }
             }
         }
     }
@@ -97,6 +122,17 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnBoxChange -> _uiState.update { it.copy(boxContext = it.boxContext.copy(box = event.value)) }
             is RapidInputUiEvent.OnYearChange -> _uiState.update { it.copy(boxContext = it.boxContext.copy(year = event.value)) }
             is RapidInputUiEvent.OnConfirmBoxContext -> validateBoxContext()
+            is RapidInputUiEvent.OnSelectExistingBox -> {
+                _uiState.update { it.copy(
+                    boxContext = BoxContext(
+                        warehouse = event.box.warehouse,
+                        rack = event.box.rack,
+                        box = event.box.box,
+                        year = event.box.year
+                    ),
+                    isBoxContextSet = true
+                ) }
+            }
             
             is RapidInputUiEvent.OnDocTypeChange -> _uiState.update { it.copy(docType = event.value) }
             is RapidInputUiEvent.OnCopyStatusChange -> _uiState.update { it.copy(copyStatus = event.value) }
@@ -109,6 +145,7 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnEditStagedDoc -> startEditing(event.doc)
             is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload()
             is RapidInputUiEvent.ResetState -> _uiState.value = RapidInputUiState()
+            is RapidInputUiEvent.ResetBoxContext -> _uiState.update { it.copy(isBoxContextSet = false) }
         }
     }
 

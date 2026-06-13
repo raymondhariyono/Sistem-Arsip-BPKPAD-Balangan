@@ -9,13 +9,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
-import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
-import com.example.arsipbpkpad.presentation.archive.review.ArchiveReviewScreen
 import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
+import com.example.arsipbpkpad.presentation.archive.add.manual.BoxContextScreen
+import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
+import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel
 
 @Composable
 fun AppNavHost(
@@ -34,13 +34,17 @@ fun AppNavHost(
                     navController.navigate("archive_flow")
                 },
                 onNavigateToScan = {
-                    navController.navigate("archive_flow")
+                    navController.navigate("archive_flow") {
+                        // When clicking ADD on Home, we want to go straight to initialization
+                        // But since ArchiveList handles it, we go to flow which lands on List.
+                        // Or we can navigate directly to BoxContext if we move it out.
+                    }
                 },
                 onNavigateToDetail = { archiveId ->
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                 },
                 onNavigateToReview = {
-                    navController.navigate(Screen.ArchiveReview.route)
+                    navController.navigate("archive_flow") // Shortcut to current session
                 }
             )
         }
@@ -54,6 +58,7 @@ fun AppNavHost(
                 val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
                 
                 ArchiveListScreen(
+                    viewModel = hiltViewModel(),
                     stagingViewModel = rapidViewModel,
                     onNavigateToDetail = { archiveId ->
                         navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
@@ -68,7 +73,29 @@ fun AppNavHost(
                                 popUpTo(Screen.Home.route) { inclusive = true }
                             }
                             "archive" -> { /* Already here */ }
-                            "add" -> { /* Dialog handles navigation */ }
+                            "add" -> navController.navigate(Screen.BoxContext.route)
+                        }
+                    }
+                )
+            }
+            
+            composable(Screen.BoxContext.route) { entry ->
+                val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
+                val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
+
+                BoxContextScreen(
+                    viewModel = rapidViewModel,
+                    onNavigateToRapidInput = {
+                        navController.navigate(Screen.RapidInput.route)
+                    },
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToBottomNav = { item ->
+                        when (item.route) {
+                            "home" -> navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                            "archive" -> navController.navigate(Screen.ArchiveList.route)
+                            "add" -> { /* Already here */ }
                         }
                     }
                 )
@@ -92,16 +119,7 @@ fun AppNavHost(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable(Screen.ArchiveReview.route) {
-            ArchiveReviewScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToHome = {
-                    navController.navigate(Screen.ArchiveList.route) {
-                        popUpTo(Screen.Home.route)
-                    }
-                }
-            )
-        }
+
         composable(Screen.Scan.route) {
             ScanScreen(
                 onNavigateBack = { navController.popBackStack() }

@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
@@ -70,7 +69,7 @@ fun HomeScreen(
         onNavigateToScan = onNavigateToScan,
         onNavigateToArchiveList = onNavigateToArchiveList,
         onNavigateToDetail = onNavigateToDetail,
-        onNavigateToReview = onNavigateToReview
+        onNavigateToRapidInput = onNavigateToReview // Dashboard card goes to Rapid Input
     )
 }
 
@@ -80,7 +79,7 @@ fun HomeContent(
     onNavigateToScan: () -> Unit,
     onNavigateToArchiveList: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
-    onNavigateToReview: () -> Unit
+    onNavigateToRapidInput: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -127,7 +126,7 @@ fun HomeContent(
                     StagingStatusCard(
                         count = uiState.stagedItemsCount,
                         summary = uiState.stagedBoxSummary ?: "",
-                        onClick = onNavigateToReview
+                        onClick = onNavigateToRapidInput
                     )
                 }
             }

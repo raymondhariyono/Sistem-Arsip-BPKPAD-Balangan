@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -34,11 +33,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -57,6 +51,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,7 +75,6 @@ import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
-import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import kotlinx.coroutines.flow.flowOf
 
@@ -97,109 +91,68 @@ fun ArchiveListScreen(
     val stagingState by stagingViewModel.uiState.collectAsStateWithLifecycle()
     val pagingItems = viewModel.archivesPagingData.collectAsLazyPagingItems()
     
-    var showBoxDialog by remember { mutableStateOf(false) }
-
-    if (showBoxDialog) {
-        BoxContextDialog(
-            state = stagingState,
-            onEvent = stagingViewModel::onEvent,
-            onDismiss = { showBoxDialog = false },
-            onConfirm = {
-                stagingViewModel.onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.OnConfirmBoxContext)
-            }
-        )
-    }
-
     LaunchedEffect(stagingState.isBoxContextSet) {
-        if (stagingState.isBoxContextSet && showBoxDialog) {
-            showBoxDialog = false
+        if (stagingState.isBoxContextSet) {
             onNavigateToRapidInput()
         }
     }
 
-    ArchiveListContent(
-        uiState = uiState,
-        pagingItems = pagingItems,
-        onSearchQueryChange = { query -> 
-            viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(query)) 
+    Scaffold(
+        bottomBar = {
+            BpkpadBottomNavigation(
+                currentRoute = BottomNavItem.ARCHIVE.route,
+                onNavigate = onNavigateToBottomNav
+            )
         },
-        onFilterChange = { type ->
-            viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
-        },
-        onYearToggle = { year ->
-            viewModel.onEvent(ArchiveListUiEvent.OnYearToggle(year))
-        },
-        onSelectAllYears = {
-            viewModel.onEvent(ArchiveListUiEvent.OnSelectAllYears)
-        },
-        onConfirmFilter = {
-            viewModel.onEvent(ArchiveListUiEvent.OnConfirmFilter)
-        },
-        onResetFilter = {
-            viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
-        },
-        onArchiveClick = onNavigateToDetail,
-        onNavigateToAdd = { showBoxDialog = true },
-        onNavigateBack = onNavigateBack,
-        onNavigateToBottomNav = onNavigateToBottomNav
-    )
-}
-
-@Composable
-fun BoxContextDialog(
-    state: com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiState,
-    onEvent: (com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent) -> Unit,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Inisialisasi Box", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Tentukan lokasi box untuk sesi ini.", style = MaterialTheme.typography.bodySmall)
-                
-                OutlinedTextField(
-                    value = state.boxContext.warehouse,
-                    onValueChange = { onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.OnWarehouseChange(it)) },
-                    label = { Text("Gudang") },
-                    isError = state.validationErrors.containsKey("warehouse")
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = state.boxContext.rack,
-                        onValueChange = { onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.OnRackChange(it)) },
-                        label = { Text("Rak") },
-                        modifier = Modifier.weight(1f),
-                        isError = state.validationErrors.containsKey("rack")
-                    )
-                    OutlinedTextField(
-                        value = state.boxContext.box,
-                        onValueChange = { onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.OnBoxChange(it)) },
-                        label = { Text("Box") },
-                        modifier = Modifier.weight(1f),
-                        isError = state.validationErrors.containsKey("box")
+        floatingActionButton = {
+            if (uiState.isFilterConfirmed) {
+                FloatingActionButton(
+                    onClick = { 
+                        // Navigate to Box Context initialization screen
+                        onNavigateToBottomNav(BottomNavItem.ADD)
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.add_document),
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-                OutlinedTextField(
-                    value = state.boxContext.year,
-                    onValueChange = { onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.OnYearChange(it)) },
-                    label = { Text("Tahun Dokumen") },
-                    isError = state.validationErrors.containsKey("year")
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Lanjut ke Input")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal")
             }
         }
-    )
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            ArchiveListContent(
+                uiState = uiState,
+                pagingItems = pagingItems,
+                onSearchQueryChange = { query -> 
+                    viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(query)) 
+                },
+                onFilterChange = { type ->
+                    viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
+                },
+                onYearToggle = { year ->
+                    viewModel.onEvent(ArchiveListUiEvent.OnYearToggle(year))
+                },
+                onSelectAllYears = {
+                    viewModel.onEvent(ArchiveListUiEvent.OnSelectAllYears)
+                },
+                onConfirmFilter = {
+                    viewModel.onEvent(ArchiveListUiEvent.OnConfirmFilter)
+                },
+                onResetFilter = {
+                    viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+                },
+                onArchiveClick = onNavigateToDetail,
+                onNavigateToAdd = { 
+                    onNavigateToBottomNav(BottomNavItem.ADD)
+                },
+                onNavigateBack = onNavigateBack,
+                onNavigateToBottomNav = onNavigateToBottomNav
+            )
+        }
+    }
 }
 
 @Composable
@@ -227,223 +180,188 @@ fun ArchiveListContent(
             onNavigateBack = onNavigateBack
         )
     } else {
-        Scaffold(
-            topBar = {
-                BpkpadTopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = onResetFilter) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                )
-            },
-            bottomBar = {
-                BpkpadBottomNavigation(
-                    currentRoute = BottomNavItem.ARCHIVE.route,
-                    onNavigate = onNavigateToBottomNav
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = onNavigateToAdd,
-                    containerColor = MaterialTheme.colorScheme.primary
+        Column(modifier = Modifier.fillMaxSize()) {
+            
+            // Header section with search and filter
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Active Filters Summary Chip
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_document),
-                        tint = MaterialTheme.colorScheme.onPrimary
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    FilterChip(
+                        text = "${uiState.selectedYears.sortedDescending().joinToString(", ")} | ${uiState.selectedFilter}",
+                        isSelected = true,
+                        onClick = onResetFilter
                     )
                 }
-            },
-            containerColor = MaterialTheme.colorScheme.background
-        ) { paddingValues ->
-            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                
-                // Header section with search and filter
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Active Filters Summary Chip
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Search Bar
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.search_hint),
+                            color = MaterialTheme.colorScheme.outline,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    leadingIcon = {
                         Icon(
-                            imageVector = Icons.Default.MoreVert,
+                            imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.outline
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        FilterChip(
-                            text = "${uiState.selectedYears.sortedDescending().joinToString(", ")} | ${uiState.selectedFilter}",
-                            isSelected = true,
-                            onClick = onResetFilter
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Search Bar
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.search_hint),
-                                color = MaterialTheme.colorScheme.outline,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                        },
-                        trailingIcon = {
-                            if (uiState.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { onSearchQueryChange("") }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.outline
-                                    )
-                                }
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary
-                        ),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Quick Doc Type Filter
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val filters = listOf("Semua", "SP2D", "SPM", "SP3B", "DSB")
-                        items(filters) { filter ->
-                            FilterChip(
-                                text = filter,
-                                isSelected = uiState.selectedFilter == filter,
-                                onClick = { onFilterChange(filter) }
-                            )
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                // Dynamic Table Layout
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // Table Header
-                    item {
-                        TableHeader()
-                    }
-
-                    // Paging Items
-                    items(pagingItems.itemCount) { index ->
-                        val archive = pagingItems[index]
-                        if (archive != null) {
-                            ArchiveTableRow(
-                                no = (index + 1).toString(),
-                                archive = archive,
-                                onClick = { onArchiveClick(archive.id) }
-                            )
-                        }
-                    }
-
-                    // Empty state handling
-                    if (pagingItems.loadState.refresh is LoadState.NotLoading && pagingItems.itemCount == 0) {
-                        item {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 64.dp, horizontal = 32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
+                    },
+                    trailingIcon = {
+                        if (uiState.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
                                 Icon(
-                                    imageVector = Icons.Default.Info,
+                                    imageVector = Icons.Default.Close,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.size(64.dp)
+                                    tint = MaterialTheme.colorScheme.outline
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = stringResource(R.string.no_data_for_year),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = stringResource(R.string.try_another_filter),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(24.dp))
-                                Button(
-                                    onClick = onResetFilter,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Text("Ubah Filter")
-                                }
                             }
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                    ),
+                    singleLine = true
+                )
 
-                    // Load States
-                    pagingItems.apply {
-                        when {
-                            loadState.refresh is LoadState.Loading -> {
-                                item {
-                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                    }
-                                }
-                            }
-                            loadState.append is LoadState.Loading -> {
-                                item {
-                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                    }
-                                }
-                            }
-                            loadState.refresh is LoadState.Error -> {
-                                item {
-                                    val e = pagingItems.loadState.refresh as LoadState.Error
-                                    Text(
-                                        text = e.error.localizedMessage ?: "Gagal memuat data",
-                                        color = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                        }
-                    }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    item { Spacer(modifier = Modifier.height(88.dp)) }
+                // Quick Doc Type Filter
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val filters = listOf("Semua", "SP2D", "SPM", "SP3B", "DSB")
+                    items(filters) { filter ->
+                        FilterChip(
+                            text = filter,
+                            isSelected = uiState.selectedFilter == filter,
+                            onClick = { onFilterChange(filter) }
+                        )
+                    }
                 }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Dynamic Table Layout
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Table Header
+                item {
+                    TableHeader()
+                }
+
+                // Paging Items
+                items(pagingItems.itemCount) { index ->
+                    val archive = pagingItems[index]
+                    if (archive != null) {
+                        ArchiveTableRow(
+                            no = (index + 1).toString(),
+                            archive = archive,
+                            onClick = { onArchiveClick(archive.id) }
+                        )
+                    }
+                }
+
+                // Empty state handling
+                if (pagingItems.loadState.refresh is LoadState.NotLoading && pagingItems.itemCount == 0) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 64.dp, horizontal = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(R.string.no_data_for_year),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.try_another_filter),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = onResetFilter,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text("Ubah Filter")
+                            }
+                        }
+                    }
+                }
+
+                // Load States
+                pagingItems.apply {
+                    when {
+                        loadState.refresh is LoadState.Loading -> {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                        loadState.append is LoadState.Loading -> {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                        loadState.refresh is LoadState.Error -> {
+                            item {
+                                val e = pagingItems.loadState.refresh as LoadState.Error
+                                Text(
+                                    text = e.error.localizedMessage ?: "Gagal memuat data",
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item { Spacer(modifier = Modifier.height(88.dp)) }
             }
         }
     }
@@ -577,6 +495,15 @@ fun FilterContent(
                         )
                     }
                 },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
                 actions = {
                     IconButton(onClick = { /* Profile side effect */ }) {
                         Box(
@@ -618,7 +545,7 @@ fun FilterContent(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.List,
+                    imageVector = Icons.Default.Add,
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
@@ -916,6 +843,31 @@ fun ArchiveListScreenPreview() {
             onNavigateToAdd = {},
             onNavigateBack = {},
             onNavigateToBottomNav = {}
+        )
+    }
+}
+
+@Composable
+fun FormTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    error: String? = null
+) {
+    Column(modifier = modifier) {
+        Text(text = label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            isError = error != null,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFF9F9F9),
+                unfocusedContainerColor = Color(0xFFF9F9F9)
+            )
         )
     }
 }
