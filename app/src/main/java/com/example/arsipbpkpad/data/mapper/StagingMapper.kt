@@ -52,7 +52,7 @@ fun StagingBoxEntity.toDomain(itemCount: Int = 0): StagedBox {
         sessionId = sessionId,
         warehouse = warehouse,
         rack = rack,
-        box = boxNumber,
+        box = box,
         year = year,
         itemCount = itemCount
     )
@@ -63,7 +63,7 @@ fun StagedBox.toEntity(): StagingBoxEntity {
         sessionId = sessionId,
         warehouse = warehouse,
         rack = rack,
-        boxNumber = box,
+        box = box,
         year = year
     )
 }

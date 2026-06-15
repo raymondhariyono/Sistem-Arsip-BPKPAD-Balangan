@@ -81,6 +81,10 @@ class ArchiveRepositoryImpl @Inject constructor(
         return archiveDao.existsByDocumentNumberAndStatus(docNumber, copyStatus)
     }
 
+    override suspend fun checkDocumentNumberExists(docNumber: String): Boolean {
+        return archiveDao.existsByDocumentNumber(docNumber)
+    }
+
     override suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit> {
         return try {
             // 1. Save locally as DRAFT
@@ -101,6 +105,29 @@ class ArchiveRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             ResultState.Error("Gagal menyimpan data: ${e.message}")
+        }
+    }
+
+    override suspend fun saveArchives(archives: List<ArchiveDocument>): ResultState<Unit> {
+        return try {
+            // 1. Save all locally as DRAFT
+            val entities = archives.map { it.toEntity(syncStatus = "DRAFT") }
+            archiveDao.insertArchives(entities)
+
+            try {
+                // 2. Push to Supabase
+                val dtos = archives.map { it.toDto() }
+                supabaseClient.postgrest["arsip_keuangan"].upsert(dtos)
+
+                // 3. Update local status to SYNCED
+                val syncedEntities = entities.map { it.copy(syncStatus = "SYNCED") }
+                archiveDao.insertArchives(syncedEntities)
+                ResultState.Success(Unit)
+            } catch (e: Exception) {
+                ResultState.Error("Gagal mengirim data ke server (tersimpan lokal sebagai draft): ${e.message}")
+            }
+        } catch (e: Exception) {
+            ResultState.Error("Gagal menyimpan data bulk: ${e.message}")
         }
     }
 

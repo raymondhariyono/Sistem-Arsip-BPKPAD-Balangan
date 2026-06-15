@@ -9,7 +9,7 @@ data class StagingBoxEntity(
     val sessionId: String,
     val warehouse: String,
     val rack: String,
-    val boxNumber: String,
+    val box: String,
     val year: String,
     val createdAt: Long = System.currentTimeMillis()
 )

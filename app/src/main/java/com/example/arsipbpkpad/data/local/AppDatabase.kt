@@ -10,7 +10,7 @@ import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
 import com.example.arsipbpkpad.data.local.entity.StagingArchiveEntity
 import com.example.arsipbpkpad.data.local.entity.StagingBoxEntity
 
-@Database(entities = [ArchiveEntity::class, StagingArchiveEntity::class, StagingBoxEntity::class], version = 6, exportSchema = false)
+@Database(entities = [ArchiveEntity::class, StagingArchiveEntity::class, StagingBoxEntity::class], version = 7, exportSchema = false)
 @TypeConverters(DatabaseConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao

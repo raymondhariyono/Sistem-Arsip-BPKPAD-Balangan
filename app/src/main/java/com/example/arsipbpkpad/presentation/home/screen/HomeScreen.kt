@@ -43,10 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
-import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
-import com.example.arsipbpkpad.presentation.components.BpkpadExpandableFAB
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.home.HomeUiState
 import com.example.arsipbpkpad.presentation.home.HomeViewModel
@@ -104,12 +102,6 @@ fun HomeContent(
                         BottomNavItem.ANALYTICS -> onNavigateToAnalytics()
                     }
                 }
-            )
-        },
-        floatingActionButton = {
-            BpkpadExpandableFAB(
-                onManualInputClick = onNavigateToStagingBoxList,
-                onOcrScanClick = onNavigateToScan
             )
         },
         containerColor = MaterialTheme.colorScheme.background

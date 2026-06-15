@@ -44,7 +44,7 @@ import java.util.concurrent.Executor
 @Composable
 fun ScanScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToReview: (String, String?, Int?, String?) -> Unit,
+    onResultDispatched: (com.example.arsipbpkpad.domain.usecase.ParsedMetadata) -> Unit,
     viewModel: ScanViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -59,13 +59,7 @@ fun ScanScreen(
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess && uiState.parsedData != null) {
-            val data = uiState.parsedData!!
-            onNavigateToReview(
-                uiState.capturedImageUri ?: "",
-                data.docNumber,
-                data.year,
-                data.subject
-            )
+            onResultDispatched(uiState.parsedData!!)
             viewModel.resetState()
         }
     }

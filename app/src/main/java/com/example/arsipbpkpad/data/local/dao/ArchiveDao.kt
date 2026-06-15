@@ -35,6 +35,9 @@ interface ArchiveDao {
     @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber AND copyStatus = :copyStatus)")
     suspend fun existsByDocumentNumberAndStatus(docNumber: String, copyStatus: String): Boolean
 
+    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber)")
+    suspend fun existsByDocumentNumber(docNumber: String): Boolean
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertArchive(archive: ArchiveEntity)
 

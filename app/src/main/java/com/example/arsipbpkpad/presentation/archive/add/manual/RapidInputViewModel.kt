@@ -4,15 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
-import com.example.arsipbpkpad.domain.model.StagedBox
+import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCopyStatus
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.usecase.BulkInsertArchivesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -41,7 +47,7 @@ data class RapidInputUiState(
     val validationErrors: Map<String, String> = emptyMap(),
     val isUploadSuccess: Boolean = false,
     val editingId: String? = null,
-    val capturedImageUri: String? = null
+    val showDuplicateWarning: Boolean = false
 )
 
 sealed class RapidInputUiEvent {
@@ -62,7 +68,8 @@ sealed class RapidInputUiEvent {
     data class OnDocNumberChange(val value: String) : RapidInputUiEvent()
     data class OnSubjectChange(val value: String) : RapidInputUiEvent()
     data class OnNominalChange(val value: String) : RapidInputUiEvent()
-    data object OnAddToBoxClick : RapidInputUiEvent()
+    data class OnAddToBoxClick(val forceSave: Boolean = false) : RapidInputUiEvent()
+    data object DismissDuplicateWarning : RapidInputUiEvent()
 
     // Staging Actions
     data class OnDeleteStagedDoc(val id: String) : RapidInputUiEvent()
@@ -72,7 +79,7 @@ sealed class RapidInputUiEvent {
     data object ResetState : RapidInputUiEvent()
     data class OnDeleteBoxSession(val sessionId: String) : RapidInputUiEvent()
     data class OnConfirmUpload(val sessionId: String) : RapidInputUiEvent()
-    data class OnPreFillFromOcr(val imageUri: String?, val docNumber: String?, val year: Int?, val subject: String?) : RapidInputUiEvent()
+    data object OnConfirmAllUpload : RapidInputUiEvent()
     data object OnHandledNavigation : RapidInputUiEvent()
 }
 
@@ -80,16 +87,43 @@ sealed class RapidInputUiEvent {
 class RapidInputViewModel @Inject constructor(
     private val stagingRepository: StagingRepository,
     private val archiveRepository: ArchiveRepository,
-    private val bulkInsertArchivesUseCase: BulkInsertArchivesUseCase
+    private val bulkInsertArchivesUseCase: BulkInsertArchivesUseCase,
+    private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RapidInputUiState())
     val uiState: StateFlow<RapidInputUiState> = _uiState.asStateFlow()
 
+    private val _navigationEvent = MutableSharedFlow<String>()
+    val navigationEvent = _navigationEvent.asSharedFlow()
+
     private var stagingJob: kotlinx.coroutines.Job? = null
+    
+    private val boxSessionId: String? = savedStateHandle["sessionId"]
 
     init {
         observeAllStaging()
+        boxSessionId?.let { sessionId ->
+            onEvent(RapidInputUiEvent.SetCurrentSession(sessionId))
+        }
+        observeOcrResults()
+    }
+
+    private fun observeOcrResults() {
+        viewModelScope.launch {
+            savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.usecase.ParsedMetadata?>("ocr_result", null)
+                .collect { metadata ->
+                    if (metadata != null) {
+                        _uiState.update { it.copy(
+                            documentNumber = metadata.docNumber ?: it.documentNumber,
+                            subject = metadata.subject ?: it.subject,
+                            docType = metadata.docType.name
+                        ) }
+                        // Clear after consumption
+                        savedStateHandle["ocr_result"] = null
+                    }
+                }
+        }
     }
 
     private fun observeAllStaging() {
@@ -126,15 +160,16 @@ class RapidInputViewModel @Inject constructor(
     fun onEvent(event: RapidInputUiEvent) {
         when (event) {
             is RapidInputUiEvent.SetCurrentSession -> {
-                _uiState.update { it.copy(currentSessionId = event.sessionId, isBoxContextSet = false) }
-                observeSessionStaging(event.sessionId)
+                if (_uiState.value.currentSessionId != event.sessionId) {
+                    _uiState.update { it.copy(currentSessionId = event.sessionId) }
+                    observeSessionStaging(event.sessionId)
+                }
             }
             is RapidInputUiEvent.CreateNewSession -> {
                 val newId = UUID.randomUUID().toString()
                 _uiState.update { it.copy(
                     currentSessionId = newId,
                     boxContext = BoxContext(),
-                    isBoxContextSet = false,
                     stagedDocuments = emptyList(),
                     validationErrors = emptyMap(),
                     error = null
@@ -153,24 +188,17 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value) }
             is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value) }
             
-            is RapidInputUiEvent.OnAddToBoxClick -> addToStaging()
+            is RapidInputUiEvent.OnAddToBoxClick -> addToStaging(event.forceSave)
+            is RapidInputUiEvent.DismissDuplicateWarning -> _uiState.update { it.copy(showDuplicateWarning = false) }
+            
             is RapidInputUiEvent.OnDeleteStagedDoc -> deleteFromStaging(event.id)
             is RapidInputUiEvent.OnEditStagedDoc -> startEditing(event.doc)
             is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload(event.sessionId)
-            is RapidInputUiEvent.OnPreFillFromOcr -> preFillFromOcr(event.imageUri, event.docNumber, event.year, event.subject)
+            is RapidInputUiEvent.OnConfirmAllUpload -> uploadAllBoxes()
             is RapidInputUiEvent.OnDeleteBoxSession -> deleteBoxSession(event.sessionId)
-            is RapidInputUiEvent.OnHandledNavigation -> _uiState.update { it.copy(isBoxContextSet = false) }
+            is RapidInputUiEvent.OnHandledNavigation -> { /* Using SharedFlow */ }
             is RapidInputUiEvent.ResetState -> _uiState.value = RapidInputUiState()
         }
-    }
-
-    private fun preFillFromOcr(imageUri: String?, docNumber: String?, year: Int?, subject: String?) {
-        _uiState.update { it.copy(
-            capturedImageUri = imageUri ?: it.capturedImageUri,
-            documentNumber = docNumber ?: it.documentNumber,
-            subject = subject ?: it.subject,
-            boxContext = it.boxContext.copy(year = year?.toString() ?: it.boxContext.year)
-        ) }
     }
 
     private fun deleteBoxSession(sessionId: String) {
@@ -191,7 +219,6 @@ class RapidInputViewModel @Inject constructor(
             if (errors.isEmpty()) {
                 val newId = _uiState.value.currentSessionId ?: UUID.randomUUID().toString()
                 
-                // Persistence: Save the box metadata immediately
                 stagingRepository.saveStagedBox(
                     StagedBox(
                         sessionId = newId,
@@ -204,17 +231,17 @@ class RapidInputViewModel @Inject constructor(
 
                 _uiState.update { it.copy(
                     currentSessionId = newId,
-                    isBoxContextSet = true, 
                     validationErrors = emptyMap()
                 ) }
                 observeSessionStaging(newId)
+                _navigationEvent.emit(newId)
             } else {
                 _uiState.update { it.copy(validationErrors = errors) }
             }
         }
     }
 
-    private fun addToStaging() {
+    private fun addToStaging(forceSave: Boolean = false) {
         viewModelScope.launch {
             val state = _uiState.value
             val sessionId = state.currentSessionId ?: return@launch
@@ -228,11 +255,18 @@ class RapidInputViewModel @Inject constructor(
                 return@launch
             }
 
-            // Duplicate check
-            val exists = archiveRepository.checkDocumentNumberAndStatusExists(state.documentNumber, state.copyStatus)
-            if (exists && state.editingId == null) {
-                _uiState.update { it.copy(error = "Nomor dokumen dengan status tersebut sudah ada.") }
+            val exactExists = archiveRepository.checkDocumentNumberAndStatusExists(state.documentNumber, state.copyStatus)
+            if (exactExists && state.editingId == null) {
+                _uiState.update { it.copy(error = "Nomor dokumen ini sudah ada dengan status yang sama.") }
                 return@launch
+            }
+
+            if (!forceSave && state.editingId == null) {
+                val numberExists = archiveRepository.checkDocumentNumberExists(state.documentNumber)
+                if (numberExists) {
+                    _uiState.update { it.copy(showDuplicateWarning = true) }
+                    return@launch
+                }
             }
 
             val docYear = state.boxContext.year.toIntOrNull() ?: 2026
@@ -247,10 +281,13 @@ class RapidInputViewModel @Inject constructor(
                 year = docYear,
                 dateIssued = "${docYear + 10}-12-31",
                 status = DocStatus.UNVERIFIED,
-                idStorageLocation = "${state.boxContext.warehouse}-${state.boxContext.rack}-${state.boxContext.box}",
-                imageUrl = state.capturedImageUri,
-                metadata = null,
-                createdBy = "Admin",
+                idStorageLocation = null,
+                metadata = ArchiveMetadata(
+                    warehouse = state.boxContext.warehouse,
+                    rack = state.boxContext.rack,
+                    boxNumber = state.boxContext.box
+                ),
+                createdBy = null,
                 verifiedBy = null,
                 createdAt = null,
                 updatedAt = null
@@ -264,7 +301,8 @@ class RapidInputViewModel @Inject constructor(
                 nominal = "",
                 editingId = null,
                 validationErrors = emptyMap(),
-                error = null
+                error = null,
+                showDuplicateWarning = false
             ) }
         }
     }
@@ -299,6 +337,29 @@ class RapidInputViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, error = result.message) }
                 }
                 else -> _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    private fun uploadAllBoxes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val boxes = _uiState.value.existingStagedBoxes
+            var allSuccess = true
+            var lastError: String? = null
+
+            for (box in boxes) {
+                val result = bulkInsertArchivesUseCase(box.sessionId)
+                if (result !is ResultState.Success) {
+                    allSuccess = false
+                    lastError = (result as? ResultState.Error)?.message
+                }
+            }
+
+            if (allSuccess) {
+                _uiState.update { it.copy(isLoading = false, isUploadSuccess = true) }
+            } else {
+                _uiState.update { it.copy(isLoading = false, error = lastError ?: "Gagal mengupload beberapa box") }
             }
         }
     }
