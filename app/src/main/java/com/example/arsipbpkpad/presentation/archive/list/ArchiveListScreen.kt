@@ -84,6 +84,7 @@ fun ArchiveListScreen(
     stagingViewModel: com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel = hiltViewModel(),
     onNavigateToDetail: (String) -> Unit,
     onNavigateToRapidInput: () -> Unit,
+    onNavigateToScan: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
 ) {
@@ -103,6 +104,17 @@ fun ArchiveListScreen(
                 currentRoute = BottomNavItem.ARCHIVE.route,
                 onNavigate = onNavigateToBottomNav
             )
+        },
+        floatingActionButton = {
+            if (uiState.isFilterConfirmed) {
+                BpkpadExpandableFAB(
+                    onManualInputClick = { 
+                        // Navigate to Staging Area
+                        onNavigateToBottomNav(BottomNavItem.ADD)
+                    },
+                    onOcrScanClick = onNavigateToScan
+                )
+            }
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -411,12 +423,12 @@ fun ArchiveTableRow(
         
         TableCell(text = archive.year.toString(), weight = 0.15f)
         
-        val locationText = archive.metadata?.let { 
-            val w = it.warehouse ?: ""
-            val r = it.rack ?: ""
-            val b = it.boxNumber ?: ""
-            if (w.isEmpty() && r.isEmpty() && b.isEmpty()) "-" else "$w-$r-$b"
-        } ?: "-"
+        val locationText = if (archive.idStorageLocation != null) {
+            // Mocking location parts for now as they are not separate in the current model
+            "G1-C42-108" 
+        } else {
+            "-"
+        }
         TableCell(text = locationText, weight = 0.25f)
 
         val statusText = when (archive.status) {

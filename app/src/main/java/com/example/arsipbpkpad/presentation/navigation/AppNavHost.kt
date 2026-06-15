@@ -68,6 +68,9 @@ fun AppNavHost(
                         val sessionId = rapidViewModel.uiState.value.currentSessionId ?: ""
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     },
+                    onNavigateToScan = {
+                        navController.navigate(Screen.Scan.route)
+                    },
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToBottomNav = { item ->
                         when (item.route) {
