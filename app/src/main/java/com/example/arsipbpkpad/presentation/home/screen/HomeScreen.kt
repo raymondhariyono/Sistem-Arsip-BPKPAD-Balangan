@@ -62,6 +62,7 @@ fun HomeScreen(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
+    onNavigateToAnalytics: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -71,7 +72,8 @@ fun HomeScreen(
         onNavigateToArchiveList = onNavigateToArchiveList,
         onNavigateToDetail = onNavigateToDetail,
         onNavigateToStagingBoxList = onNavigateToStagingBoxList,
-        onNavigateToRapidInput = onNavigateToRapidInput
+        onNavigateToRapidInput = onNavigateToRapidInput,
+        onNavigateToAnalytics = onNavigateToAnalytics
     )
 }
 
@@ -81,7 +83,8 @@ fun HomeContent(
     onNavigateToArchiveList: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
-    onNavigateToRapidInput: (String) -> Unit
+    onNavigateToRapidInput: (String) -> Unit,
+    onNavigateToAnalytics: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -95,6 +98,7 @@ fun HomeContent(
                         BottomNavItem.HOME -> { /* Already here */ }
                         BottomNavItem.ARCHIVE -> onNavigateToArchiveList()
                         BottomNavItem.ADD -> onNavigateToStagingBoxList()
+                        BottomNavItem.ANALYTICS -> onNavigateToAnalytics()
                     }
                 }
             )

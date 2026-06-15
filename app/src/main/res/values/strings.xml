@@ -27,7 +27,13 @@
     <string name="nav_home">Home</string>
     <string name="nav_archive">Archive</string>
     <string name="nav_add">Add</string>
+    <string name="nav_analytics">Analytics</string>
     <string name="nav_profile">Profile</string>
+
+    <!-- Analytics page -->
+    <string name="analytics_title">Analitik</string>
+    <string name="total_budget_label">Total Anggaran</string>
+    <string name="budget_helper_text">Total akumulasi dari semua arsip keuangan.</string>
 
     <!-- Archive list -->
     <string name="search_hint">Cari nomor dokumen, jenis...</string>

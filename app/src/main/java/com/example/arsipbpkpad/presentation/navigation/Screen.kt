@@ -11,4 +11,5 @@ sealed class Screen(val route: String) {
     data object RapidInput : Screen("rapid_input/{sessionId}") {
         fun createRoute(sessionId: String) = "rapid_input/$sessionId"
     }
+    data object Analytics : Screen("analytics")
 }

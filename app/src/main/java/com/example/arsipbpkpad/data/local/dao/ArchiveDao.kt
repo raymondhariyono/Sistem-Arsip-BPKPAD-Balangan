@@ -12,19 +12,22 @@ import kotlinx.coroutines.flow.Flow
 interface ArchiveDao {
     @Query("""
         SELECT * FROM archives 
-        WHERE (NULLIF(:years, '') IS NULL OR year IN (:years))
-        AND (:query IS NULL OR documentNumber LIKE '%' || :query || '%' OR thirdParty LIKE '%' || :query || '%')
+        WHERE (:isYearEmpty OR year IN (:years))
+        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%' OR thirdParty LIKE '%' || :query || '%')
         ORDER BY createdAt DESC
     """)
-    fun getArchives(query: String?, years: List<Int>): PagingSource<Int, ArchiveEntity>
+    fun getArchives(query: String?, years: List<Int>, isYearEmpty: Boolean): PagingSource<Int, ArchiveEntity>
 
     @Query("""
         SELECT * FROM archives 
-        WHERE (NULLIF(:years, '') IS NULL OR year IN (:years))
-        AND (:query IS NULL OR documentNumber LIKE '%' || :query || '%' OR thirdParty LIKE '%' || :query || '%')
+        WHERE (:isYearEmpty OR year IN (:years))
+        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%' OR thirdParty LIKE '%' || :query || '%')
         ORDER BY createdAt DESC
     """)
-    fun getArchivesList(query: String?, years: List<Int>): Flow<List<ArchiveEntity>>
+    fun getArchivesList(query: String?, years: List<Int>, isYearEmpty: Boolean): Flow<List<ArchiveEntity>>
+
+    @Query("SELECT SUM(nominal) FROM archives WHERE year = :year")
+    fun getTotalBudgetByYear(year: Int): Flow<Double?>
 
     @Query("SELECT * FROM archives WHERE id = :id")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>

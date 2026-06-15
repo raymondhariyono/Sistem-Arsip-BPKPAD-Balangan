@@ -32,7 +32,7 @@ class ArchiveRepositoryImpl @Inject constructor(
                 pageSize = 20,
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { archiveDao.getArchives(query, years) }
+            pagingSourceFactory = { archiveDao.getArchives(query, years, years.isEmpty()) }
         ).flow
             .map { pagingData ->
                 pagingData.map { it.toDomain() }
@@ -44,7 +44,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     }
 
     override fun getArchivesList(query: String?, years: List<Int>): Flow<ResultState<List<ArchiveDocument>>> {
-        return archiveDao.getArchivesList(query, years)
+        return archiveDao.getArchivesList(query, years, years.isEmpty())
             .map { entities ->
                 val documents = entities.map { it.toDomain() }
                 ResultState.Success(documents) as ResultState<List<ArchiveDocument>>
@@ -136,5 +136,18 @@ class ArchiveRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             ResultState.Error(e.message ?: "Sync failed")
         }
+    }
+
+    override fun getTotalBudgetByYear(year: Int): Flow<ResultState<Double>> {
+        return archiveDao.getTotalBudgetByYear(year)
+            .map { total ->
+                ResultState.Success(total ?: 0.0) as ResultState<Double>
+            }
+            .onStart {
+                emit(ResultState.Loading)
+            }
+            .catch { e ->
+                emit(ResultState.Error(e.message ?: "Failed to fetch total budget"))
+            }
     }
 }

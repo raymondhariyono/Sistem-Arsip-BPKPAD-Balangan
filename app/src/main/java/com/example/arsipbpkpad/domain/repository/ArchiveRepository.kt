@@ -13,4 +13,5 @@ interface ArchiveRepository {
     suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit>
     suspend fun deleteArchive(id: String): ResultState<Unit>
     suspend fun syncArchives(): ResultState<Unit>
+    fun getTotalBudgetByYear(year: Int): Flow<ResultState<Double>>
 }

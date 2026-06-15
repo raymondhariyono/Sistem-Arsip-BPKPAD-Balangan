@@ -15,6 +15,7 @@ import com.example.arsipbpkpad.presentation.archive.add.manual.StagingBoxListScr
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
 import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
+import com.example.arsipbpkpad.presentation.analytics.AnalyticsScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
 
 @Composable
@@ -41,6 +42,9 @@ fun AppNavHost(
                 },
                 onNavigateToRapidInput = { sessionId ->
                     navController.navigate(Screen.RapidInput.createRoute(sessionId))
+                },
+                onNavigateToAnalytics = {
+                    navController.navigate(Screen.Analytics.route)
                 }
             )
         }
@@ -72,6 +76,7 @@ fun AppNavHost(
                             }
                             "archive" -> { /* Already here */ }
                             "add" -> navController.navigate(Screen.StagingBoxList.route)
+                            "analytics" -> navController.navigate(Screen.Analytics.route)
                         }
                     }
                 )
@@ -120,6 +125,23 @@ fun AppNavHost(
         composable(Screen.Scan.route) {
             ScanScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Analytics.route) {
+            AnalyticsScreen(
+                onNavigateToBottomNav = { item ->
+                    when (item.route) {
+                        "home" -> navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                        "archive" -> navController.navigate("archive_flow") {
+                            popUpTo(Screen.Home.route)
+                        }
+                        "add" -> navController.navigate(Screen.StagingBoxList.route)
+                        "analytics" -> { /* Already here */ }
+                    }
+                }
             )
         }
     }

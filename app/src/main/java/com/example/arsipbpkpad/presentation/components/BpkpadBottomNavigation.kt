@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -17,7 +18,8 @@ import com.example.arsipbpkpad.R
 enum class BottomNavItem(val route: String) {
     HOME("home"),
     ARCHIVE("archive"),
-    ADD("add")
+    ADD("add"),
+    ANALYTICS("analytics")
 }
 
 @Composable
@@ -52,6 +54,15 @@ fun BpkpadBottomNavigation(
             onClick = { onNavigate(BottomNavItem.ADD) },
             icon = { Icon(Icons.Default.Add, contentDescription = null) },
             label = { Text(stringResource(R.string.nav_add)) },
+            colors = NavigationBarItemDefaults.colors(
+                indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+            )
+        )
+        NavigationBarItem(
+            selected = currentRoute == BottomNavItem.ANALYTICS.route,
+            onClick = { onNavigate(BottomNavItem.ANALYTICS) },
+            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+            label = { Text(stringResource(R.string.nav_analytics)) },
             colors = NavigationBarItemDefaults.colors(
                 indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
             )
