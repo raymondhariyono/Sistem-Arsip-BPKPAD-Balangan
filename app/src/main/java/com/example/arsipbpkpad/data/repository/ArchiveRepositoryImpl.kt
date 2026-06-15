@@ -14,6 +14,7 @@ import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -149,5 +150,19 @@ class ArchiveRepositoryImpl @Inject constructor(
             .catch { e ->
                 emit(ResultState.Error(e.message ?: "Failed to fetch total budget"))
             }
+    }
+
+    override suspend fun uploadImage(id: String, imageByteArray: ByteArray): ResultState<String> {
+        return try {
+            val fileName = "$id.jpg"
+            val bucket = supabaseClient.storage["archive-covers"]
+            bucket.upload(fileName, imageByteArray) {
+                upsert = true
+            }
+            val publicUrl = bucket.publicUrl(fileName)
+            ResultState.Success(publicUrl)
+        } catch (e: Exception) {
+            ResultState.Error(e.message ?: "Failed to upload image")
+        }
     }
 }

@@ -84,6 +84,7 @@ fun ArchiveListScreen(
     stagingViewModel: com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel = hiltViewModel(),
     onNavigateToDetail: (String) -> Unit,
     onNavigateToRapidInput: () -> Unit,
+    onNavigateToScan: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
 ) {
@@ -111,9 +112,7 @@ fun ArchiveListScreen(
                         // Navigate to Staging Area
                         onNavigateToBottomNav(BottomNavItem.ADD)
                     },
-                    onOcrScanClick = {
-                        // Placeholder for OCR
-                    }
+                    onOcrScanClick = onNavigateToScan
                 )
             }
         }

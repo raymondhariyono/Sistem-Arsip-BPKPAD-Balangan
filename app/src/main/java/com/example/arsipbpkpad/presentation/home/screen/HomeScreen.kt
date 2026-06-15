@@ -63,6 +63,7 @@ fun HomeScreen(
     onNavigateToStagingBoxList: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateToAnalytics: () -> Unit,
+    onNavigateToScan: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -73,7 +74,8 @@ fun HomeScreen(
         onNavigateToDetail = onNavigateToDetail,
         onNavigateToStagingBoxList = onNavigateToStagingBoxList,
         onNavigateToRapidInput = onNavigateToRapidInput,
-        onNavigateToAnalytics = onNavigateToAnalytics
+        onNavigateToAnalytics = onNavigateToAnalytics,
+        onNavigateToScan = onNavigateToScan
     )
 }
 
@@ -84,7 +86,8 @@ fun HomeContent(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
-    onNavigateToAnalytics: () -> Unit
+    onNavigateToAnalytics: () -> Unit,
+    onNavigateToScan: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -106,9 +109,7 @@ fun HomeContent(
         floatingActionButton = {
             BpkpadExpandableFAB(
                 onManualInputClick = onNavigateToStagingBoxList,
-                onOcrScanClick = {
-                    // Placeholder for OCR
-                }
+                onOcrScanClick = onNavigateToScan
             )
         },
         containerColor = MaterialTheme.colorScheme.background

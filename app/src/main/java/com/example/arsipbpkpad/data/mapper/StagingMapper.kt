@@ -18,6 +18,7 @@ fun StagingArchiveEntity.toDomain(): ArchiveDocument {
         dateIssued = dateIssued,
         status = status,
         idStorageLocation = idStorageLocation,
+        imageUrl = imageUrl,
         metadata = metadata,
         createdBy = createdBy,
         verifiedBy = verifiedBy,
@@ -39,6 +40,7 @@ fun ArchiveDocument.toStagingEntity(): StagingArchiveEntity {
         dateIssued = dateIssued,
         status = status,
         idStorageLocation = idStorageLocation,
+        imageUrl = imageUrl,
         metadata = metadata,
         createdBy = createdBy,
         verifiedBy = verifiedBy

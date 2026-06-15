@@ -21,6 +21,7 @@ data class StagingArchiveEntity(
     val dateIssued: String?,
     val status: DocStatus,
     val idStorageLocation: String?,
+    val imageUrl: String? = null,
     val metadata: ArchiveMetadata?,
     val createdBy: String?,
     val verifiedBy: String?

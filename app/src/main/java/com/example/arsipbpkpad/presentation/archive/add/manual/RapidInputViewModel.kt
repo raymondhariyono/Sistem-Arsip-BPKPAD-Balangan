@@ -40,7 +40,8 @@ data class RapidInputUiState(
     val error: String? = null,
     val validationErrors: Map<String, String> = emptyMap(),
     val isUploadSuccess: Boolean = false,
-    val editingId: String? = null
+    val editingId: String? = null,
+    val capturedImageUri: String? = null
 )
 
 sealed class RapidInputUiEvent {
@@ -71,6 +72,7 @@ sealed class RapidInputUiEvent {
     data object ResetState : RapidInputUiEvent()
     data class OnDeleteBoxSession(val sessionId: String) : RapidInputUiEvent()
     data class OnConfirmUpload(val sessionId: String) : RapidInputUiEvent()
+    data class OnPreFillFromOcr(val imageUri: String?, val docNumber: String?, val year: Int?, val subject: String?) : RapidInputUiEvent()
     data object OnHandledNavigation : RapidInputUiEvent()
 }
 
@@ -155,10 +157,20 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnDeleteStagedDoc -> deleteFromStaging(event.id)
             is RapidInputUiEvent.OnEditStagedDoc -> startEditing(event.doc)
             is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload(event.sessionId)
+            is RapidInputUiEvent.OnPreFillFromOcr -> preFillFromOcr(event.imageUri, event.docNumber, event.year, event.subject)
             is RapidInputUiEvent.OnDeleteBoxSession -> deleteBoxSession(event.sessionId)
             is RapidInputUiEvent.OnHandledNavigation -> _uiState.update { it.copy(isBoxContextSet = false) }
             is RapidInputUiEvent.ResetState -> _uiState.value = RapidInputUiState()
         }
+    }
+
+    private fun preFillFromOcr(imageUri: String?, docNumber: String?, year: Int?, subject: String?) {
+        _uiState.update { it.copy(
+            capturedImageUri = imageUri ?: it.capturedImageUri,
+            documentNumber = docNumber ?: it.documentNumber,
+            subject = subject ?: it.subject,
+            boxContext = it.boxContext.copy(year = year?.toString() ?: it.boxContext.year)
+        ) }
     }
 
     private fun deleteBoxSession(sessionId: String) {
@@ -236,6 +248,7 @@ class RapidInputViewModel @Inject constructor(
                 dateIssued = "${docYear + 10}-12-31",
                 status = DocStatus.UNVERIFIED,
                 idStorageLocation = "${state.boxContext.warehouse}-${state.boxContext.rack}-${state.boxContext.box}",
+                imageUrl = state.capturedImageUri,
                 metadata = null,
                 createdBy = "Admin",
                 verifiedBy = null,

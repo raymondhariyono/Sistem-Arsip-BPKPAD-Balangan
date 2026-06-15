@@ -45,6 +45,9 @@ fun AppNavHost(
                 },
                 onNavigateToAnalytics = {
                     navController.navigate(Screen.Analytics.route)
+                },
+                onNavigateToScan = {
+                    navController.navigate(Screen.Scan.route)
                 }
             )
         }
@@ -63,10 +66,11 @@ fun AppNavHost(
                         navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                     },
                     onNavigateToRapidInput = {
-                        // This usually comes from the dialog which already set the session in VM
-                        // But let's be explicit and pass the current session from state
                         val sessionId = rapidViewModel.uiState.value.currentSessionId ?: ""
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
+                    },
+                    onNavigateToScan = {
+                        navController.navigate(Screen.Scan.route)
                     },
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToBottomNav = { item ->
@@ -100,7 +104,6 @@ fun AppNavHost(
                 val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
                 val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
 
-                // Ensure the session is set in the shared ViewModel
                 androidx.compose.runtime.LaunchedEffect(sessionId) {
                     if (sessionId.isNotEmpty()) {
                         rapidViewModel.onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.SetCurrentSession(sessionId))
@@ -112,18 +115,39 @@ fun AppNavHost(
                     viewModel = rapidViewModel
                 )
             }
+
+            composable(Screen.Scan.route) { entry ->
+                val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
+                val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
+
+                ScanScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToReview = { imageUri, docNumber, year, subject ->
+                        // Pre-fill the shared ViewModel
+                        rapidViewModel.onEvent(com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent.OnPreFillFromOcr(imageUri, docNumber, year, subject))
+                        
+                        // Navigate to Rapid Input. 
+                        // If no session exists, we might need to create one or go to StagingBoxList first.
+                        val currentSessionId = rapidViewModel.uiState.value.currentSessionId
+                        if (currentSessionId != null) {
+                            navController.navigate(Screen.RapidInput.createRoute(currentSessionId)) {
+                                popUpTo(Screen.Scan.route) { inclusive = true }
+                            }
+                        } else {
+                            // No session, go to Box selection first but keep the pre-filled data in VM
+                            navController.navigate(Screen.StagingBoxList.route) {
+                                popUpTo(Screen.Scan.route) { inclusive = true }
+                            }
+                        }
+                    }
+                )
+            }
         }
 
         composable(Screen.ArchiveDetail.route) { backStackEntry ->
             val archiveId = backStackEntry.arguments?.getString("archiveId") ?: ""
             ArchiveDetailScreen(
                 archiveId = archiveId,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Screen.Scan.route) {
-            ScanScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

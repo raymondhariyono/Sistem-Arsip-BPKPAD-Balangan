@@ -19,6 +19,7 @@ data class ArchiveDto(
     @SerialName("date_issued") val dateIssued: String? = null,
     @SerialName("status") val status: DocStatus,
     @SerialName("id_storage_location") val idStorageLocation: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("metadata") val metadata: ArchiveMetadata? = null,
     @SerialName("created_by") val createdBy: String? = null,
     @SerialName("verified_by") val verifiedBy: String? = null,
