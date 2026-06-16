@@ -30,9 +30,11 @@ android {
 
         val supabaseUrl = localProperties.getProperty("SUPABASE_URL") ?: ""
         val supabaseKey = localProperties.getProperty("SUPABASE_KEY") ?: ""
+        val groqApiKey = localProperties.getProperty("GROQ_API_KEY") ?: ""
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
+        buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
     }
 
     buildTypes {

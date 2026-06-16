@@ -1,6 +1,7 @@
 package com.example.arsipbpkpad.data.repository
 
 import android.util.Log
+import com.example.arsipbpkpad.BuildConfig
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.data.remote.dto.GroqMessage
 import com.example.arsipbpkpad.data.remote.dto.GroqRequest
@@ -15,6 +16,8 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -22,7 +25,7 @@ class AiParserRepositoryImpl @Inject constructor(
     private val client: HttpClient
 ) : AiParserRepository {
 
-    private val apiKey = "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"
+    private val apiKey = BuildConfig.GROQ_API_KEY
     private val baseUrl = "https://api.groq.com/openai/v1/chat/completions"
 
     override suspend fun parseMetadata(rawText: String): ResultState<ParsedMetadata> {
@@ -57,7 +60,7 @@ class AiParserRepositoryImpl @Inject constructor(
             """.trimIndent()
 
             Log.e("AiParser", "NETWORK: Sending request to Groq API. Raw text preview: ${rawText.take(100)}...")
-            val response: GroqResponse = client.post(baseUrl) {
+            val response: HttpResponse = client.post(baseUrl) {
                 header("Authorization", "Bearer $apiKey")
                 contentType(ContentType.Application.Json)
                 setBody(
@@ -70,10 +73,18 @@ class AiParserRepositoryImpl @Inject constructor(
                         responseFormat = GroqResponseFormat(type = "json_object")
                     )
                 )
-            }.body()
+            }
 
-            val content = response.choices.firstOrNull()?.message?.content
-            Log.e("AiParser", "NETWORK: Received response from Groq. Raw JSON: $content")
+            val responseBody = response.body<String>()
+            Log.e("AiParser", "NETWORK: Received RAW response (Status: ${response.status}): $responseBody")
+            
+            if (!response.status.isSuccess()) {
+                return ResultState.Error("API Error (${response.status.value}): $responseBody")
+            }
+            
+            val groqResponse = Json { ignoreUnknownKeys = true }.decodeFromString<GroqResponse>(responseBody)
+            val content = groqResponse.choices.firstOrNull()?.message?.content
+
             if (content != null) {
                 val parsed = Json { ignoreUnknownKeys = true }.decodeFromString<ParsedMetadata>(content)
                 Log.e("AiParser", "NETWORK: Successfully parsed AI JSON to domain model: $parsed")
