@@ -68,7 +68,8 @@ fun AnalyticsScreen(
             uiState = uiState,
             onYearToggle = { viewModel.onYearSelected(it) },
             onConfirmFilter = { viewModel.onConfirmFilter() },
-            onNavigateBack = { onNavigateToBottomNav(BottomNavItem.HOME) }
+            onNavigateBack = { onNavigateToBottomNav(BottomNavItem.HOME) },
+            onNavigateToBottomNav = onNavigateToBottomNav
         )
     } else {
         AnalyticsResultsContent(
@@ -85,7 +86,8 @@ fun AnalyticsFilterContent(
     uiState: AnalyticsUiState,
     onYearToggle: (Int) -> Unit,
     onConfirmFilter: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToBottomNav: (BottomNavItem) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -120,7 +122,13 @@ fun AnalyticsFilterContent(
                 containerColor = Color.Transparent
             )
         },
-        containerColor = Color(0xFFF3FAFF)
+        bottomBar = {
+            BpkpadBottomNavigation(
+                currentRoute = BottomNavItem.ANALYTICS.route,
+                onNavigate = onNavigateToBottomNav
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -135,13 +143,13 @@ fun AnalyticsFilterContent(
             Box(
                 modifier = Modifier
                     .size(64.dp)
-                    .background(Color(0xFF2E7D32), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Info,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -167,7 +175,7 @@ fun AnalyticsFilterContent(
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
@@ -175,7 +183,8 @@ fun AnalyticsFilterContent(
                     Text(
                         text = stringResource(R.string.select_year_label),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -215,16 +224,20 @@ fun AnalyticsFilterContent(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1B5E20),
-                    disabledContainerColor = Color(0xFFBDBDBD)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.outlineVariant
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
-                Icon(Icons.Default.Search, contentDescription = null, tint = Color.White)
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Tampilkan Analitik",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -243,7 +256,7 @@ fun YearItem(
 ) {
     Row(
         modifier = modifier
-            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(24.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -254,20 +267,20 @@ fun YearItem(
             text = year.toString(),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF424242)
+            color = MaterialTheme.colorScheme.onSurface
         )
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
-                tint = Color(0xFF2E7D32),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         } else {
             Box(
                 modifier = Modifier
                     .size(20.dp)
-                    .border(1.dp, Color.LightGray, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
             )
         }
     }
@@ -278,20 +291,20 @@ fun AnalyticsFilterSummaryBox(selectedYear: Int?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFE8F5E9), RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp))
             .padding(16.dp),
         verticalAlignment = Alignment.Top
     ) {
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .background(Color(0xFF2E7D32), CircleShape),
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -303,13 +316,13 @@ fun AnalyticsFilterSummaryBox(selectedYear: Int?) {
                 text = "Ringkasan Filter",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B5E20)
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = if (selectedYear != null) "Tahun $selectedYear terpilih untuk analisis anggaran." else "Silakan pilih tahun.",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF424242),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
                 lineHeight = 16.sp
             )
         }
