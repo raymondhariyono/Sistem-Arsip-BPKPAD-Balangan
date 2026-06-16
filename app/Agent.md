@@ -620,4 +620,4 @@ Phase 5 — Sync & Hardening
 - Mappers must live in `core/data/mapper`.
 - UI strings must live in `strings.xml`.
 - Any operation that can fail must return `Result<T>` or a sealed result type.
-- Never hardcode Supabase URL or anon key.
+- Never hardcode Supabase URL or anon key..
