@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.usecase.GetArchivesListUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,7 +52,7 @@ class HomeViewModel @Inject constructor(
                                 recentItems = archives.take(5).map {
                                     RecentArchive(
                                         id = it.id,
-                                        title = it.documentNumber,
+                                        title = it.documentNumber ?: "-",
                                         type = it.type.name,
                                         isAvailable = it.status == DocStatus.AVAILABLE
                                     )

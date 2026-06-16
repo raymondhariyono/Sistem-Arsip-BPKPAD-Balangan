@@ -13,7 +13,7 @@ interface ArchiveDao {
     @Query("""
         SELECT * FROM archives 
         WHERE (:isYearEmpty OR year IN (:years))
-        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%' OR thirdParty LIKE '%' || :query || '%')
+        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%')
         ORDER BY createdAt DESC
     """)
     fun getArchives(query: String?, years: List<Int>, isYearEmpty: Boolean): PagingSource<Int, ArchiveEntity>
@@ -21,7 +21,7 @@ interface ArchiveDao {
     @Query("""
         SELECT * FROM archives 
         WHERE (:isYearEmpty OR year IN (:years))
-        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%' OR thirdParty LIKE '%' || :query || '%')
+        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%')
         ORDER BY createdAt DESC
     """)
     fun getArchivesList(query: String?, years: List<Int>, isYearEmpty: Boolean): Flow<List<ArchiveEntity>>
@@ -32,8 +32,8 @@ interface ArchiveDao {
     @Query("SELECT * FROM archives WHERE id = :id")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber AND copyStatus = :copyStatus)")
-    suspend fun existsByDocumentNumberAndStatus(docNumber: String, copyStatus: String): Boolean
+    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber AND copyType = :copyType)")
+    suspend fun existsByDocumentNumberAndType(docNumber: String, copyType: String): Boolean
 
     @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber)")
     suspend fun existsByDocumentNumber(docNumber: String): Boolean

@@ -413,7 +413,7 @@ fun ArchiveTableRow(
                 )
             }
             Text(
-                text = archive.documentNumber,
+                text = archive.documentNumber ?: "-",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -806,16 +806,17 @@ fun ArchiveListScreenPreview() {
                 id = "1",
                 type = com.example.arsipbpkpad.domain.model.DocType.SP2D,
                 documentNumber = "SP2D-1029",
+                copyType = com.example.arsipbpkpad.domain.model.DocCopyType.ORIGINAL,
+                copyCount = 1,
                 nominal = 1000000.0,
-                thirdParty = "PT. Maju Bersama",
+                description = "Pembayaran ATK",
                 year = 2014, // Retention cue should trigger
-                dateIssued = "2014-05-10",
                 status = DocStatus.AVAILABLE,
                 idStorageLocation = "LOC1",
                 metadata = null,
                 createdBy = null,
                 verifiedBy = null,
-                createdAt = null,
+                createdAt = "2014-05-10",
                 updatedAt = null
             )
         ))

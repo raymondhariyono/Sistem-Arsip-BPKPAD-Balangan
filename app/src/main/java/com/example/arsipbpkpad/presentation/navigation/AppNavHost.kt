@@ -94,7 +94,19 @@ fun AppNavHost(
                     onNavigateToRapidInput = { sessionId ->
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     },
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToBottomNav = { item ->
+                        when (item.route) {
+                            "home" -> navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                            "archive" -> navController.navigate("archive_flow") {
+                                popUpTo(Screen.Home.route)
+                            }
+                            "add" -> { /* Already here */ }
+                            "analytics" -> navController.navigate(Screen.Analytics.route)
+                        }
+                    }
                 )
             }
             
@@ -107,7 +119,19 @@ fun AppNavHost(
                     sessionId = sessionId,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToScan = { navController.navigate(Screen.Scan.route) },
-                    viewModel = rapidViewModel
+                    viewModel = rapidViewModel,
+                    onNavigateToBottomNav = { item ->
+                        when (item.route) {
+                            "home" -> navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                            "archive" -> navController.navigate("archive_flow") {
+                                popUpTo(Screen.Home.route)
+                            }
+                            "add" -> navController.navigate(Screen.StagingBoxList.route)
+                            "analytics" -> navController.navigate(Screen.Analytics.route)
+                        }
+                    }
                 )
             }
         }

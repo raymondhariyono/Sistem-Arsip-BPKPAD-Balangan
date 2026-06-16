@@ -252,7 +252,6 @@ data class ArchiveDocument(
     val classificationCode: String = "900.1.3.1",
     val description: String?,
     val nominal: Double?,
-    val thirdParty: String?,
     val year: Int,
     val condition: DocumentCondition,
     val status: DocumentStatus,

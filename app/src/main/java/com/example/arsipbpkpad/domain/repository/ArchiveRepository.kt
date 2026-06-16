@@ -9,7 +9,7 @@ interface ArchiveRepository {
     fun getArchives(query: String? = null, years: List<Int> = emptyList()): Flow<PagingData<ArchiveDocument>>
     fun getArchivesList(query: String? = null, years: List<Int> = emptyList()): Flow<ResultState<List<ArchiveDocument>>>
     fun getArchiveDetail(id: String): Flow<ResultState<ArchiveDocument>>
-    suspend fun checkDocumentNumberAndStatusExists(docNumber: String, copyStatus: String): Boolean
+    suspend fun checkDocumentNumberAndTypeExists(docNumber: String, copyType: String): Boolean
     suspend fun checkDocumentNumberExists(docNumber: String): Boolean
     suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit>
     suspend fun saveArchives(archives: List<ArchiveDocument>): ResultState<Unit>

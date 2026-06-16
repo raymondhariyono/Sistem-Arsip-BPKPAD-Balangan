@@ -77,8 +77,8 @@ class ArchiveRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun checkDocumentNumberAndStatusExists(docNumber: String, copyStatus: String): Boolean {
-        return archiveDao.existsByDocumentNumberAndStatus(docNumber, copyStatus)
+    override suspend fun checkDocumentNumberAndTypeExists(docNumber: String, copyType: String): Boolean {
+        return archiveDao.existsByDocumentNumberAndType(docNumber, copyType)
     }
 
     override suspend fun checkDocumentNumberExists(docNumber: String): Boolean {

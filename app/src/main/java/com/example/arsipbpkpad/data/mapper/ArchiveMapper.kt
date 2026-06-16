@@ -3,23 +3,25 @@ package com.example.arsipbpkpad.data.mapper
 import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
 import com.example.arsipbpkpad.data.remote.dto.ArchiveDto
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import java.util.UUID
 
 fun ArchiveDto.toDomain(): ArchiveDocument {
     return ArchiveDocument(
         id = id ?: "",
         type = type,
-        copyStatus = copyStatus,
         documentNumber = documentNumber,
+        copyType = copyType,
+        copyCount = copyCount,
+        classificationCode = classificationCode,
+        description = description,
         nominal = nominal,
-        thirdParty = thirdParty,
         year = year,
-        dateIssued = dateIssued,
+        condition = condition,
         status = status,
-        idStorageLocation = idStorageLocation,
-        imageUrl = imageUrl,
         metadata = metadata,
+        idStorageLocation = idStorageLocation,
+        bundleId = bundleId,
         createdBy = createdBy,
-        verifiedBy = verifiedBy,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -30,16 +32,18 @@ fun ArchiveEntity.toDomain(): ArchiveDocument {
         id = id,
         boxSessionId = boxSessionId,
         type = type,
-        copyStatus = copyStatus,
+        copyType = copyType,
+        copyCount = copyCount,
         documentNumber = documentNumber,
+        classificationCode = classificationCode,
+        description = description,
         nominal = nominal,
-        thirdParty = thirdParty,
         year = year,
-        dateIssued = dateIssued,
+        condition = condition,
         status = status,
-        idStorageLocation = idStorageLocation,
-        imageUrl = imageUrl,
         metadata = metadata,
+        idStorageLocation = idStorageLocation,
+        bundleId = bundleId,
         createdBy = createdBy,
         verifiedBy = verifiedBy,
         createdAt = createdAt,
@@ -52,16 +56,18 @@ fun ArchiveDocument.toEntity(syncStatus: String = "SYNCED"): ArchiveEntity {
         id = id,
         boxSessionId = boxSessionId,
         type = type,
-        copyStatus = copyStatus,
+        copyType = copyType,
+        copyCount = copyCount,
         documentNumber = documentNumber,
+        classificationCode = classificationCode,
+        description = description,
         nominal = nominal,
-        thirdParty = thirdParty,
         year = year,
-        dateIssued = dateIssued,
+        condition = condition,
         status = status,
-        idStorageLocation = idStorageLocation,
-        imageUrl = imageUrl,
         metadata = metadata,
+        idStorageLocation = idStorageLocation,
+        bundleId = bundleId,
         createdBy = createdBy,
         verifiedBy = verifiedBy,
         createdAt = createdAt,
@@ -74,19 +80,30 @@ fun ArchiveDocument.toDto(): ArchiveDto {
     return ArchiveDto(
         id = if (id.isEmpty()) null else id,
         type = type,
-        copyStatus = copyStatus,
         documentNumber = documentNumber,
+        copyType = copyType,
+        copyCount = copyCount,
+        classificationCode = classificationCode,
+        description = description,
         nominal = nominal,
-        thirdParty = thirdParty,
         year = year,
-        dateIssued = dateIssued,
+        condition = condition,
         status = status,
-        idStorageLocation = idStorageLocation,
-        imageUrl = imageUrl,
         metadata = metadata,
+        idStorageLocation = if (isValidUuid(idStorageLocation)) idStorageLocation else null,
+        bundleId = if (isValidUuid(bundleId)) bundleId else null,
         createdBy = createdBy,
-        verifiedBy = verifiedBy,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
+}
+
+private fun isValidUuid(value: String?): Boolean {
+    if (value.isNullOrBlank()) return false
+    return try {
+        UUID.fromString(value)
+        true
+    } catch (e: Exception) {
+        false
+    }
 }

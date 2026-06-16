@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -27,6 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +44,7 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,12 +59,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.DocCopyType
+import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.utils.CurrencyVisualTransformation
 
@@ -71,6 +77,7 @@ fun RapidInputScreen(
     sessionId: String,
     onNavigateBack: () -> Unit,
     onNavigateToScan: () -> Unit,
+    onNavigateToBottomNav: (com.example.arsipbpkpad.presentation.components.BottomNavItem) -> Unit,
     viewModel: RapidInputViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,7 +93,7 @@ fun RapidInputScreen(
         AlertDialog(
             onDismissRequest = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) },
             title = { Text("Peringatan Duplikasi") },
-            text = { Text("Nomor dokumen '${uiState.documentNumber}' sudah terdaftar di sistem. Tetap simpan sebagai status '${uiState.copyStatus}' yang berbeda?") },
+            text = { Text("Nomor dokumen '${uiState.documentNumber}' sudah terdaftar di sistem. Tetap simpan sebagai status '${uiState.copyType}' yang berbeda?") },
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true)) }
@@ -146,62 +153,68 @@ fun RapidInputScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White
             ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Scan Document")
+                Icon(imageVector = Icons.Filled.Done, contentDescription = "Scan Document")
             }
         },
         bottomBar = {
-            Surface(
-                color = Color.White,
-                shadowElevation = 8.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    if (uiState.stagedDocuments.isNotEmpty()) {
-                        Button(
-                            onClick = { 
-                                uiState.currentSessionId?.let { 
-                                    viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) 
+            Column {
+                Surface(
+                    color = Color.White,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        if (uiState.stagedDocuments.isNotEmpty()) {
+                            Button(
+                                onClick = { 
+                                    uiState.currentSessionId?.let { 
+                                        viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) 
+                                    }
+                                },
+                                enabled = !uiState.isLoading,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                                shape = RoundedCornerShape(28.dp)
+                            ) {
+                                if (uiState.isLoading) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Filled.Done, contentDescription = null, tint = Color.White)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Upload (${uiState.stagedDocuments.size}) Dokumen ke Database", 
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
                                 }
-                            },
-                            enabled = !uiState.isLoading,
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        
+                        OutlinedButton(
+                            onClick = { onNavigateBack() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                            shape = RoundedCornerShape(28.dp)
+                            border = BorderStroke(1.dp, Color(0xFF2E7D32)),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
                         ) {
-                            if (uiState.isLoading) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                            } else {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.Done, contentDescription = null, tint = Color.White)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Upload (${uiState.stagedDocuments.size}) Dokumen ke Database", 
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                            }
+                            Text(
+                                text = if (uiState.stagedDocuments.isEmpty()) "Selesai & Kembali" else "Batal & Keluar",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    
-                    OutlinedButton(
-                        onClick = { onNavigateBack() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        border = BorderStroke(1.dp, Color(0xFF2E7D32)),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
-                    ) {
-                        Text(
-                            text = if (uiState.stagedDocuments.isEmpty()) "Selesai & Kembali" else "Batal & Keluar",
-                            fontWeight = FontWeight.Bold
-                        )
                     }
                 }
+                com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
+                    currentRoute = com.example.arsipbpkpad.presentation.components.BottomNavItem.ADD.route,
+                    onNavigate = onNavigateToBottomNav
+                )
             }
         },
         containerColor = Color(0xFFF3FAFF)
@@ -230,47 +243,110 @@ fun RapidInputScreen(
                         
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            FormDropdownField(
-                                label = "Tipe",
-                                value = uiState.docType,
-                                options = listOf("SP2D", "SPM", "SP3B", "DSB"),
-                                onOptionSelected = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
-                                modifier = Modifier.weight(1f)
+                        // Document Type & Bundle Logic
+                        FormDropdownField(
+                            label = "Tipe Dokumen",
+                            value = uiState.docType.name,
+                            // Hide SPJ from manual select per rules
+                            options = listOf("SP2D", "SPM", "SPP"),
+                            onOptionSelected = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(DocType.valueOf(it))) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Auto-Bundle Checkbox
+                        if (uiState.editingId == null && uiState.docType == DocType.SP2D) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = uiState.isAutoBundleEnabled,
+                                    onCheckedChange = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) }
+                                )
+                                Text(
+                                    text = "Buatkan SPM dan SPJ (Auto-Bundle)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Physical Status (Original/Copy)
+                        Text(text = "Status Fisik", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = uiState.copyType == DocCopyType.ORIGINAL,
+                                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.ORIGINAL)) }
+                                )
+                                Text("Asli", style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = uiState.copyType == DocCopyType.COPY,
+                                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.COPY)) }
+                                )
+                                Text("Salinan", style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+
+                        // Copy Count (Visible only for COPY)
+                        if (uiState.copyType == DocCopyType.COPY) {
+                            FormTextField(
+                                label = "Jumlah Salinan",
+                                value = uiState.copyCount,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                error = uiState.validationErrors["copyCount"]
                             )
-                            FormDropdownField(
-                                label = "Status",
-                                value = uiState.copyStatus,
-                                options = listOf("ORIGINAL", "COPY"),
-                                onOptionSelected = { viewModel.onEvent(RapidInputUiEvent.OnCopyStatusChange(it)) },
-                                modifier = Modifier.weight(1f)
+                        }
+
+                        if (uiState.docType != DocType.SPJ || !uiState.isAutoBundleEnabled) {
+                            FormTextField(
+                                label = if (uiState.isAutoBundleEnabled) "Nomor Dokumen SP2D" else "Nomor Dokumen",
+                                value = uiState.documentNumber,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                                error = uiState.validationErrors["docNumber"]
+                            )
+                        }
+                        
+                        if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                            FormTextField(
+                                label = "Nomor Dokumen SPM",
+                                value = uiState.spmDocumentNumber,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                                error = uiState.validationErrors["spmDocNumber"]
                             )
                         }
                         
                         FormTextField(
-                            label = "Nomor Dokumen",
-                            value = uiState.documentNumber,
-                            onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
-                            error = uiState.validationErrors["docNumber"]
+                            label = "Uraian",
+                            value = uiState.description,
+                            onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDescriptionChange(it)) },
+                            error = uiState.validationErrors["description"]
                         )
+
+                        if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                            FormTextField(
+                                label = "Deskripsi SPJ",
+                                value = uiState.spjDescription,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                                error = uiState.validationErrors["spjDescription"]
+                            )
+                        }
                         
                         FormTextField(
-                            label = "Deskripsi / Perihal",
-                            value = uiState.subject,
-                            onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
-                            singleLine = false,
-                            minLines = 2,
-                            error = uiState.validationErrors["subject"]
-                        )
-                        
-                        FormTextField(
-                            label = "Nominal (Opsional)",
+                            label = "Nominal",
                             value = uiState.nominal,
                             onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
                             visualTransformation = CurrencyVisualTransformation(),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                            )
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -319,13 +395,6 @@ fun RapidInputScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray
                     )
-                    if (uiState.stagedDocuments.isNotEmpty()) {
-                        Text(
-                            text = "Geser untuk aksi",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.LightGray
-                        )
-                    }
                 }
             }
 
@@ -399,14 +468,14 @@ fun StagedItemRow(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(doc.documentNumber, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(doc.documentNumber ?: "-", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             },
             supportingContent = { 
                 Column {
-                    Text(doc.thirdParty ?: "-", maxLines = 1, fontSize = 12.sp, color = Color.DarkGray)
+                    Text(doc.description ?: "-", maxLines = 1, fontSize = 12.sp, color = Color.DarkGray)
                     Text(
-                        text = "Status: ${doc.copyStatus} | Nominal: Rp ${doc.nominal?.toLong() ?: 0}",
+                        text = "Status: ${doc.copyType} | Nominal: Rp ${doc.nominal?.toLong() ?: 0}",
                         fontSize = 11.sp,
                         color = Color.Gray
                     )
@@ -437,7 +506,7 @@ fun FormTextField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     Column(modifier = modifier.padding(bottom = 8.dp)) {
         Text(text = label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)

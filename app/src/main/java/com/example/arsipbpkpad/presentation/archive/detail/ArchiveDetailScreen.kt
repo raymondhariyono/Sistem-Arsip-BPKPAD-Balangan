@@ -23,13 +23,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -183,14 +180,14 @@ fun ArchiveDetailContent(
 
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = archive.documentNumber, 
+                        text = archive.documentNumber ?: "-", 
                         style = MaterialTheme.typography.headlineSmall, 
                         fontWeight = FontWeight.Bold, 
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(R.string.uploaded_info, DateUtils.formatForDisplay(archive.dateIssued), "Admin"), 
+                        text = stringResource(R.string.uploaded_info, DateUtils.formatForDisplay(archive.createdAt), "Admin"), 
                         style = MaterialTheme.typography.bodySmall, 
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -255,11 +252,11 @@ fun ArchiveDetailContent(
                         title = stringResource(R.string.section_metadata),
                         icon = Icons.Default.Info
                     ) {
-                        MetadataRow(label = stringResource(R.string.label_nama_dokumen), value = archive.documentNumber)
-                        MetadataRow(label = stringResource(R.string.label_nomor_dokumen), value = archive.documentNumber)
+                        MetadataRow(label = stringResource(R.string.label_nama_dokumen), value = archive.documentNumber ?: "-")
+                        MetadataRow(label = stringResource(R.string.label_nomor_dokumen), value = archive.documentNumber ?: "-")
                         MetadataRow(label = stringResource(R.string.label_dinas), value = archive.type.name)
-                        MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = DateUtils.formatForDisplay(archive.dateIssued))
-                        MetadataRow(label = "Nominal", value = archive.nominal?.toString() ?: "0", showDivider = false)
+                        MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = DateUtils.formatForDisplay(archive.createdAt))
+                        MetadataRow(label = "Nominal", value = archive.nominal?.toLong()?.toString() ?: "0", showDivider = false)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

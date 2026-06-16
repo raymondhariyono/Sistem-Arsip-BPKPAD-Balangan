@@ -70,7 +70,8 @@ import com.example.arsipbpkpad.presentation.archive.list.FormTextField
 fun StagingBoxListScreen(
     viewModel: RapidInputViewModel,
     onNavigateToRapidInput: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToBottomNav: (com.example.arsipbpkpad.presentation.components.BottomNavItem) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddBoxDialog by remember { mutableStateOf(false) }
@@ -156,6 +157,12 @@ fun StagingBoxListScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Tambah Box")
             }
+        },
+        bottomBar = {
+            com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
+                currentRoute = com.example.arsipbpkpad.presentation.components.BottomNavItem.ADD.route,
+                onNavigate = onNavigateToBottomNav
+            )
         },
         containerColor = Color(0xFFE1F5FE) 
     ) { paddingValues ->

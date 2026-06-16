@@ -8,9 +8,7 @@ import com.example.arsipbpkpad.data.local.AppDatabase
 import com.example.arsipbpkpad.data.local.dao.ArchiveDao
 import com.example.arsipbpkpad.data.local.dao.StagingArchiveDao
 import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
-import com.example.arsipbpkpad.domain.model.DocCopyStatus
-import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -65,15 +63,15 @@ object DatabaseModule {
             ArchiveEntity(
                 id = "1",
                 type = DocType.SP2D,
-                copyStatus = DocCopyStatus.ORIGINAL,
+                copyType = DocCopyType.ORIGINAL,
+                copyCount = 1,
                 documentNumber = "SP2D-123",
                 nominal = 50000000.0,
-                thirdParty = "PT. Pembangunan Jaya",
+                description = "Pembangunan Gedung A",
                 year = 2024,
-                dateIssued = "2024-01-15",
+                condition = DocCondition.GOOD,
                 status = DocStatus.AVAILABLE,
                 idStorageLocation = null,
-                imageUrl = null,
                 metadata = null,
                 createdBy = null,
                 verifiedBy = null,
@@ -83,15 +81,15 @@ object DatabaseModule {
             ArchiveEntity(
                 id = "2",
                 type = DocType.SPM,
-                copyStatus = DocCopyStatus.ORIGINAL,
+                copyType = DocCopyType.ORIGINAL,
+                copyCount = 1,
                 documentNumber = "SPM-456",
                 nominal = 25000000.0,
-                thirdParty = "CV. Berkah Utama",
+                description = "Pengadaan ATK",
                 year = 2024,
-                dateIssued = "2024-03-10",
+                condition = DocCondition.GOOD,
                 status = DocStatus.AVAILABLE,
                 idStorageLocation = null,
-                imageUrl = null,
                 metadata = null,
                 createdBy = null,
                 verifiedBy = null,
