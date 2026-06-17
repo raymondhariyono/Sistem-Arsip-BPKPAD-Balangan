@@ -11,6 +11,9 @@ data class HomeUiState(
     val dsbCount: String = "0",
     val recentItems: List<RecentArchive> = emptyList(),
     val activeStagingBoxes: List<StagedBox> = emptyList(),
+    val availableYears: List<Int> = emptyList(),
+    val yearStats: List<com.example.arsipbpkpad.domain.model.YearStats> = emptyList(),
+    val showYearSelection: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )

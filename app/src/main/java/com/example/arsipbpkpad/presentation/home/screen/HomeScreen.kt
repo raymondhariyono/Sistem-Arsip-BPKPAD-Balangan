@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,7 +56,7 @@ import com.example.arsipbpkpad.presentation.home.component.SectionHeader
 
 @Composable
 fun HomeScreen(
-    onNavigateToArchiveList: () -> Unit,
+    onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
@@ -80,7 +80,7 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     uiState: HomeUiState,
-    onNavigateToArchiveList: () -> Unit,
+    onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
@@ -97,7 +97,7 @@ fun HomeContent(
                 onNavigate = { item ->
                     when (item) {
                         BottomNavItem.HOME -> { /* Already here */ }
-                        BottomNavItem.ARCHIVE -> onNavigateToArchiveList()
+                        BottomNavItem.ARCHIVE -> onNavigateToArchiveList(null)
                         BottomNavItem.ADD -> onNavigateToStagingBoxList()
                         BottomNavItem.ANALYTICS -> onNavigateToAnalytics()
                     }
@@ -195,7 +195,7 @@ fun HomeContent(
                 SectionHeader(
                     title = stringResource(R.string.recently_added),
                     actionText = stringResource(R.string.view_all),
-                    onActionClick = onNavigateToArchiveList
+                    onActionClick = { onNavigateToArchiveList(null) }
                 )
             }
 

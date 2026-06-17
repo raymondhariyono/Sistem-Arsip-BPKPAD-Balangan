@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS public.storage_locations (
   box_number text NOT NULL,
   description text,
   is_active boolean NOT NULL DEFAULT true,
+  created_by uuid REFERENCES auth.users(id),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
 
   CONSTRAINT uq_storage_box UNIQUE (room, shelf, box_number)
@@ -351,26 +352,30 @@ RETURNS trigger AS $$
 DECLARE
   v_entity_id uuid;
   v_metadata jsonb;
+  v_actor_id uuid;
 BEGIN
   IF TG_OP = 'DELETE' THEN
     v_entity_id := OLD.id;
     v_metadata := to_jsonb(OLD);
+    -- Robustly handle missing created_by column
+    BEGIN
+      v_actor_id := OLD.created_by;
+    EXCEPTION WHEN undefined_column THEN
+      v_actor_id := NULL;
+    END;
   ELSE
     v_entity_id := NEW.id;
     v_metadata := to_jsonb(NEW);
+    -- Robustly handle missing created_by column
+    BEGIN
+      v_actor_id := NEW.created_by;
+    EXCEPTION WHEN undefined_column THEN
+      v_actor_id := NULL;
+    END;
   END IF;
 
   INSERT INTO public.activity_logs(actor_id, action, entity_type, entity_id, metadata)
-  VALUES (
-    CASE
-      WHEN TG_OP = 'DELETE' THEN OLD.created_by
-      ELSE NEW.created_by
-    END,
-    TG_OP,
-    TG_TABLE_NAME,
-    v_entity_id,
-    v_metadata
-  );
+  VALUES (v_actor_id, TG_OP, TG_TABLE_NAME, v_entity_id, v_metadata);
 
   RETURN COALESCE(NEW, OLD);
 END;

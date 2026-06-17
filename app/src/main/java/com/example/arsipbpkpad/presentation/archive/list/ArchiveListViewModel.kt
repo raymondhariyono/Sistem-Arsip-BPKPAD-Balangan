@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.filter
-import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,24 +12,24 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ArchiveListViewModel @Inject constructor(
-    private val getArchivesUseCase: GetArchivesUseCase
+    private val getArchivesUseCase: GetArchivesUseCase,
+    private val getArchivedYearsUseCase: com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase,
+    private val getYearStatsUseCase: com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase,
+    savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArchiveListUiState())
@@ -68,17 +67,58 @@ class ArchiveListViewModel @Inject constructor(
         }
 
     init {
-        // No longer need observeArchives() as we use archivesPagingData
+        val initialYear = savedStateHandle.get<String>("year")?.toIntOrNull()
+        if (initialYear != null) {
+            _selectedYears.value = setOf(initialYear)
+            _isFilterConfirmed.value = true
+            _uiState.update { 
+                it.copy(
+                    selectedYears = setOf(initialYear),
+                    isFilterConfirmed = true
+                )
+            }
+        }
+
+        observeAvailableYears()
+        observeYearStats()
+    }
+
+    private fun observeYearStats() {
+        viewModelScope.launch {
+            getYearStatsUseCase().collect { stats ->
+                _uiState.update { it.copy(yearStats = stats) }
+            }
+        }
+    }
+
+    fun updateInitialYear(year: Int?) {
+        if (year != null) {
+            _selectedYears.value = setOf(year)
+            _isFilterConfirmed.value = true
+            _uiState.update { 
+                it.copy(
+                    selectedYears = setOf(year),
+                    isFilterConfirmed = true
+                )
+            }
+        }
+    }
+
+    private fun observeAvailableYears() {
+        viewModelScope.launch {
+            getArchivedYearsUseCase().collect { years ->
+                _uiState.update { it.copy(availableYears = years) }
+            }
+        }
     }
 
     fun onEvent(event: ArchiveListUiEvent) {
         when (event) {
             is ArchiveListUiEvent.Refresh -> {
-                // Paging3 handles refresh via the LazyPagingItems.refresh() in UI, 
-                // but we can trigger a state change here if needed.
+                // Paging3 handles refresh via the LazyPagingItems.refresh() in UI
             }
             is ArchiveListUiEvent.OnArchiveClick -> {
-                /* Handle navigation if needed via side effect or state */
+                /* Handle navigation if needed */
             }
             is ArchiveListUiEvent.OnSearchQueryChange -> {
                 _searchQuery.value = event.query
@@ -108,7 +148,7 @@ class ArchiveListViewModel @Inject constructor(
             }
             is ArchiveListUiEvent.OnResetFilter -> {
                 _isFilterConfirmed.value = false
-                _uiState.update { it.copy(isFilterConfirmed = false) }
+                _uiState.update { it.copy(isFilterConfirmed = false, selectedYears = emptySet()) }
             }
         }
     }

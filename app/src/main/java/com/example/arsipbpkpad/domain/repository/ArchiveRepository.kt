@@ -16,6 +16,9 @@ interface ArchiveRepository {
     suspend fun deleteArchive(id: String): ResultState<Unit>
     suspend fun syncArchives(): ResultState<Unit>
     suspend fun syncPendingArchives(): ResultState<Unit>
+    fun getArchivedYears(): Flow<List<Int>>
+    fun getYearStats(): Flow<List<com.example.arsipbpkpad.domain.model.YearStats>>
+    fun getArchivesByBundleId(bundleId: String): Flow<List<ArchiveDocument>>
     fun getTotalBudgetByYear(year: Int): Flow<ResultState<Double>>
     suspend fun uploadImage(id: String, imageByteArray: ByteArray): ResultState<String>
 }

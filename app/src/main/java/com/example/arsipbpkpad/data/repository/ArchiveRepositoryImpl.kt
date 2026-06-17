@@ -185,6 +185,28 @@ class ArchiveRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getArchivedYears(): Flow<List<Int>> {
+        return archiveDao.getArchivedYears()
+    }
+
+    override fun getYearStats(): Flow<List<com.example.arsipbpkpad.domain.model.YearStats>> {
+        return archiveDao.getYearStats().map { entities ->
+            entities.map { 
+                com.example.arsipbpkpad.domain.model.YearStats(
+                    year = it.year,
+                    count = it.count,
+                    lastUpdated = it.lastUpdated
+                )
+            }
+        }
+    }
+
+    override fun getArchivesByBundleId(bundleId: String): Flow<List<ArchiveDocument>> {
+        return archiveDao.getArchivesByBundleId(bundleId).map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
     override fun getTotalBudgetByYear(year: Int): Flow<ResultState<Double>> {
         return archiveDao.getTotalBudgetByYear(year)
             .map { total ->

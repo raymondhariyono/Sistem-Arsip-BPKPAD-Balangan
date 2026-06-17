@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -46,8 +46,8 @@ fun AppNavHost(
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToArchiveList = {
-                    navController.navigate(archiveFlowRoute)
+                onNavigateToArchiveList = { year ->
+                    navController.navigate(Screen.ArchiveList.createRoute(year))
                 },
                 onNavigateToDetail = { archiveId ->
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
@@ -71,8 +71,25 @@ fun AppNavHost(
             startDestination = Screen.ArchiveList.route,
             route = archiveFlowRoute
         ) {
-            composable(Screen.ArchiveList.route) {
+            composable(
+                route = Screen.ArchiveList.route,
+                arguments = listOf(
+                    androidx.navigation.navArgument("year") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                val flowEntry = remember(entry) { navController.getBackStackEntry(archiveFlowRoute) }
+                val rapidInputViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
+                val archiveListViewModel: com.example.arsipbpkpad.presentation.archive.list.ArchiveListViewModel = hiltViewModel(flowEntry)
+                val year = entry.arguments?.getString("year")?.toIntOrNull()
+
                 ArchiveListScreen(
+                    year = year,
+                    viewModel = archiveListViewModel,
+                    stagingViewModel = rapidInputViewModel,
                     onNavigateToDetail = { archiveId ->
                         navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                     },
@@ -100,7 +117,10 @@ fun AppNavHost(
                 val archiveId = entry.arguments?.getString(archiveIdKey) ?: ""
                 ArchiveDetailScreen(
                     archiveId = archiveId,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToArchive = { id ->
+                        navController.navigate(Screen.ArchiveDetail.createRoute(id))
+                    }
                 )
             }
 
@@ -177,7 +197,7 @@ fun AppNavHost(
                     // Also set on flow entry to ensure delivery if the above fails
                     try {
                         val flowEntry = navController.getBackStackEntry(archiveFlowRoute)
-                        flowEntry.savedStateHandle.set(ocrResultKey, metadata)
+                        flowEntry.savedStateHandle[ocrResultKey] = metadata
                     } catch (e: Exception) {
                         android.util.Log.e("AppNavHost", "archive_flow not found during scan dispatch")
                     }

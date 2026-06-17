@@ -8,6 +8,12 @@ import androidx.room.Query
 import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
 import kotlinx.coroutines.flow.Flow
 
+data class YearStatEntity(
+    val year: Int,
+    val count: Int,
+    val lastUpdated: String?
+)
+
 @Dao
 interface ArchiveDao {
     @Query("""
@@ -32,6 +38,9 @@ interface ArchiveDao {
     @Query("SELECT * FROM archives WHERE id = :id")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>
 
+    @Query("SELECT * FROM archives WHERE bundleId = :bundleId")
+    fun getArchivesByBundleId(bundleId: String): Flow<List<ArchiveEntity>>
+
     @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber AND copyType = :copyType)")
     suspend fun existsByDocumentNumberAndType(docNumber: String, copyType: String): Boolean
 
@@ -49,6 +58,17 @@ interface ArchiveDao {
 
     @Query("SELECT * FROM archives WHERE syncStatus = 'DRAFT'")
     suspend fun getPendingArchives(): List<ArchiveEntity>
+
+    @Query("SELECT DISTINCT year FROM archives ORDER BY year DESC")
+    fun getArchivedYears(): Flow<List<Int>>
+
+    @Query("""
+        SELECT year, COUNT(*) as count, MAX(updatedAt) as lastUpdated 
+        FROM archives 
+        GROUP BY year 
+        ORDER BY year DESC
+    """)
+    fun getYearStats(): Flow<List<com.example.arsipbpkpad.data.local.dao.YearStatEntity>>
 
     @Query("DELETE FROM archives")
     suspend fun clearArchives()

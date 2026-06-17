@@ -35,5 +35,6 @@ data class StorageLocationDto(
     @SerialName("room") val room: String,
     @SerialName("shelf") val shelf: String,
     @SerialName("box_number") val boxNumber: String,
-    @SerialName("description") val description: String? = null
+    @SerialName("description") val description: String? = null,
+    @SerialName("created_by") val createdBy: String? = null
 )

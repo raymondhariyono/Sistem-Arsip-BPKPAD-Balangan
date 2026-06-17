@@ -17,7 +17,9 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getArchivesListUseCase: GetArchivesListUseCase,
-    private val stagingRepository: StagingRepository
+    private val stagingRepository: StagingRepository,
+    private val getArchivedYearsUseCase: com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase,
+    private val getYearStatsUseCase: com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -26,6 +28,16 @@ class HomeViewModel @Inject constructor(
     init {
         loadDashboardData()
         observeStagingData()
+        observeAvailableYears()
+        observeYearStats()
+    }
+
+    private fun observeYearStats() {
+        viewModelScope.launch {
+            getYearStatsUseCase().collect { stats ->
+                _uiState.update { it.copy(yearStats = stats) }
+            }
+        }
     }
 
     private fun observeStagingData() {
@@ -34,6 +46,18 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(activeStagingBoxes = boxes) }
             }
         }
+    }
+
+    private fun observeAvailableYears() {
+        viewModelScope.launch {
+            getArchivedYearsUseCase().collect { years ->
+                _uiState.update { it.copy(availableYears = years) }
+            }
+        }
+    }
+
+    fun onToggleYearSelection(show: Boolean) {
+        _uiState.update { it.copy(showYearSelection = show) }
     }
 
     private fun loadDashboardData() {

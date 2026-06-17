@@ -2,7 +2,9 @@ package com.example.arsipbpkpad.presentation.navigation
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
-    data object ArchiveList : Screen("archive_list")
+    data object ArchiveList : Screen("archive_list?year={year}") {
+        fun createRoute(year: Int?) = if (year != null) "archive_list?year=$year" else "archive_list"
+    }
     data object ArchiveDetail : Screen("archive_detail/{archiveId}") {
         fun createRoute(archiveId: String) = "archive_detail/$archiveId"
     }

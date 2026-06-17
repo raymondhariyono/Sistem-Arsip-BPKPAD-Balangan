@@ -19,32 +19,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,7 +44,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -78,6 +69,7 @@ import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun ArchiveListScreen(
+    year: Int? = null,
     viewModel: ArchiveListViewModel = hiltViewModel(),
     stagingViewModel: com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel = hiltViewModel(),
     onNavigateToDetail: (String) -> Unit,
@@ -90,6 +82,12 @@ fun ArchiveListScreen(
     val stagingState by stagingViewModel.uiState.collectAsStateWithLifecycle()
     val pagingItems = viewModel.archivesPagingData.collectAsLazyPagingItems()
     
+    LaunchedEffect(year) {
+        if (year != null) {
+            viewModel.updateInitialYear(year)
+        }
+    }
+
     LaunchedEffect(stagingState.isBoxContextSet) {
         if (stagingState.isBoxContextSet) {
             onNavigateToRapidInput()
@@ -97,6 +95,33 @@ fun ArchiveListScreen(
     }
 
     Scaffold(
+        topBar = {
+            com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
+                title = {
+                    Text(
+                        text = if (uiState.isFilterConfirmed) "Daftar Arsip" else "Archival Repository",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (uiState.isFilterConfirmed) {
+                            viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+                        } else {
+                            onNavigateBack()
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            )
+        },
         bottomBar = {
             BpkpadBottomNavigation(
                 currentRoute = BottomNavItem.ARCHIVE.route,
@@ -107,7 +132,6 @@ fun ArchiveListScreen(
             if (uiState.isFilterConfirmed) {
                 BpkpadExpandableFAB(
                     onManualInputClick = { 
-                        // Navigate to Staging Area
                         onNavigateToBottomNav(BottomNavItem.ADD)
                     },
                     onOcrScanClick = onNavigateToScan
@@ -116,246 +140,297 @@ fun ArchiveListScreen(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            ArchiveListContent(
-                uiState = uiState,
-                pagingItems = pagingItems,
-                onSearchQueryChange = { query -> 
-                    viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(query)) 
-                },
-                onFilterChange = { type ->
-                    viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
-                },
-                onYearToggle = { year ->
-                    viewModel.onEvent(ArchiveListUiEvent.OnYearToggle(year))
-                },
-                onSelectAllYears = {
-                    viewModel.onEvent(ArchiveListUiEvent.OnSelectAllYears)
-                },
-                onConfirmFilter = {
-                    viewModel.onEvent(ArchiveListUiEvent.OnConfirmFilter)
-                },
-                onResetFilter = {
-                    viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
-                },
-                onArchiveClick = onNavigateToDetail,
-                onNavigateToAdd = { 
-                    onNavigateToBottomNav(BottomNavItem.ADD)
-                },
-                onNavigateBack = onNavigateBack,
-                onNavigateToBottomNav = onNavigateToBottomNav
+            if (uiState.selectedYears.isEmpty() && !uiState.isFilterConfirmed) {
+                // Year Grid Selection (Entry Point)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    ArchivalRepositoryHeader()
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        val yearsRange = (2016..2026).reversed().toList()
+                        yearsRange.chunked(2).forEach { rowYears ->
+                            item {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    rowYears.forEach { y ->
+                                        val stats = uiState.yearStats.find { it.year == y }
+                                        YearGridCard(
+                                            year = y,
+                                            recordsCount = stats?.count ?: 0,
+                                            lastUpdated = stats?.lastUpdated ?: "No data",
+                                            onClick = { viewModel.updateInitialYear(y) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    if (rowYears.size < 2) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
+                        item { Spacer(modifier = Modifier.height(32.dp)) }
+                    }
+                }
+            } else {
+                ArchiveListContentOnly(
+                    uiState = uiState,
+                    pagingItems = pagingItems,
+                    onSearchQueryChange = { query -> 
+                        viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(query)) 
+                    },
+                    onFilterChange = { type ->
+                        viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
+                    },
+                    onArchiveClick = onNavigateToDetail
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ArchivalRepositoryHeader() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        shape = RoundedCornerShape(40.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2E7D32))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Archival\nRepository",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                lineHeight = 36.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Pilih tahun arsip untuk melihat daftar dokumen",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.8f)
             )
         }
     }
 }
 
 @Composable
-fun ArchiveListContent(
+fun YearGridCard(
+    year: Int,
+    recordsCount: Int,
+    lastUpdated: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .height(110.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = year.toString(),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF1B5E20)
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "$recordsCount Records",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Updated $lastUpdated",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
+                    color = Color.LightGray
+                )
+            }
+            
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = Color(0xFF1B5E20),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyArchiveState(onAction: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Default.Info, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Belum ada tahun yang dipilih", style = MaterialTheme.typography.titleMedium)
+        TextButton(onClick = onAction) { Text("Pilih Tahun di Dashboard") }
+    }
+}
+
+@Composable
+fun ArchiveListContentOnly(
     uiState: ArchiveListUiState,
     pagingItems: LazyPagingItems<ArchiveDocument>,
     onSearchQueryChange: (String) -> Unit,
     onFilterChange: (String) -> Unit,
-    onYearToggle: (Int) -> Unit,
-    onSelectAllYears: () -> Unit,
-    onConfirmFilter: () -> Unit,
-    onResetFilter: () -> Unit,
     onArchiveClick: (String) -> Unit,
-    onNavigateToAdd: () -> Unit,
-    onNavigateBack: () -> Unit,
-    onNavigateToBottomNav: (BottomNavItem) -> Unit,
 ) {
-    if (!uiState.isFilterConfirmed) {
-        FilterContent(
-            uiState = uiState,
-            onYearToggle = onYearToggle,
-            onSelectAllYears = onSelectAllYears,
-            onFilterChange = onFilterChange,
-            onConfirmFilter = onConfirmFilter,
-            onNavigateBack = onNavigateBack
-        )
-    } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            
-            // Header section with search and filter
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.fillMaxSize()) {
+        
+        // Header section with search and filter
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Active Filters Summary Chip
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    FilterChip(
-                        text = "${uiState.selectedYears.sortedDescending().joinToString(", ")} | ${uiState.selectedFilter}",
-                        isSelected = true,
-                        onClick = onResetFilter
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Search Bar
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = onSearchQueryChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.search_hint),
-                            color = MaterialTheme.colorScheme.outline,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    },
-                    trailingIcon = {
-                        if (uiState.searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { onSearchQueryChange("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.outline
-                                )
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary
-                    ),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Quick Doc Type Filter
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val filters = listOf("Semua", "SP2D", "SPM", "SP3B", "DSB")
-                    items(filters) { filter ->
-                        FilterChip(
-                            text = filter,
-                            isSelected = uiState.selectedFilter == filter,
-                            onClick = { onFilterChange(filter) }
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // Dynamic Table Layout
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
+            // Active Filters Summary
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Table Header
-                item {
-                    TableHeader()
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Tahun ${uiState.selectedYears.sortedDescending().joinToString(", ")}",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
-
-                // Paging Items
-                items(pagingItems.itemCount) { index ->
-                    val archive = pagingItems[index]
-                    if (archive != null) {
-                        ArchiveTableRow(
-                            no = (index + 1).toString(),
-                            archive = archive,
-                            onClick = { onArchiveClick(archive.id) }
-                        )
-                    }
-                }
-
-                // Empty state handling
-                if (pagingItems.loadState.refresh is LoadState.NotLoading && pagingItems.itemCount == 0) {
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 64.dp, horizontal = 32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(64.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.no_data_for_year),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = stringResource(R.string.try_another_filter),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = onResetFilter,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Text("Ubah Filter")
-                            }
-                        }
-                    }
-                }
-
-                // Load States
-                pagingItems.apply {
-                    when {
-                        loadState.refresh is LoadState.Loading -> {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                }
-                            }
-                        }
-                        loadState.append is LoadState.Loading -> {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                }
-                            }
-                        }
-                        loadState.refresh is LoadState.Error -> {
-                            item {
-                                val e = pagingItems.loadState.refresh as LoadState.Error
-                                Text(
-                                    text = e.error.localizedMessage ?: "Gagal memuat data",
-                                    color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-                }
-
-                item { Spacer(modifier = Modifier.height(88.dp)) }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Search Bar
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.search_hint),
+                        color = MaterialTheme.colorScheme.outline,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                leadingIcon = {
+                    Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                },
+                trailingIcon = {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { onSearchQueryChange("") }) {
+                            Icon(imageVector = Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                        }
+                    }
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                ),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Quick Doc Type Filter
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val filters = listOf("Semua", "SP2D", "SPM", "SPP", "SPJ")
+                items(filters) { filter ->
+                    FilterChip(
+                        text = filter,
+                        isSelected = uiState.selectedFilter == filter,
+                        onClick = { onFilterChange(filter) }
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Dynamic Table Layout
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            item { TableHeader() }
+
+            items(pagingItems.itemCount) { index ->
+                val archive = pagingItems[index]
+                if (archive != null) {
+                    ArchiveTableRow(
+                        no = (index + 1).toString(),
+                        archive = archive,
+                        onClick = { onArchiveClick(archive.id) }
+                    )
+                }
+            }
+
+            // Load States and Empty state
+            if (pagingItems.loadState.refresh is LoadState.NotLoading && pagingItems.itemCount == 0) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(Icons.Default.Info, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Tidak ada dokumen ditemukan", style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
+            
+            pagingItems.apply {
+                when {
+                    loadState.refresh is LoadState.Loading || loadState.append is LoadState.Loading -> {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(88.dp)) }
         }
     }
 }
@@ -422,7 +497,6 @@ fun ArchiveTableRow(
         TableCell(text = archive.year.toString(), weight = 0.15f)
         
         val locationText = if (archive.idStorageLocation != null) {
-            // Mocking location parts for now as they are not separate in the current model
             "G1-C42-108" 
         } else {
             "-"
@@ -456,291 +530,6 @@ fun RowScope.TableCell(
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FilterContent(
-    uiState: ArchiveListUiState,
-    onYearToggle: (Int) -> Unit,
-    onSelectAllYears: () -> Unit,
-    onFilterChange: (String) -> Unit,
-    onConfirmFilter: () -> Unit,
-    onNavigateBack: () -> Unit
-) {
-    Scaffold(
-        topBar = {
-            com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Profile side effect */ }) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                containerColor = Color.Transparent
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Main Icon
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.filter_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.filter_subtitle),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Selection Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.select_year_label),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        TextButton(onClick = onSelectAllYears) {
-                            Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            val isAllSelected = uiState.selectedYears.size == uiState.availableYears.size
-                            Text(
-                                text = if (isAllSelected) "Hapus Semua" else stringResource(R.string.select_all),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Year Grid using Columns and Rows
-                    uiState.availableYears.chunked(2).forEach { rowYears ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            rowYears.forEach { year ->
-                                YearItem(
-                                    year = year,
-                                    isSelected = uiState.selectedYears.contains(year),
-                                    onClick = { onYearToggle(year) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (rowYears.size < 2) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = stringResource(R.string.label_doc_type),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val types = listOf("Semua", "SP2D", "SPM", "SP3B", "DSB")
-                        items(types) { type ->
-                            FilterChip(
-                                text = type,
-                                isSelected = uiState.selectedFilter == type,
-                                onClick = { onFilterChange(type) }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Summary Box
-                    FilterSummaryBox(
-                        selectedYears = uiState.selectedYears,
-                        selectedType = uiState.selectedFilter
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = onConfirmFilter,
-                enabled = uiState.selectedYears.isNotEmpty(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                ),
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Icon(Icons.Default.Search, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.btn_show_archives),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-        }
-    }
-}
-
-@Composable
-fun YearItem(
-    year: Int,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
-            .clip(RoundedCornerShape(24.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = year.toString(),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-            )
-        }
-    }
-}
-
-@Composable
-fun FilterSummaryBox(
-    selectedYears: Set<Int>,
-    selectedType: String
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp))
-            .padding(16.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(MaterialTheme.colorScheme.primary, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column {
-            Text(
-                text = "Ringkasan Filter",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            val yearsText = if (selectedYears.isEmpty()) "-" else selectedYears.sortedDescending().joinToString(", ")
-            Text(
-                text = "${selectedYears.size} Tahun terpilih ($yearsText) untuk tipe $selectedType.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 16.sp
-            )
-        }
-    }
 }
 
 @Composable
@@ -791,7 +580,7 @@ fun ArchiveListScreenPreview() {
                 copyCount = 1,
                 nominal = 1000000.0,
                 description = "Pembayaran ATK",
-                year = 2014, // Retention cue should trigger
+                year = 2014,
                 status = DocStatus.AVAILABLE,
                 idStorageLocation = "LOC1",
                 metadata = null,
@@ -803,7 +592,7 @@ fun ArchiveListScreenPreview() {
         ))
         val pagingItems = flowOf(mockPagingData).collectAsLazyPagingItems()
         
-        ArchiveListContent(
+        ArchiveListContentOnly(
             uiState = ArchiveListUiState(
                 isFilterConfirmed = true,
                 selectedYears = setOf(2014),
@@ -812,14 +601,7 @@ fun ArchiveListScreenPreview() {
             pagingItems = pagingItems,
             onSearchQueryChange = {},
             onFilterChange = {},
-            onYearToggle = {},
-            onSelectAllYears = {},
-            onConfirmFilter = {},
-            onResetFilter = {},
-            onArchiveClick = {},
-            onNavigateToAdd = {},
-            onNavigateBack = {},
-            onNavigateToBottomNav = {}
+            onArchiveClick = {}
         )
     }
 }
