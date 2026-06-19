@@ -86,6 +86,7 @@ sealed class RapidInputUiEvent {
     // Staging Actions
     data class OnDeleteStagedDoc(val id: String) : RapidInputUiEvent()
     data class OnEditStagedDoc(val doc: ArchiveDocument) : RapidInputUiEvent()
+    data object CancelEditing : RapidInputUiEvent()
     
     // Bulk Actions
     data object ResetState : RapidInputUiEvent()
@@ -217,6 +218,7 @@ class RapidInputViewModel @Inject constructor(
             
             is RapidInputUiEvent.OnDeleteStagedDoc -> deleteFromStaging(event.id)
             is RapidInputUiEvent.OnEditStagedDoc -> startEditing(event.doc)
+            is RapidInputUiEvent.CancelEditing -> cancelEditing()
             is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload(event.sessionId)
             is RapidInputUiEvent.OnConfirmAllUpload -> uploadAllBoxes()
             is RapidInputUiEvent.OnDeleteBoxSession -> deleteBoxSession(event.sessionId)
@@ -393,6 +395,20 @@ class RapidInputViewModel @Inject constructor(
             subject = doc.description ?: "",
             nominal = doc.nominal?.toString() ?: "",
             isAutoBundleEnabled = false // Disable auto-bundle on edit to avoid complexity
+        ) }
+    }
+
+    private fun cancelEditing() {
+        _uiState.update { it.copy(
+            editingId = null,
+            documentNumber = "",
+            spmDocumentNumber = "",
+            subject = "",
+            spjDescription = "",
+            nominal = "",
+            isAutoBundleEnabled = false,
+            validationErrors = emptyMap(),
+            error = null
         ) }
     }
 
