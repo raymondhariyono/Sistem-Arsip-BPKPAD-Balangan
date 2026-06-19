@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,11 +42,13 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
- import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
@@ -136,15 +140,24 @@ fun RapidInputScreen(
 
     if (showClassificationSheet) {
         ClassificationBottomSheet(
-            availableCodes = uiState.availableCodes,
+            uiState = uiState,
+            onSearchQueryChanged = { viewModel.onEvent(RapidInputUiEvent.OnClassificationSearchQueryChanged(it)) },
+            onQuickCategorySelected = { viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(it)) },
             onCodeSelected = { code ->
                 viewModel.onEvent(RapidInputUiEvent.OnClassificationCodeChange(code))
                 scope.launch { 
                     sheetState.hide() 
                     showClassificationSheet = false
+                    // Reset search state on select
+                    viewModel.onEvent(RapidInputUiEvent.OnClassificationSearchQueryChanged(""))
+                    viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(null))
                 }
             },
-            onDismiss = { showClassificationSheet = false },
+            onDismiss = { 
+                showClassificationSheet = false 
+                viewModel.onEvent(RapidInputUiEvent.OnClassificationSearchQueryChanged(""))
+                viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(null))
+            },
             sheetState = sheetState
         )
     }
@@ -304,6 +317,13 @@ fun RapidInputScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     enabled = false,
                                     shape = RoundedCornerShape(12.dp),
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.UnfoldMore,
+                                            contentDescription = "Pilih Kode",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
                                     colors = OutlinedTextFieldDefaults.colors(
                                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
                                         disabledBorderColor = MaterialTheme.colorScheme.outline,
@@ -554,16 +574,26 @@ fun RapidInputScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassificationBottomSheet(
-    availableCodes: List<ClassificationCode>,
+    uiState: RapidInputUiState,
+    onSearchQueryChanged: (String) -> Unit,
+    onQuickCategorySelected: (ClassificationCode?) -> Unit,
     onCodeSelected: (String) -> Unit,
     onDismiss: () -> Unit,
     sheetState: SheetState
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    val filteredCodes = remember(searchQuery, availableCodes) {
-        availableCodes.filter {
-            it.code.contains(searchQuery, ignoreCase = true) ||
-                    it.name.contains(searchQuery, ignoreCase = true)
+    val filteredCodes = remember(
+        uiState.classificationSearchQuery, 
+        uiState.selectedQuickCategory, 
+        uiState.availableCodes
+    ) {
+        uiState.availableCodes.filter { code ->
+            val matchesCategory = uiState.selectedQuickCategory == null || 
+                    code.code.startsWith(uiState.selectedQuickCategory.code)
+            
+            val matchesSearch = code.code.contains(uiState.classificationSearchQuery, ignoreCase = true) ||
+                    code.name.contains(uiState.classificationSearchQuery, ignoreCase = true)
+            
+            matchesCategory && matchesSearch
         }
     }
 
@@ -588,7 +618,7 @@ fun ClassificationBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.8f)
+                .fillMaxHeight(0.85f)
                 .padding(horizontal = 24.dp)
         ) {
             Text(
@@ -600,11 +630,43 @@ fun ClassificationBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+            // Kategori Cepat (Filter Chips) - Moved above Search Bar for better reach
+            Text(
+                text = "Kategori Cepat",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cari kode atau nama...") },
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.quickCategories, key = { it.code }) { category ->
+                    val isSelected = uiState.selectedQuickCategory?.code == category.code
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onQuickCategorySelected(category) },
+                        label = { Text(category.code) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Search Bar
+            OutlinedTextField(
+                value = uiState.classificationSearchQuery,
+                onValueChange = onSearchQueryChanged,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Cari kode atau nama klasifikasi...") },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -616,6 +678,7 @@ fun ClassificationBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Results List
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -770,6 +833,7 @@ fun FormTextField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             isError = error != null,
+            placeholder = { Text("Masukkan $label...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
             singleLine = singleLine,
             minLines = minLines,
             visualTransformation = visualTransformation,
@@ -811,6 +875,7 @@ fun FormDropdownField(
                 value = value,
                 onValueChange = {},
                 readOnly = true,
+                placeholder = { Text("Pilih $label...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                 modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 shape = RoundedCornerShape(8.dp),

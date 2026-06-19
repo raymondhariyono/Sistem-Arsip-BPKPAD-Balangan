@@ -56,7 +56,10 @@ data class RapidInputUiState(
     val editingId: String? = null,
     val showDuplicateWarning: Boolean = false,
     val classificationCode: String = "900.1.3.1",
-    val availableCodes: List<com.example.arsipbpkpad.domain.model.ClassificationCode> = emptyList()
+    val availableCodes: List<com.example.arsipbpkpad.domain.model.ClassificationCode> = emptyList(),
+    val classificationSearchQuery: String = "",
+    val selectedQuickCategory: com.example.arsipbpkpad.domain.model.ClassificationCode? = null,
+    val quickCategories: List<com.example.arsipbpkpad.domain.model.ClassificationCode> = emptyList()
 )
 
 sealed class RapidInputUiEvent {
@@ -81,6 +84,8 @@ sealed class RapidInputUiEvent {
     data class OnSpjDescriptionChange(val value: String) : RapidInputUiEvent()
     data class OnNominalChange(val value: String) : RapidInputUiEvent()
     data class OnClassificationCodeChange(val value: String) : RapidInputUiEvent()
+    data class OnClassificationSearchQueryChanged(val query: String) : RapidInputUiEvent()
+    data class OnQuickCategorySelected(val category: com.example.arsipbpkpad.domain.model.ClassificationCode?) : RapidInputUiEvent()
     data class OnAutoBundleToggle(val enabled: Boolean) : RapidInputUiEvent()
     data class OnAddToBoxClick(val forceSave: Boolean = false) : RapidInputUiEvent()
     data class OnOcrResultReceived(val metadata: ParsedMetadata) : RapidInputUiEvent()
@@ -167,7 +172,11 @@ class RapidInputViewModel @Inject constructor(
     private fun observeClassificationCodes() {
         viewModelScope.launch {
             archiveRepository.observeClassificationCodes().collect { codes ->
-                _uiState.update { it.copy(availableCodes = codes) }
+                val quickCats = codes.filter { it.parentCode == "900.1" }
+                _uiState.update { it.copy(
+                    availableCodes = codes,
+                    quickCategories = quickCats
+                ) }
             }
         }
     }
@@ -232,6 +241,11 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnSpjDescriptionChange -> _uiState.update { it.copy(spjDescription = event.value) }
             is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value) }
             is RapidInputUiEvent.OnClassificationCodeChange -> _uiState.update { it.copy(classificationCode = event.value) }
+            is RapidInputUiEvent.OnClassificationSearchQueryChanged -> _uiState.update { it.copy(classificationSearchQuery = event.query) }
+            is RapidInputUiEvent.OnQuickCategorySelected -> _uiState.update { state -> 
+                val newSelection = if (state.selectedQuickCategory == event.category) null else event.category
+                state.copy(selectedQuickCategory = newSelection) 
+            }
             is RapidInputUiEvent.OnAutoBundleToggle -> _uiState.update { it.copy(isAutoBundleEnabled = event.enabled) }
             
             is RapidInputUiEvent.OnAddToBoxClick -> addToStaging(event.forceSave)

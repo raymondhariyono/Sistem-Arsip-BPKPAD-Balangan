@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.ArsipBPKPAD" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo_balangan</item>
+        <item name="postSplashScreenTheme">@style/Theme.ArsipBPKPAD</item>
+    </style>
 </resources>

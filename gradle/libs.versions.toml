@@ -24,6 +24,7 @@ paging = "3.5.0"
 camerax = "1.4.1"
 mlkitTextRecognition = "16.0.1"
 accompanist = "0.36.0"
+splashscreen = "1.0.1"
 
 [libraries]
 androidx-compose-ui-text-google-fonts = { module = "androidx.compose.ui:ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
@@ -83,6 +84,7 @@ androidx-camera-extensions = { group = "androidx.camera", name = "camera-extensi
 # ML Kit
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
