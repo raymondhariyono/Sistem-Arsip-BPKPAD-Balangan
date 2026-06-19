@@ -15,13 +15,29 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
-    private val getAnalyticsUseCase: GetAnalyticsUseCase
+    private val getAnalyticsUseCase: GetAnalyticsUseCase,
+    private val getArchivedYearsUseCase: com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
     val uiState: StateFlow<AnalyticsUiState> = _uiState.asStateFlow()
 
     private var fetchJob: Job? = null
+
+    init {
+        observeAvailableYears()
+    }
+
+    private fun observeAvailableYears() {
+        viewModelScope.launch {
+            getArchivedYearsUseCase().collect { dbYears ->
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                val baseYears = (2015..currentYear).toSet()
+                val combined = (baseYears + dbYears).sortedDescending()
+                _uiState.update { it.copy(availableYears = combined) }
+            }
+        }
+    }
 
     fun onYearSelected(year: Int) {
         _uiState.update { 

@@ -155,8 +155,7 @@ fun ArchiveListScreen(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        val yearsRange = (2016..2026).reversed().toList()
-                        yearsRange.chunked(2).forEach { rowYears ->
+                        uiState.availableYears.chunked(2).forEach { rowYears ->
                             item {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),

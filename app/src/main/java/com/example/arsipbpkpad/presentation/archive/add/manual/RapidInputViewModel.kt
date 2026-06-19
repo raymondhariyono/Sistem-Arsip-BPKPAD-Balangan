@@ -54,7 +54,9 @@ data class RapidInputUiState(
     val validationErrors: Map<String, String> = emptyMap(),
     val isUploadSuccess: Boolean = false,
     val editingId: String? = null,
-    val showDuplicateWarning: Boolean = false
+    val showDuplicateWarning: Boolean = false,
+    val classificationCode: String = "900.1.3.1",
+    val availableCodes: List<com.example.arsipbpkpad.domain.model.ClassificationCode> = emptyList()
 )
 
 sealed class RapidInputUiEvent {
@@ -78,6 +80,7 @@ sealed class RapidInputUiEvent {
     data class OnSubjectChange(val value: String) : RapidInputUiEvent()
     data class OnSpjDescriptionChange(val value: String) : RapidInputUiEvent()
     data class OnNominalChange(val value: String) : RapidInputUiEvent()
+    data class OnClassificationCodeChange(val value: String) : RapidInputUiEvent()
     data class OnAutoBundleToggle(val enabled: Boolean) : RapidInputUiEvent()
     data class OnAddToBoxClick(val forceSave: Boolean = false) : RapidInputUiEvent()
     data class OnOcrResultReceived(val metadata: ParsedMetadata) : RapidInputUiEvent()
@@ -116,6 +119,12 @@ class RapidInputViewModel @Inject constructor(
     init {
         Log.e("RapidInputVM", "ViewModel created! Instance: ${this.hashCode()}")
         observeAllStaging()
+        observeClassificationCodes()
+        
+        // Trigger sync in background
+        viewModelScope.launch {
+            archiveRepository.syncClassificationCodes()
+        }
         
         // Handle initial session if passed
         val boxSessionId: String? = savedStateHandle["sessionId"]
@@ -147,6 +156,18 @@ class RapidInputViewModel @Inject constructor(
         viewModelScope.launch {
             stagingRepository.getAllStagedBoxes().collect { boxes ->
                 _uiState.update { it.copy(existingStagedBoxes = boxes) }
+            }
+        }
+    }
+
+    private fun observeYearStats() {
+        // ... handled in other VM or if needed here
+    }
+
+    private fun observeClassificationCodes() {
+        viewModelScope.launch {
+            archiveRepository.observeClassificationCodes().collect { codes ->
+                _uiState.update { it.copy(availableCodes = codes) }
             }
         }
     }
@@ -210,6 +231,7 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value) }
             is RapidInputUiEvent.OnSpjDescriptionChange -> _uiState.update { it.copy(spjDescription = event.value) }
             is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value) }
+            is RapidInputUiEvent.OnClassificationCodeChange -> _uiState.update { it.copy(classificationCode = event.value) }
             is RapidInputUiEvent.OnAutoBundleToggle -> _uiState.update { it.copy(isAutoBundleEnabled = event.enabled) }
             
             is RapidInputUiEvent.OnAddToBoxClick -> addToStaging(event.forceSave)
@@ -358,6 +380,7 @@ class RapidInputViewModel @Inject constructor(
             boxSessionId = sessionId,
             type = state.docType,
             documentNumber = state.documentNumber,
+            classificationCode = state.classificationCode,
             copyType = state.copyType,
             copyCount = state.copyCount.toIntOrNull() ?: 1,
             description = state.subject,
@@ -391,6 +414,7 @@ class RapidInputViewModel @Inject constructor(
             docType = doc.type,
             copyType = doc.copyType,
             copyCount = doc.copyCount.toString(),
+            classificationCode = doc.classificationCode,
             documentNumber = doc.documentNumber ?: "",
             subject = doc.description ?: "",
             nominal = doc.nominal?.toString() ?: "",

@@ -24,10 +24,12 @@ import javax.inject.Inject
 
 class ArchiveRepositoryImpl @Inject constructor(
     private val archiveDao: ArchiveDao,
+    private val classificationCodeDao: com.example.arsipbpkpad.data.local.dao.ClassificationCodeDao,
     private val supabaseClient: SupabaseClient
 ) : ArchiveRepository {
 
     private val tableName = "archive_documents"
+    private val classificationTableName = "archive_classifications"
 
     override fun getArchives(query: String?, years: List<Int>): Flow<PagingData<ArchiveDocument>> {
         return Pager(
@@ -231,6 +233,48 @@ class ArchiveRepositoryImpl @Inject constructor(
             ResultState.Success(publicUrl)
         } catch (e: Exception) {
             ResultState.Error(e.message ?: "Failed to upload image")
+        }
+    }
+
+    override suspend fun syncClassificationCodes(): ResultState<Unit> {
+        return try {
+            val count = classificationCodeDao.getCodesCount()
+            if (count > 0) {
+                return ResultState.Success(Unit)
+            }
+
+            val dtos = supabaseClient.postgrest[classificationTableName]
+                .select()
+                .decodeList<com.example.arsipbpkpad.data.remote.dto.ClassificationCodeDto>()
+            
+            val entities = dtos.map { 
+                com.example.arsipbpkpad.data.local.entity.ClassificationCodeEntity(
+                    code = it.code,
+                    name = it.name,
+                    parentCode = it.parentCode,
+                    level = it.level,
+                    isActive = it.isActive
+                )
+            }
+            
+            classificationCodeDao.insertAll(entities)
+            ResultState.Success(Unit)
+        } catch (e: Exception) {
+            ResultState.Error("Sync classification codes failed: ${e.message}")
+        }
+    }
+
+    override fun observeClassificationCodes(): Flow<List<com.example.arsipbpkpad.domain.model.ClassificationCode>> {
+        return classificationCodeDao.getAllActiveCodes().map { entities ->
+            entities.map { 
+                com.example.arsipbpkpad.domain.model.ClassificationCode(
+                    code = it.code,
+                    name = it.name,
+                    parentCode = it.parentCode,
+                    level = it.level,
+                    isActive = it.isActive
+                )
+            }
         }
     }
 }

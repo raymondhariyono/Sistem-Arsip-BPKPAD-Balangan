@@ -58,6 +58,12 @@ object DatabaseModule {
         return database.stagingArchiveDao()
     }
 
+    @Provides
+    @Singleton
+    fun provideClassificationCodeDao(database: AppDatabase): com.example.arsipbpkpad.data.local.dao.ClassificationCodeDao {
+        return database.classificationCodeDao()
+    }
+
     private fun getDummyArchives(): List<ArchiveEntity> {
         return listOf(
             ArchiveEntity(

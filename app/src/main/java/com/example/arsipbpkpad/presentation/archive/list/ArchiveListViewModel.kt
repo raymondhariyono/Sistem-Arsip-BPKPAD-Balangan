@@ -106,8 +106,11 @@ class ArchiveListViewModel @Inject constructor(
 
     private fun observeAvailableYears() {
         viewModelScope.launch {
-            getArchivedYearsUseCase().collect { years ->
-                _uiState.update { it.copy(availableYears = years) }
+            getArchivedYearsUseCase().collect { dbYears ->
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                val baseYears = (2015..currentYear).toSet()
+                val combined = (baseYears + dbYears).sortedDescending()
+                _uiState.update { it.copy(availableYears = combined) }
             }
         }
     }
