@@ -1,7 +1,8 @@
 package com.example.arsipbpkpad.domain.usecase
 
-import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DomainConstants
+import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
@@ -9,23 +10,25 @@ import com.example.arsipbpkpad.domain.repository.TransactionBundleRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
+/**
+ * UseCase for bulk inserting documents from a staging session into the archive.
+ * Follows SRP and uses pure domain abstractions.
+ */
 class BulkInsertArchivesUseCase @Inject constructor(
     private val archiveRepository: ArchiveRepository,
     private val stagingRepository: StagingRepository,
     private val storageLocationRepository: StorageLocationRepository,
     private val transactionBundleRepository: TransactionBundleRepository
 ) {
-    suspend operator fun invoke(
-        sessionId: String
-    ): ResultState<Unit> {
+    suspend operator fun invoke(sessionId: String): DomainResult<Unit> {
         return try {
             val stagedBox = stagingRepository.getStagedBoxById(sessionId)
-                ?: return ResultState.Error("Session box tidak ditemukan")
+                ?: return DomainResult.Error(DomainConstants.ERROR_SESSION_NOT_FOUND)
             
             val stagedDocs = stagingRepository.getStagingArchivesBySession(sessionId).first()
-            if (stagedDocs.isEmpty()) return ResultState.Error("Staging session kosong")
+            if (stagedDocs.isEmpty()) return DomainResult.Error(DomainConstants.ERROR_STAGING_EMPTY)
 
-            // 1. Get or Create Storage Location in Supabase
+            // 1. Get or Create Storage Location
             val locationResult = storageLocationRepository.getOrCreateLocation(
                 room = stagedBox.warehouse,
                 shelf = stagedBox.rack,
@@ -34,38 +37,33 @@ class BulkInsertArchivesUseCase @Inject constructor(
             )
             
             val storageLocationId = when (locationResult) {
-                is ResultState.Success -> locationResult.data
-                is ResultState.Error -> {
-                    val friendlyError = com.example.arsipbpkpad.utils.handleNetworkError(locationResult.message)
-                    return ResultState.Error("Gagal inisialisasi lokasi: $friendlyError")
-                }
-                else -> return ResultState.Error("Gagal inisialisasi lokasi")
+                is DomainResult.Success -> locationResult.data
+                is DomainResult.Error -> return DomainResult.Error("${DomainConstants.ERROR_LOCATION_INIT_FAILED}: ${locationResult.message}")
             }
 
-            // 2. Identify unique local bundles and create them in Supabase
+            // 2. Identify and create transaction bundles
             val localToRemoteBundleMap = mutableMapOf<String, String>()
             val bundlesToCreate = stagedDocs.filter { it.bundleId != null }
                 .groupBy { it.bundleId!! }
             
             for ((localId, docs) in bundlesToCreate) {
-                // Heuristic: take description from SP2D if exists
                 val sp2d = docs.find { it.type == DocType.SP2D }
                 val bundleDesc = "Bundle ${sp2d?.documentNumber ?: docs.first().documentNumber}"
                 
                 val bundleResult = transactionBundleRepository.createBundle(
                     description = bundleDesc,
                     documentType = sp2d?.type?.name ?: docs.first().type.name,
-                    year = stagedBox.year.toIntOrNull() ?: 2026
+                    year = stagedBox.year.toIntOrNull() ?: DomainConstants.DEFAULT_YEAR
                 )
                 
-                if (bundleResult is ResultState.Success) {
+                if (bundleResult is DomainResult.Success) {
                     localToRemoteBundleMap[localId] = bundleResult.data
-                } else if (bundleResult is ResultState.Error) {
-                    return ResultState.Error("Gagal membuat bundle transaksi: ${bundleResult.message}")
+                } else if (bundleResult is DomainResult.Error) {
+                    return DomainResult.Error("${DomainConstants.ERROR_BUNDLE_CREATION_FAILED}: ${bundleResult.message}")
                 }
             }
 
-            // 3. Update documents with remote IDs and save to Archive repository
+            // 3. Map documents to final state
             val finalDocs = stagedDocs.map { doc ->
                 doc.copy(
                     idStorageLocation = storageLocationId,
@@ -73,22 +71,19 @@ class BulkInsertArchivesUseCase @Inject constructor(
                 )
             }
 
-            // 4. Save to Archive Repository (it handles local draft + remote sync)
+            // 4. Save and cleanup
             val saveResult = archiveRepository.saveArchives(finalDocs)
             
-            if (saveResult is ResultState.Success) {
+            if (saveResult is DomainResult.Success) {
                 stagingRepository.deleteStagedBox(sessionId)
-                ResultState.Success(Unit)
+                DomainResult.Success(Unit)
             } else {
-                // If it partially failed (saved as local draft), we still consider it "done" for staging
-                // but the repo already returns Success/Error.
-                // In our implementation, saveArchives returns Error if remote fails but local succeeds.
-                // We should only clear staging if local save was successful.
-                stagingRepository.deleteStagedBox(sessionId)
-                saveResult
+                // Keep staging if it failed
+                saveResult as DomainResult.Error
+                DomainResult.Error(saveResult.message)
             }
         } catch (e: Exception) {
-            ResultState.Error(e.message ?: "Gagal melakukan bulk insert")
+            DomainResult.Error(e.message ?: DomainConstants.ERROR_BULK_INSERT_FAILED)
         }
     }
 }

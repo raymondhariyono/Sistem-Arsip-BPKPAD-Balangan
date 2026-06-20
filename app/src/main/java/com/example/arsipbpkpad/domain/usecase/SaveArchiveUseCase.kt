@@ -1,14 +1,17 @@
 package com.example.arsipbpkpad.domain.usecase
 
-import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import javax.inject.Inject
 
+/**
+ * UseCase for saving an archive document.
+ */
 class SaveArchiveUseCase @Inject constructor(
     private val repository: ArchiveRepository
 ) {
-    suspend operator fun invoke(archive: ArchiveDocument): ResultState<Unit> {
+    suspend operator fun invoke(archive: ArchiveDocument): DomainResult<Unit> {
         return repository.saveArchive(archive)
     }
 }

@@ -4,6 +4,10 @@ import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.StagedBox
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Interface for staging operations.
+ * Manages temporary storage of boxes and documents before they are finalized.
+ */
 interface StagingRepository {
     // Box Management
     fun getAllStagedBoxes(): Flow<List<StagedBox>>

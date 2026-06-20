@@ -1,28 +1,44 @@
 package com.example.arsipbpkpad.domain.repository
 
-import androidx.paging.PagingData
-import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.ClassificationCode
+import com.example.arsipbpkpad.domain.model.DomainResult
+import com.example.arsipbpkpad.domain.model.YearStats
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Repository interface for archive operations.
+ * Uses DomainResult and avoids paging dependencies in the interface where possible
+ * (PagingData is typically presentation/data layer, but some architectures keep it in domain.
+ * Here we lean towards purity).
+ */
 interface ArchiveRepository {
-    fun getArchives(query: String? = null, years: List<Int> = emptyList()): Flow<PagingData<ArchiveDocument>>
-    fun getArchivesList(query: String? = null, years: List<Int> = emptyList()): Flow<ResultState<List<ArchiveDocument>>>
-    fun getArchiveDetail(id: String): Flow<ResultState<ArchiveDocument>>
+    // Note: PagingData is removed from the domain interface to maintain purity.
+    // If paging is strictly required in domain, we'd need a domain abstraction.
+    // For now, we use Flow<List<ArchiveDocument>> or specialized results.
+    fun getArchivesFlow(query: String? = null, years: List<Int> = emptyList()): Flow<List<ArchiveDocument>>
+    
+    fun getArchivesList(query: String? = null, years: List<Int> = emptyList()): Flow<DomainResult<List<ArchiveDocument>>>
+    fun getArchiveDetail(id: String): Flow<DomainResult<ArchiveDocument>>
+    
     suspend fun checkDocumentNumberAndTypeExists(docNumber: String, copyType: String): Boolean
     suspend fun checkDocumentNumberExists(docNumber: String): Boolean
-    suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit>
-    suspend fun saveArchives(archives: List<ArchiveDocument>): ResultState<Unit>
-    suspend fun deleteArchive(id: String): ResultState<Unit>
-    suspend fun syncArchives(): ResultState<Unit>
-    suspend fun syncPendingArchives(): ResultState<Unit>
+    
+    suspend fun saveArchive(archive: ArchiveDocument): DomainResult<Unit>
+    suspend fun saveArchives(archives: List<ArchiveDocument>): DomainResult<Unit>
+    suspend fun deleteArchive(id: String): DomainResult<Unit>
+    
+    suspend fun syncArchives(): DomainResult<Unit>
+    suspend fun syncPendingArchives(): DomainResult<Unit>
+    
     fun getArchivedYears(): Flow<List<Int>>
-    fun getYearStats(): Flow<List<com.example.arsipbpkpad.domain.model.YearStats>>
+    fun getYearStats(): Flow<List<YearStats>>
     fun getArchivesByBundleId(bundleId: String): Flow<List<ArchiveDocument>>
-    fun getTotalBudgetByYear(year: Int): Flow<ResultState<Double>>
-    suspend fun uploadImage(id: String, imageByteArray: ByteArray): ResultState<String>
+    
+    fun getTotalBudgetByYear(year: Int): Flow<DomainResult<Double>>
+    suspend fun uploadImage(id: String, imageByteArray: ByteArray): DomainResult<String>
     
     // Master Data
-    suspend fun syncClassificationCodes(): ResultState<Unit>
-    fun observeClassificationCodes(): Flow<List<com.example.arsipbpkpad.domain.model.ClassificationCode>>
+    suspend fun syncClassificationCodes(): DomainResult<Unit>
+    fun observeClassificationCodes(): Flow<List<ClassificationCode>>
 }

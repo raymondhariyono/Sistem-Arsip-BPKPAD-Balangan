@@ -162,4 +162,23 @@
     <string name="total_budget_label">Total Anggaran</string>
     <string name="budget_helper_text">Total akumulasi dari semua arsip keuangan.</string>
 
+    <!-- Navigation Routes and Keys -->
+    <string name="route_archive_flow">archive_flow</string>
+    <string name="nav_home_id">home</string>
+    <string name="nav_archive_id">archive</string>
+    <string name="nav_add_id">add</string>
+    <string name="nav_analytics_id">analytics</string>
+    <string name="key_session_id">sessionId</string>
+    <string name="key_archive_id">archiveId</string>
+    <string name="key_ocr_result">ocr_result</string>
+
+    <!-- Dashboard/Detail Labels -->
+    <string name="overview">Overview</string>
+    <string name="status_gudang">di Gudang</string>
+    <string name="status_keluar">di Pinjam</string>
+    <string name="header_id">ID</string>
+    <string name="header_title">TITLE</string>
+    <string name="header_type">TIPE</string>
+    <string name="header_status">STATUS</string>
+
 </resources>
