@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+/**
+ * Implementation of StagingRepository.
+ * Stripped of logic that can be handled by domain, though it mostly deals with Room.
+ */
 class StagingRepositoryImpl @Inject constructor(
     private val stagingArchiveDao: StagingArchiveDao
 ) : StagingRepository {

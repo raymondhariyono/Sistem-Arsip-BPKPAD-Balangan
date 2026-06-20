@@ -1,31 +1,29 @@
 package com.example.arsipbpkpad.data.repository
 
-import com.example.arsipbpkpad.core.common.ResultState
+import com.example.arsipbpkpad.data.remote.dto.TransactionBundleDto
+import com.example.arsipbpkpad.data.util.safeApiCall
+import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.TransactionBundleRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Inject
+import javax.inject.Named
 
-@Serializable
-data class TransactionBundleDto(
-    @SerialName("id") val id: String? = null,
-    @SerialName("description") val description: String? = null,
-    @SerialName("document_type") val documentType: String,
-    @SerialName("year") val year: Int
-)
-
+/**
+ * Implementation of TransactionBundleRepository using Supabase.
+ */
 class TransactionBundleRepositoryImpl @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    private val supabaseClient: SupabaseClient,
+    @Named("ioDispatcher") private val ioDispatcher: CoroutineDispatcher
 ) : TransactionBundleRepository {
 
     override suspend fun createBundle(
         description: String?,
         documentType: String,
         year: Int
-    ): ResultState<String> {
-        return try {
+    ): DomainResult<String> {
+        return safeApiCall(ioDispatcher) {
             val bundle = TransactionBundleDto(
                 description = description,
                 documentType = documentType,
@@ -38,9 +36,7 @@ class TransactionBundleRepositoryImpl @Inject constructor(
                 }
                 .decodeSingle<TransactionBundleDto>()
 
-            ResultState.Success(inserted.id!!)
-        } catch (e: Exception) {
-            ResultState.Error(e.message ?: "Failed to create transaction bundle")
+            inserted.id!!
         }
     }
 }

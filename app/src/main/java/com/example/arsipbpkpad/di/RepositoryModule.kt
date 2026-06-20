@@ -10,6 +10,8 @@ import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import com.example.arsipbpkpad.domain.repository.TransactionBundleRepository
+import com.example.arsipbpkpad.data.repository.OcrRepositoryImpl
+import com.example.arsipbpkpad.domain.repository.OcrRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -48,4 +50,10 @@ abstract class RepositoryModule {
     abstract fun bindTransactionBundleRepository(
         transactionBundleRepositoryImpl: TransactionBundleRepositoryImpl
     ): TransactionBundleRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOcrRepository(
+        ocrRepositoryImpl: OcrRepositoryImpl
+    ): OcrRepository
 }
