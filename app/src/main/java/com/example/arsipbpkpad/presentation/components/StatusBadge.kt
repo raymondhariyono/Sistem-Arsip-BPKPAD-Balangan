@@ -46,23 +46,23 @@ fun RetentionStatusBadge(isExpired: Boolean) {
 
 @Composable
 fun ConditionBadge(condition: String) {
-    val backgroundColor = when (condition.uppercase()) {
-        "GOOD" -> DarkGreen
-        "DAMAGED" -> Color(0xFFFFA000) // Amber
-        "LOST" -> ErrorRed
-        else -> MaterialTheme.colorScheme.secondary
+    val (backgroundColor, text) = when (condition.uppercase()) {
+        "GOOD" -> DarkGreen to "BAIK"
+        "DAMAGED" -> Color(0xFFFFA000) to "RUSAK" // Amber
+        "LOST" -> ErrorRed to "HILANG"
+        else -> MaterialTheme.colorScheme.secondary to condition
     }
-    StatusBadge(text = condition, backgroundColor = backgroundColor, textColor = White)
+    StatusBadge(text = text, backgroundColor = backgroundColor, textColor = White)
 }
 
 @Composable
 fun DocStatusBadge(status: String) {
-    val backgroundColor = when (status.uppercase()) {
-        "AVAILABLE" -> DarkGreen
-        "BORROWED" -> Color(0xFF1976D2) // Blue
-        "DISPOSED" -> Color(0xFF757575) // Grey
-        "UNVERIFIED" -> Color(0xFFFFA000) // Amber
-        else -> MaterialTheme.colorScheme.secondary
+    val (backgroundColor, text) = when (status.uppercase()) {
+        "AVAILABLE" -> DarkGreen to "TERSEDIA (DI GUDANG)"
+        "BORROWED" -> Color(0xFF1976D2) to "DIPINJAM" // Blue
+        "DISPOSED" -> Color(0xFF757575) to "DIMUSNAHKAN" // Grey
+        "UNVERIFIED" -> Color(0xFFFFA000) to "BELUM DIVERIFIKASI" // Amber
+        else -> MaterialTheme.colorScheme.secondary to status
     }
-    StatusBadge(text = status, backgroundColor = backgroundColor, textColor = White)
+    StatusBadge(text = text, backgroundColor = backgroundColor, textColor = White)
 }

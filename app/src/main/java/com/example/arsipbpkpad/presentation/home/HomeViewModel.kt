@@ -79,8 +79,6 @@ class HomeViewModel @Inject constructor(
                                 isLoading = false,
                                 totalDocuments = archives.size.toString(),
                                 expiredDocuments = archives.count { (currentYear - it.year) > 10 }.toString(),
-                                damagedDocuments = archives.count { it.condition == com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED }.toString(),
-                                lostDocuments = archives.count { it.condition == com.example.arsipbpkpad.domain.model.DocCondition.LOST }.toString(),
                                 sppCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPP }.toString(),
                                 spmCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPM }.toString(),
                                 sp2dCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SP2D }.toString(),

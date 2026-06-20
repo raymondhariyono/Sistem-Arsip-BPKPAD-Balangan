@@ -6,8 +6,6 @@ import com.example.arsipbpkpad.domain.model.StagedBox
 data class HomeUiState(
     val totalDocuments: String = "0",
     val expiredDocuments: String = "0",
-    val damagedDocuments: String = "0",
-    val lostDocuments: String = "0",
     val sp2dCount: String = "0",
     val spmCount: String = "0",
     val sppCount: String = "0",

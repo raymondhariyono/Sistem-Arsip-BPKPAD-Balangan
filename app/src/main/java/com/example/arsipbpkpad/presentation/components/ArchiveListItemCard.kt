@@ -24,7 +24,10 @@ import androidx.compose.ui.unit.dp
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 
 @Composable
-fun ArchiveTableHeader() {
+fun ArchiveTableHeader(
+    showCondition: Boolean = true,
+    showStatus: Boolean = true
+) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth()
@@ -39,13 +42,19 @@ fun ArchiveTableHeader() {
             VerticalDivider()
             HeaderCell(text = "Kode", weight = 0.20f)
             VerticalDivider()
-            HeaderCell(text = "No Dokumen", weight = 0.30f)
+            HeaderCell(text = "No Dokumen", weight = if (showCondition || showStatus) 0.30f else 0.60f)
             VerticalDivider()
             HeaderCell(text = "Thn", weight = 0.12f)
-            VerticalDivider()
-            HeaderCell(text = "Kondisi", weight = 0.15f)
-            VerticalDivider()
-            HeaderCell(text = "Status", weight = 0.15f)
+            
+            if (showCondition) {
+                VerticalDivider()
+                HeaderCell(text = "Kondisi", weight = 0.15f)
+            }
+            
+            if (showStatus) {
+                VerticalDivider()
+                HeaderCell(text = "Status", weight = 0.15f)
+            }
         }
     }
 }
@@ -69,6 +78,8 @@ fun ArchiveListItemCard(
     no: Int,
     archive: ArchiveDocument,
     onClick: () -> Unit,
+    showCondition: Boolean = true,
+    showStatus: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (no % 2 == 0) {
@@ -95,28 +106,32 @@ fun ArchiveListItemCard(
             VerticalDivider()
 
             // 3. No Dokumen
-            TableCell(text = archive.documentNumber ?: "-", weight = 0.30f, textAlign = TextAlign.Start)
+            TableCell(text = archive.documentNumber ?: "-", weight = if (showCondition || showStatus) 0.30f else 0.60f, textAlign = TextAlign.Start)
             VerticalDivider()
 
             // 4. Tahun
             TableCell(text = archive.year.toString(), weight = 0.12f)
-            VerticalDivider()
 
             // 5. Kondisi
-            Box(
-                modifier = Modifier.weight(0.15f),
-                contentAlignment = Alignment.Center
-            ) {
-                ConditionBadge(condition = archive.condition.name)
+            if (showCondition) {
+                VerticalDivider()
+                Box(
+                    modifier = Modifier.weight(0.15f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ConditionBadge(condition = archive.condition.name)
+                }
             }
-            VerticalDivider()
 
             // 6. Status
-            Box(
-                modifier = Modifier.weight(0.15f),
-                contentAlignment = Alignment.Center
-            ) {
-                DocStatusBadge(status = archive.status.name)
+            if (showStatus) {
+                VerticalDivider()
+                Box(
+                    modifier = Modifier.weight(0.15f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    DocStatusBadge(status = archive.status.name)
+                }
             }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

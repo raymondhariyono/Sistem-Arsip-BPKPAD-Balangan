@@ -120,6 +120,9 @@ fun AppNavHost(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToArchive = { id ->
                         navController.navigate(Screen.ArchiveDetail.createRoute(id))
+                    },
+                    onNavigateToEdit = { id ->
+                        navController.navigate(Screen.EditArchive.createRoute(id))
                     }
                 )
             }
@@ -170,6 +173,43 @@ fun AppNavHost(
 
                 RapidInputScreen(
                     sessionId = sessionId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToScan = {
+                        navController.navigate(Screen.Scan.route)
+                    },
+                    onNavigateToBottomNav = { item ->
+                        when (item.route) {
+                            navHomeId -> navController.navigate(Screen.Home.route)
+                            navArchiveId -> navController.navigate(archiveFlowRoute)
+                            navAddId -> navController.navigate(Screen.StagingBoxList.route)
+                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
+                        }
+                    },
+                    viewModel = rapidInputViewModel
+                )
+            }
+
+            composable(
+                route = Screen.EditArchive.route,
+                arguments = listOf(
+                    androidx.navigation.navArgument("archiveId") {
+                        type = androidx.navigation.NavType.StringType
+                    }
+                )
+            ) { entry ->
+                val rapidInputViewModel: RapidInputViewModel = hiltViewModel()
+
+                val ocrResult by entry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>(ocrResultKey, null).collectAsStateWithLifecycle()
+
+                LaunchedEffect(ocrResult) {
+                    ocrResult?.let {
+                        rapidInputViewModel.onEvent(RapidInputUiEvent.OnOcrResultReceived(it))
+                        entry.savedStateHandle[ocrResultKey] = null
+                    }
+                }
+
+                RapidInputScreen(
+                    sessionId = "",
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToScan = {
                         navController.navigate(Screen.Scan.route)

@@ -66,6 +66,7 @@ class BulkInsertArchivesUseCase @Inject constructor(
             // 3. Map documents to final state
             val finalDocs = stagedDocs.map { doc ->
                 doc.copy(
+                    status = com.example.arsipbpkpad.domain.model.DocStatus.AVAILABLE,
                     idStorageLocation = storageLocationId,
                     bundleId = if (doc.bundleId != null) localToRemoteBundleMap[doc.bundleId] else null
                 )

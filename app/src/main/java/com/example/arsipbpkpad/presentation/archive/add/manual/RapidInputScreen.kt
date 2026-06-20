@@ -107,7 +107,8 @@ fun RapidInputScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showClassificationSheet by remember { mutableStateOf(false) }
-    var showStagingConfirmDialog by remember { mutableStateOf(false) }
+    var showUploadConfirmDialog by remember { mutableStateOf(false) }
+    var showEditConfirmDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -126,17 +127,31 @@ fun RapidInputScreen(
         )
     }
 
-    if (showStagingConfirmDialog) {
+    if (showUploadConfirmDialog) {
         BpkpadConfirmDialog(
-            title = stringResource(R.string.title_add_to_staging),
+            title = stringResource(R.string.btn_push_to_db),
             message = stringResource(R.string.msg_confirm_staging),
             confirmText = stringResource(R.string.btn_confirm),
             dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
-                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
-                showStagingConfirmDialog = false
+                uiState.currentSessionId?.let { viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) }
+                showUploadConfirmDialog = false
             },
-            onDismiss = { showStagingConfirmDialog = false }
+            onDismiss = { showUploadConfirmDialog = false }
+        )
+    }
+
+    if (showEditConfirmDialog) {
+        BpkpadConfirmDialog(
+            title = "Simpan Perubahan?",
+            message = "Apakah Anda yakin ingin menyimpan perubahan pada data arsip ini?",
+            confirmText = "Simpan",
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = {
+                viewModel.onEvent(RapidInputUiEvent.OnSaveArchiveUpdate)
+                showEditConfirmDialog = false
+            },
+            onDismiss = { showEditConfirmDialog = false }
         )
     }
 
@@ -209,7 +224,9 @@ fun RapidInputScreen(
                 stagedCount = uiState.stagedDocuments.size,
                 isLoading = uiState.isLoading,
                 onUploadClick = { 
-                    uiState.currentSessionId?.let { viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) }
+                    if (uiState.stagedDocuments.isNotEmpty()) {
+                        showUploadConfirmDialog = true
+                    }
                 },
                 onExitClick = onNavigateBack,
                 onNavigateToBottomNav = onNavigateToBottomNav
@@ -234,12 +251,13 @@ fun RapidInputScreen(
                     onSubjectChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
                     onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
                     onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
+                    onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
                     onClassificationClick = { showClassificationSheet = true },
                     onAddOrUpdateClick = { 
-                        if (uiState.editingId != null) {
-                            viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                        if (uiState.editingId != null && sessionId.isEmpty()) {
+                            showEditConfirmDialog = true
                         } else {
-                            showStagingConfirmDialog = true 
+                            viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
                         }
                     },
                     onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
@@ -414,6 +432,7 @@ fun RapidInputForm(
     onSubjectChange: (String) -> Unit,
     onSpjDescriptionChange: (String) -> Unit,
     onNominalChange: (String) -> Unit,
+    onConditionChange: (com.example.arsipbpkpad.domain.model.DocCondition) -> Unit,
     onClassificationClick: () -> Unit,
     onAddOrUpdateClick: () -> Unit,
     onCancelEditClick: () -> Unit
@@ -542,6 +561,40 @@ fun RapidInputForm(
                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 placeholder = stringResource(R.string.placeholder_nominal)
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Kondisi Dokumen",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.GOOD,
+                    onClick = { onConditionChange(com.example.arsipbpkpad.domain.model.DocCondition.GOOD) },
+                    label = { Text("Baik") },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = if (uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.GOOD) {
+                        { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null
+                )
+                FilterChip(
+                    selected = uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED,
+                    onClick = { onConditionChange(com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED) },
+                    label = { Text("Rusak") },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = if (uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED) {
+                        { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

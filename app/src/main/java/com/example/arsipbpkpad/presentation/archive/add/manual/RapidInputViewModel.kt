@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -52,6 +53,7 @@ data class RapidInputUiState(
     val subject: String = "",
     val spjDescription: String = "",
     val nominal: String = "",
+    val condition: DocCondition = DocCondition.GOOD,
     val isAutoBundleEnabled: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -86,6 +88,7 @@ sealed class RapidInputUiEvent {
     data class OnSubjectChange(val value: String) : RapidInputUiEvent()
     data class OnSpjDescriptionChange(val value: String) : RapidInputUiEvent()
     data class OnNominalChange(val value: String) : RapidInputUiEvent()
+    data class OnConditionChange(val value: DocCondition) : RapidInputUiEvent()
     data class OnClassificationCodeChange(val value: String) : RapidInputUiEvent()
     data class OnClassificationSearchQueryChanged(val query: String) : RapidInputUiEvent()
     data class OnQuickCategorySelected(val category: ClassificationCode?) : RapidInputUiEvent()
@@ -100,6 +103,7 @@ sealed class RapidInputUiEvent {
     data class OnDeleteBoxSession(val sessionId: String) : RapidInputUiEvent()
     data class OnConfirmUpload(val sessionId: String) : RapidInputUiEvent()
     data object OnConfirmAllUpload : RapidInputUiEvent()
+    data object OnSaveArchiveUpdate : RapidInputUiEvent()
     data object DismissSuccess : RapidInputUiEvent()
     data object DismissError : RapidInputUiEvent()
     data object DismissWarning : RapidInputUiEvent()
@@ -110,6 +114,7 @@ class RapidInputViewModel @Inject constructor(
     private val stagingRepository: StagingRepository,
     private val archiveRepository: ArchiveRepository,
     private val bulkInsertArchivesUseCase: BulkInsertArchivesUseCase,
+    private val getArchiveDetailUseCase: com.example.arsipbpkpad.domain.usecase.GetArchiveDetailUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -125,7 +130,10 @@ class RapidInputViewModel @Inject constructor(
         syncClassificationCodes()
         
         val boxSessionId: String? = savedStateHandle["sessionId"]
-        boxSessionId?.let { onEvent(RapidInputUiEvent.SetCurrentSession(it)) }
+        val archiveId: String? = savedStateHandle["archiveId"]
+        
+        boxSessionId?.let { if (it.isNotEmpty()) onEvent(RapidInputUiEvent.SetCurrentSession(it)) }
+        archiveId?.let { if (it.isNotEmpty()) loadArchiveForEditing(it) }
     }
 
     private fun syncClassificationCodes() {
@@ -185,6 +193,7 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value) }
             is RapidInputUiEvent.OnSpjDescriptionChange -> _uiState.update { it.copy(spjDescription = event.value) }
             is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value) }
+            is RapidInputUiEvent.OnConditionChange -> _uiState.update { it.copy(condition = event.value) }
             is RapidInputUiEvent.OnClassificationCodeChange -> _uiState.update { it.copy(classificationCode = event.value) }
             is RapidInputUiEvent.OnClassificationSearchQueryChanged -> _uiState.update { it.copy(classificationSearchQuery = event.query) }
             is RapidInputUiEvent.OnQuickCategorySelected -> handleQuickCategorySelected(event.category)
@@ -197,6 +206,7 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.CancelEditing -> cancelEditing()
             is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload(event.sessionId)
             is RapidInputUiEvent.OnConfirmAllUpload -> uploadAllBoxes()
+            is RapidInputUiEvent.OnSaveArchiveUpdate -> updateExistingArchive()
             is RapidInputUiEvent.OnDeleteBoxSession -> viewModelScope.launch { stagingRepository.deleteStagedBox(event.sessionId) }
             is RapidInputUiEvent.TriggerSync -> viewModelScope.launch { archiveRepository.syncPendingArchives() }
             is RapidInputUiEvent.DismissSuccess -> handleDismissSuccess()
@@ -368,7 +378,7 @@ class RapidInputViewModel @Inject constructor(
             description = state.subject,
             nominal = state.nominal.toDoubleOrNull(),
             year = state.boxContext.year.toIntOrNull() ?: DomainConstants.DEFAULT_YEAR,
-            condition = DocCondition.GOOD,
+            condition = state.condition,
             status = DocStatus.UNVERIFIED,
             metadata = ArchiveMetadata(warehouse = state.boxContext.warehouse, rack = state.boxContext.rack, boxNumber = state.boxContext.box),
             idStorageLocation = null,
@@ -386,6 +396,7 @@ class RapidInputViewModel @Inject constructor(
             documentNumber = doc.documentNumber ?: "",
             subject = doc.description ?: "",
             nominal = doc.nominal?.toString() ?: "",
+            condition = doc.condition,
             isAutoBundleEnabled = false
         ) }
     }
@@ -393,9 +404,79 @@ class RapidInputViewModel @Inject constructor(
     private fun cancelEditing() {
         _uiState.update { it.copy(
             editingId = null, documentNumber = "", spmDocumentNumber = "", subject = "",
-            spjDescription = "", nominal = "", isAutoBundleEnabled = false,
+            spjDescription = "", nominal = "", condition = DocCondition.GOOD, isAutoBundleEnabled = false,
             validationErrors = emptyMap(), error = null
         ) }
+    }
+
+    private fun updateExistingArchive() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val archiveId = state.editingId ?: return@launch
+            
+            _uiState.update { it.copy(isLoading = true) }
+            
+            // Re-fetch to get original non-form fields (like createdAt, status, etc)
+            val result = getArchiveDetailUseCase(archiveId).first()
+            if (result is DomainResult.Success) {
+                val original = result.data
+                val updated = original.copy(
+                    type = state.docType,
+                    documentNumber = state.documentNumber,
+                    classificationCode = state.classificationCode,
+                    copyType = state.copyType,
+                    copyCount = state.copyCount.toIntOrNull() ?: original.copyCount,
+                    description = state.subject,
+                    nominal = state.nominal.toDoubleOrNull(),
+                    condition = state.condition
+                )
+                
+                val saveResult = archiveRepository.saveArchives(listOf(updated))
+                if (saveResult is DomainResult.Success) {
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        isUploadSuccess = true,
+                        successMessage = UiText.DynamicString("Data Berhasil Diperbarui")
+                    ) }
+                } else {
+                    _uiState.update { it.copy(isLoading = false, error = (saveResult as DomainResult.Error).message) }
+                }
+            } else {
+                _uiState.update { it.copy(isLoading = false, error = (result as DomainResult.Error).message) }
+            }
+        }
+    }
+
+    private fun loadArchiveForEditing(archiveId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            getArchiveDetailUseCase(archiveId).collect { result ->
+                if (result is DomainResult.Success) {
+                    val doc = result.data
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        editingId = doc.id,
+                        docType = doc.type,
+                        copyType = doc.copyType,
+                        copyCount = doc.copyCount.toString(),
+                        classificationCode = doc.classificationCode,
+                        documentNumber = doc.documentNumber ?: "",
+                        subject = doc.description ?: "",
+                        nominal = doc.nominal?.toLong()?.toString() ?: "",
+                        condition = doc.condition,
+                        boxContext = BoxContext(
+                            warehouse = doc.metadata?.warehouse ?: "",
+                            rack = doc.metadata?.rack ?: "",
+                            box = doc.metadata?.boxNumber ?: "",
+                            year = doc.year.toString()
+                        ),
+                        isBoxContextSet = true
+                    ) }
+                } else {
+                    _uiState.update { it.copy(isLoading = false, error = (result as DomainResult.Error).message) }
+                }
+            }
+        }
     }
 
     private fun executeBulkUpload(sessionId: String) {

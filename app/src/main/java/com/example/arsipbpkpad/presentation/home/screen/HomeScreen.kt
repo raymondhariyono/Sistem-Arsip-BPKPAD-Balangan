@@ -238,21 +238,6 @@ fun HomeSecondaryStats(uiState: HomeUiState) {
                 label = stringResource(R.string.type_spj)
             )
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            SecondaryStatCard(
-                modifier = Modifier.weight(1f),
-                count = uiState.damagedDocuments,
-                label = stringResource(R.string.type_damaged)
-            )
-            SecondaryStatCard(
-                modifier = Modifier.weight(1f),
-                count = uiState.lostDocuments,
-                label = stringResource(R.string.type_lost)
-            )
-        }
     }
 }
 

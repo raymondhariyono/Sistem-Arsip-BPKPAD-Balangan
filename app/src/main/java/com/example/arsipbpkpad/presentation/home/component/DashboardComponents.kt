@@ -173,13 +173,15 @@ fun RecentArchiveTable(items: List<ArchiveDocument>, onArchiveClick: (String) ->
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
     ) {
-        ArchiveTableHeader()
+        ArchiveTableHeader(showCondition = false, showStatus = false)
 
         items.forEachIndexed { index, item ->
             ArchiveListItemCard(
                 no = index + 1,
                 archive = item,
-                onClick = { onArchiveClick(item.id) }
+                onClick = { onArchiveClick(item.id) },
+                showCondition = false,
+                showStatus = false
             )
         }
         
