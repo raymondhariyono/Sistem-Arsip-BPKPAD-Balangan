@@ -30,6 +30,8 @@ class ArchiveListViewModel @Inject constructor(
     private val getArchivesUseCase: GetArchivesUseCase,
     private val getArchivedYearsUseCase: GetArchivedYearsUseCase,
     private val getYearStatsUseCase: GetYearStatsUseCase,
+    private val importArchivesUseCase: com.example.arsipbpkpad.domain.usecase.ImportArchivesUseCase,
+    private val exportArchivesUseCase: com.example.arsipbpkpad.domain.usecase.ExportArchivesUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -135,6 +137,31 @@ class ArchiveListViewModel @Inject constructor(
             is ArchiveListUiEvent.OnResetFilter -> {
                 _isFilterConfirmed.value = false
                 _uiState.update { it.copy(isFilterConfirmed = false, selectedYears = emptySet()) }
+            }
+            is ArchiveListUiEvent.ImportExcel -> {
+                viewModelScope.launch {
+                    _uiState.update { it.copy(isLoading = true) }
+                    val result = importArchivesUseCase(event.inputStream)
+                    when (result) {
+                        is com.example.arsipbpkpad.domain.model.DomainResult.Success -> {
+                            _uiState.update { it.copy(isLoading = false, excelOperationMessage = "Import Successful") }
+                        }
+                        is com.example.arsipbpkpad.domain.model.DomainResult.Error -> {
+                            _uiState.update { it.copy(isLoading = false, excelOperationMessage = result.message) }
+                        }
+                    }
+                }
+            }
+            is ArchiveListUiEvent.ExportExcel -> {
+                viewModelScope.launch {
+                    _uiState.update { it.copy(isLoading = true) }
+                    try {
+                        exportArchivesUseCase(event.outputStream, _selectedYears.value.toList())
+                        _uiState.update { it.copy(isLoading = false, excelOperationMessage = "Export Successful") }
+                    } catch (e: Exception) {
+                        _uiState.update { it.copy(isLoading = false, excelOperationMessage = e.message) }
+                    }
+                }
             }
             else -> {}
         }

@@ -9,4 +9,6 @@ sealed class ArchiveListUiEvent {
     data object OnSelectAllYears : ArchiveListUiEvent()
     data object OnConfirmFilter : ArchiveListUiEvent()
     data object OnResetFilter : ArchiveListUiEvent()
+    data class ImportExcel(val inputStream: java.io.InputStream) : ArchiveListUiEvent()
+    data class ExportExcel(val outputStream: java.io.OutputStream) : ArchiveListUiEvent()
 }

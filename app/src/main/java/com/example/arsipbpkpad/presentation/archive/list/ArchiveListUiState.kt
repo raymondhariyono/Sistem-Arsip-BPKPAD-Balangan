@@ -8,5 +8,6 @@ data class ArchiveListUiState(
     val selectedYears: Set<Int> = emptySet(),
     val isFilterConfirmed: Boolean = false,
     val availableYears: List<Int> = emptyList(),
-    val yearStats: List<com.example.arsipbpkpad.domain.model.YearStats> = emptyList()
+    val yearStats: List<com.example.arsipbpkpad.domain.model.YearStats> = emptyList(),
+    val excelOperationMessage: String? = null
 )

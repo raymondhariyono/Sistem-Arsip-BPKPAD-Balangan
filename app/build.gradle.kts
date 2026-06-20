@@ -114,6 +114,10 @@ dependencies {
     // Accompanist
     implementation(libs.accompanist.permissions)
 
+    // Excel
+    implementation(libs.poi)
+    implementation(libs.poi.ooxml)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -1,7 +1,11 @@
 package com.example.arsipbpkpad.presentation.archive.list
 
 import android.content.res.Configuration
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -26,10 +31,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,19 +46,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,7 +93,36 @@ fun ArchiveListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val stagingState by stagingViewModel.uiState.collectAsStateWithLifecycle()
     val archives by viewModel.archivesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    
+
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.openInputStream(it)?.let { inputStream ->
+                viewModel.onEvent(ArchiveListUiEvent.ImportExcel(inputStream))
+            }
+        }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.let { outputStream ->
+                viewModel.onEvent(ArchiveListUiEvent.ExportExcel(outputStream))
+            }
+        }
+    }
+
+    LaunchedEffect(uiState.excelOperationMessage) {
+        uiState.excelOperationMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     LaunchedEffect(year) {
         if (year != null) {
             viewModel.updateInitialYear(year)
@@ -102,9 +145,16 @@ fun ArchiveListScreen(
                     } else {
                         onNavigateBack()
                     }
+                },
+                onImportClick = {
+                    importLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                },
+                onExportClick = {
+                    exportLauncher.launch("Arsip_${System.currentTimeMillis()}.xlsx")
                 }
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             BpkpadBottomNavigation(
                 currentRoute = BottomNavItem.ARCHIVE.route,
@@ -114,7 +164,9 @@ fun ArchiveListScreen(
         floatingActionButton = {
             if (uiState.isFilterConfirmed) {
                 BpkpadExpandableFAB(
-                    onManualInputClick = { onNavigateToBottomNav(BottomNavItem.ADD) },
+                    onManualInputClick = { 
+                        onNavigateToBottomNav(BottomNavItem.ADD)
+                    },
                     onOcrScanClick = onNavigateToScan
                 )
             }
@@ -125,23 +177,36 @@ fun ArchiveListScreen(
                 YearSelectionGrid(
                     availableYears = uiState.availableYears,
                     yearStats = uiState.yearStats,
-                    onYearClick = { viewModel.updateInitialYear(it) }
+                    onYearClick = { viewModel.onEvent(ArchiveListUiEvent.OnYearToggle(it)) }
                 )
             } else {
                 ArchiveListContentOnly(
                     uiState = uiState,
                     archives = archives,
-                    onSearchQueryChange = { viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(it)) },
-                    onFilterChange = { viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(it)) },
+                    onSearchQueryChange = { query -> 
+                        viewModel.onEvent(ArchiveListUiEvent.OnSearchQueryChange(query)) 
+                    },
+                    onFilterChange = { type ->
+                        viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
+                    },
                     onArchiveClick = onNavigateToDetail
                 )
+            }
+            
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
     }
 }
 
 @Composable
-fun ArchiveListTopBar(isFilterConfirmed: Boolean, onBackClick: () -> Unit) {
+fun ArchiveListTopBar(
+    isFilterConfirmed: Boolean,
+    onBackClick: () -> Unit,
+    onImportClick: () -> Unit,
+    onExportClick: () -> Unit
+) {
     com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
         title = {
             Text(
@@ -156,6 +221,22 @@ fun ArchiveListTopBar(isFilterConfirmed: Boolean, onBackClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onImportClick) {
+                Icon(
+                    imageVector = Icons.Default.FileUpload,
+                    contentDescription = "Import Excel",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = onExportClick) {
+                Icon(
+                    imageVector = Icons.Default.FileDownload,
+                    contentDescription = "Export Excel",
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
