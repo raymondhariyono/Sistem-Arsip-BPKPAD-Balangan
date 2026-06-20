@@ -22,13 +22,14 @@ import com.example.arsipbpkpad.presentation.archive.add.manual.StagingBoxListScr
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
 import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
+import com.example.arsipbpkpad.presentation.auth.screen.LoginScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
 
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Home.route
+    startDestination: String = Screen.Login.route
 ) {
     val archiveFlowRoute = stringResource(R.string.route_archive_flow)
     val navHomeId = stringResource(R.string.nav_home_id)
@@ -44,6 +45,16 @@ fun AppNavHost(
         navController = navController,
         startDestination = startDestination
     ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToArchiveList = { year ->
