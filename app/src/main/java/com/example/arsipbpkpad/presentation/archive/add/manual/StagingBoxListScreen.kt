@@ -83,9 +83,10 @@ fun StagingBoxListScreen(
         }
     }
 
+    val errorTitle = stringResource(R.string.title_error)
     LaunchedEffect(uiState.isUploadSuccess, uiState.error) {
         if (uiState.error != null) {
-            snackbarHostState.showSnackbar("Error: ${uiState.error}")
+            snackbarHostState.showSnackbar("$errorTitle: ${uiState.error}")
         }
     }
 
@@ -111,7 +112,7 @@ fun StagingBoxListScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Staging Status",
+                            text = stringResource(R.string.staging_status_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -128,7 +129,7 @@ fun StagingBoxListScreen(
                         enabled = !uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty()
                     ) {
                         Text(
-                            text = if (uiState.isLoading) "Processing..." else "Push All to\nDatabase",
+                            text = if (uiState.isLoading) stringResource(R.string.btn_processing) else stringResource(R.string.btn_push_to_db).replace(" ", "\n"),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = if (uiState.existingStagedBoxes.isNotEmpty() && !uiState.isLoading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
@@ -141,7 +142,7 @@ fun StagingBoxListScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Sync Drafts",
+                            contentDescription = stringResource(R.string.btn_sync),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -203,8 +204,8 @@ fun StagingBoxListScreen(
             if (boxToDelete != null) {
                 AlertDialog(
                     onDismissRequest = { boxToDelete = null },
-                    title = { Text("Hapus Staging Box") },
-                    text = { Text("Apakah Anda yakin ingin menghapus box ini dari staging? Data dokumen di dalamnya akan hilang.") },
+                    title = { Text(stringResource(R.string.title_delete_staging_box)) },
+                    text = { Text(stringResource(R.string.msg_delete_staging_box)) },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -213,12 +214,12 @@ fun StagingBoxListScreen(
                             },
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) {
-                            Text("Hapus")
+                            Text(stringResource(R.string.btn_delete))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { boxToDelete = null }) {
-                            Text("Batal")
+                            Text(stringResource(R.string.btn_cancel))
                         }
                     }
                 )
@@ -229,7 +230,7 @@ fun StagingBoxListScreen(
     // Task 1 Dialogs
     uiState.successMessage?.let { msg ->
         StatusDialog(
-            title = "Berhasil",
+            title = stringResource(R.string.title_success),
             message = msg,
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissSuccess) },
             isSuccess = true
@@ -238,7 +239,7 @@ fun StagingBoxListScreen(
 
     uiState.error?.let { msg ->
         StatusDialog(
-            title = "Kesalahan",
+            title = stringResource(R.string.title_error),
             message = msg,
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissError) },
             isSuccess = false
@@ -247,7 +248,7 @@ fun StagingBoxListScreen(
 
     uiState.warningMessage?.let { msg ->
         StatusDialog(
-            title = "Peringatan",
+            title = stringResource(R.string.title_warning),
             message = msg,
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
             isSuccess = null
@@ -306,25 +307,25 @@ fun DashboardStagedBoxCard(
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Box ${box.box}",
+                    text = stringResource(R.string.label_box_number, box.box),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Text(
-                    text = "Waiting for upload • ${box.itemCount} documents",
+                    text = stringResource(R.string.label_waiting_upload, box.itemCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    text = "${box.warehouse} - Rak ${box.rack} (${box.year})",
+                    text = stringResource(R.string.label_box_location, box.warehouse, box.rack, box.year),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
                 )
             }
 
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -350,13 +351,13 @@ fun DashboardSummary(uiState: RapidInputUiState) {
             ) {
                 Column {
                     Text(
-                        text = "$totalItems items in staging •",
+                        text = stringResource(R.string.label_items_in_staging, totalItems),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "$filledBoxes / ${uiState.existingStagedBoxes.size} Box Terisi",
+                        text = stringResource(R.string.label_boxes_filled, filledBoxes, uiState.existingStagedBoxes.size),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -409,7 +410,7 @@ fun EmptyStagingContent() {
         }
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Belum Ada Box di Staging",
+            text = stringResource(R.string.empty_staging_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -417,7 +418,7 @@ fun EmptyStagingContent() {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Gunakan tombol + untuk membuat box baru dan mulai memasukkan data arsip secara masal.",
+            text = stringResource(R.string.empty_staging_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -448,7 +449,7 @@ fun AddBoxDialog(
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = "Inisialisasi Box Baru",
+                    text = stringResource(R.string.title_init_new_box),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -456,29 +457,29 @@ fun AddBoxDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                     FormTextField(
-                        label = "Gudang",
+                        label = stringResource(R.string.label_warehouse),
                         value = uiState.boxContext.warehouse,
                         onValueChange = onWarehouseChange,
-                        placeholder = "Contoh: Gedung A / Lantai 2",
+                        placeholder = stringResource(R.string.placeholder_warehouse),
                         error = uiState.validationErrors["warehouse"]
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         FormTextField(
-                            label = "Rak",
+                            label = stringResource(R.string.label_rack),
                             value = uiState.boxContext.rack,
                             onValueChange = onRackChange,
                             modifier = Modifier.weight(1f),
-                            placeholder = "Contoh: R-01",
+                            placeholder = stringResource(R.string.placeholder_rack),
                             error = uiState.validationErrors["rack"]
                         )
                         FormTextField(
-                            label = "Nomor Box",
+                            label = stringResource(R.string.label_box),
                             value = uiState.boxContext.box,
                             onValueChange = onBoxChange,
                             modifier = Modifier.weight(1f),
-                            placeholder = "Contoh: B-101",
+                            placeholder = stringResource(R.string.placeholder_box),
                             error = uiState.validationErrors["box"]
                         )
                     }
@@ -487,7 +488,7 @@ fun AddBoxDialog(
                     val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
                     val years = remember { (1990..currentYear).reversed().map { it.toString() } }
                     FormDropdownField(
-                        label = "Tahun Dokumen",
+                        label = stringResource(R.string.label_doc_year),
                         value = uiState.boxContext.year,
                         options = years,
                         onOptionSelected = onYearChange,
@@ -512,7 +513,7 @@ fun AddBoxDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Batal")
+                        Text(stringResource(R.string.btn_cancel))
                     }
                     Button(
                         onClick = onConfirm,
@@ -520,7 +521,7 @@ fun AddBoxDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Buat & Input")
+                        Text(stringResource(R.string.btn_create_input))
                     }
                 }
             }

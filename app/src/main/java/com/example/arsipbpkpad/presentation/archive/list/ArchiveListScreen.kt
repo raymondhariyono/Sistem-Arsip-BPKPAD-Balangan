@@ -39,6 +39,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -93,7 +94,10 @@ fun ArchiveListScreen(
             com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
                 title = {
                     Text(
-                        text = if (uiState.isFilterConfirmed) "Daftar Arsip" else "Archival Repository",
+                        text = if (uiState.isFilterConfirmed) 
+                            stringResource(R.string.archive_list_title) 
+                        else 
+                            stringResource(R.string.archival_repository_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
@@ -109,7 +113,7 @@ fun ArchiveListScreen(
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -160,7 +164,7 @@ fun ArchiveListScreen(
                                         YearGridCard(
                                             year = y,
                                             recordsCount = stats?.count ?: 0,
-                                            lastUpdated = stats?.lastUpdated ?: "No data",
+                                            lastUpdated = stats?.lastUpdated ?: "-",
                                             onClick = { viewModel.updateInitialYear(y) },
                                             modifier = Modifier.weight(1f)
                                         )
@@ -207,7 +211,7 @@ fun ArchivalRepositoryHeader() {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Archival\nRepository",
+                text = stringResource(R.string.archival_repository_title).replace(" ", "\n"),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -215,7 +219,7 @@ fun ArchivalRepositoryHeader() {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Pilih tahun arsip untuk melihat daftar dokumen",
+                text = stringResource(R.string.archival_repository_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
@@ -258,13 +262,13 @@ fun YearGridCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "$recordsCount Records",
+                    text = stringResource(R.string.label_records, recordsCount),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Updated $lastUpdated",
+                    text = stringResource(R.string.label_updated, lastUpdated),
                     style = MaterialTheme.typography.labelSmall,
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -290,8 +294,8 @@ fun EmptyArchiveState(onAction: () -> Unit) {
     ) {
         Icon(Icons.Default.Info, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Belum ada tahun yang dipilih", style = MaterialTheme.typography.titleMedium)
-        TextButton(onClick = onAction) { Text("Pilih Tahun di Dashboard") }
+        Text(stringResource(R.string.no_year_selected), style = MaterialTheme.typography.titleMedium)
+        TextButton(onClick = onAction) { Text(stringResource(R.string.btn_select_year_dashboard)) }
     }
 }
 
@@ -319,7 +323,10 @@ fun ArchiveListContentOnly(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "Tahun ${uiState.selectedYears.sortedDescending().joinToString(", ")}",
+                        text = stringResource(
+                            R.string.filter_year_label, 
+                            uiState.selectedYears.sortedDescending().joinToString(", ")
+                        ),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
@@ -365,16 +372,32 @@ fun ArchiveListContentOnly(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Quick Doc Type Filter
+            val allFilter = stringResource(R.string.filter_all)
+            val sp2dFilter = stringResource(R.string.type_sp2d)
+            val spmFilter = stringResource(R.string.type_spm)
+            val sppFilter = stringResource(R.string.type_spp)
+            val spjFilter = stringResource(R.string.type_spj)
+            
+            val filters = remember(allFilter, sp2dFilter, spmFilter, sppFilter, spjFilter) {
+                listOf(allFilter, sp2dFilter, spmFilter, sppFilter, spjFilter)
+            }
+
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val filters = listOf("Semua", "SP2D", "SPM", "SPP", "SPJ")
                 items(filters) { filter ->
+                    val isSelected = uiState.selectedFilter == filter || (filter == allFilter && uiState.selectedFilter == "Semua")
                     FilterChip(
-                        selected = uiState.selectedFilter == filter,
-                        onClick = { onFilterChange(filter) },
+                        selected = isSelected,
+                        onClick = { 
+                            if (filter == allFilter) {
+                                onFilterChange("Semua")
+                            } else {
+                                onFilterChange(filter) 
+                            }
+                        },
                         label = { Text(filter) },
                         shape = RoundedCornerShape(16.dp),
                         colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
@@ -420,7 +443,7 @@ fun ArchiveListContentOnly(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Tidak ada dokumen ditemukan", 
+                            text = stringResource(R.string.no_docs_found),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

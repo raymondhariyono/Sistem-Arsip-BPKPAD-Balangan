@@ -123,7 +123,7 @@ fun HomeContent(
 
                     StagingStatusCard(
                         count = totalDocs,
-                        summary = "$totalBoxes box siap di staging",
+                        summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
                         onClick = onNavigateToStagingBoxList,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -241,7 +241,7 @@ fun StagingStatusCard(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Staging Status",
+                        text = stringResource(R.string.staging_status_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -249,7 +249,7 @@ fun StagingStatusCard(
                 }
                 
                 Text(
-                    text = "Review Box",
+                    text = stringResource(R.string.btn_review_box),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -277,7 +277,7 @@ fun StagingStatusCard(
                 
                 Column {
                     Text(
-                        text = "$count dokumen di staging",
+                        text = stringResource(R.string.staging_docs_waiting, count),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer

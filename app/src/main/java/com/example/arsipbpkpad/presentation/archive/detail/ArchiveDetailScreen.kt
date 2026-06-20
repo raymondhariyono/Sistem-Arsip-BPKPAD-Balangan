@@ -108,16 +108,16 @@ fun ArchiveDetailContent(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text("Hapus", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.btn_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Batal")
+                    Text(stringResource(R.string.btn_cancel))
                 }
             },
-            title = { Text("Hapus Arsip") },
-            text = { Text("Apakah Anda yakin ingin menghapus arsip ini? Tindakan ini tidak dapat dibatalkan.") }
+            title = { Text(stringResource(R.string.title_delete_archive)) },
+            text = { Text(stringResource(R.string.msg_delete_archive_confirm)) }
         )
     }
 
@@ -126,7 +126,7 @@ fun ArchiveDetailContent(
             BpkpadTopAppBar(
                 title = {
                     Text(
-                        text = "Dashboard Keuangan",
+                        text = stringResource(R.string.label_financial_dashboard),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
@@ -219,7 +219,7 @@ fun ArchiveDetailContent(
                         ) {
                             Column(modifier = Modifier.padding(24.dp)) {
                                 Text(
-                                    text = "Nominal Transaksi",
+                                    text = stringResource(R.string.label_nominal_transaction),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Bold
@@ -236,14 +236,14 @@ fun ArchiveDetailContent(
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = "Uraian",
+                                    text = stringResource(R.string.label_description),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = archive.description ?: "Tidak ada deskripsi",
+                                    text = archive.description ?: stringResource(R.string.label_no_description),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     lineHeight = 24.sp
@@ -255,7 +255,7 @@ fun ArchiveDetailContent(
                     // --- PHYSICAL ARCHIVE INFO ---
                     item {
                         DetailCardContainer(
-                            title = "Informasi Arsip Fisik",
+                            title = stringResource(R.string.label_physical_info),
                             icon = Icons.Default.LocationOn
                         ) {
                             Row(
@@ -264,17 +264,17 @@ fun ArchiveDetailContent(
                             ) {
                                 LocationBlock(
                                     modifier = Modifier.weight(1f),
-                                    label = "GUDANG",
+                                    label = stringResource(R.string.label_warehouse_caps), // Assuming caps version exists or needed
                                     value = archive.metadata?.warehouse ?: "-"
                                 )
                                 LocationBlock(
                                     modifier = Modifier.weight(1f),
-                                    label = "RAK",
+                                    label = stringResource(R.string.label_rak_caps),
                                     value = archive.metadata?.rack ?: "-"
                                 )
                                 LocationBlock(
                                     modifier = Modifier.weight(1f),
-                                    label = "BOX",
+                                    label = stringResource(R.string.label_box_caps),
                                     value = archive.metadata?.boxNumber ?: "-",
                                     isHighlighted = true
                                 )
@@ -289,7 +289,7 @@ fun ArchiveDetailContent(
                             ) {
                                 Column {
                                     Text(
-                                        text = "Tipe Salinan",
+                                        text = stringResource(R.string.label_copy_type),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.Bold
@@ -302,13 +302,13 @@ fun ArchiveDetailContent(
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = "Jumlah",
+                                        text = stringResource(R.string.label_amount),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = "${archive.copyCount} Lembar",
+                                        text = stringResource(R.string.label_sheets, archive.copyCount),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -321,7 +321,7 @@ fun ArchiveDetailContent(
                     if (state.relatedBundleDocuments.isNotEmpty()) {
                         item {
                             Text(
-                                text = "Bundle Transaksi",
+                                text = stringResource(R.string.label_bundle_transaction),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -377,7 +377,7 @@ fun ArchiveDetailContent(
                             ) {
                                 Icon(Icons.Default.Edit, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Edit Data")
+                                Text(stringResource(R.string.btn_edit_detail)) // Reusing existing
                             }
                             IconButton(
                                 onClick = { showDeleteDialog = true },

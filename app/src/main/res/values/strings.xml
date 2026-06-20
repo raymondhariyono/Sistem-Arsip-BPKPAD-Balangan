@@ -1,175 +1,165 @@
 <resources>
     <string name="app_name">arsipBPKPAD</string>
-    <string name="archive_list_title">Daftar Arsip</string>
-    <string name="archive_detail_title">Detail Arsip</string>
-    <string name="archive_review_title">Review Arsip</string>
-    <string name="scan_title">Scan Dokumen</string>
-    <string name="back">Kembali</string>
-    <string name="scan_feature_coming_soon">Fitur Scan akan segera hadir</string>
-
-    <!-- Dashboard page -->
     <string name="app_name_full">BPKPAD Balangan</string>
     <string name="logo_desc">Logo BPKPAD</string>
-    <string name="profile">Profil</string>
-    <string name="status_gudang">Gudang</string>
-    <string name="status_keluar">Keluar</string>
-    <string name="add_document">Tambah Dokumen</string>
-    <string name="overview">Overview</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_archive">Arsip</string>
+    <string name="nav_add">Tambah</string>
+    <string name="nav_analytics">Analitik</string>
+    <string name="nav_profile">Profil</string>
+    <string name="back">Kembali</string>
+    <string name="nav_back_content_desc">Kembali ke halaman sebelumnya</string>
+
+    <!-- Common Buttons -->
+    <string name="btn_save">Simpan</string>
+    <string name="btn_cancel">Batal</string>
+    <string name="btn_edit">Edit</string>
+    <string name="btn_edit_detail">Edit Data</string>
+    <string name="btn_delete">Hapus</string>
+    <string name="btn_ok">Oke</string>
+    <string name="btn_done">Selesai</string>
+    <string name="btn_close">Tutup</string>
+    <string name="btn_search">Cari</string>
+    <string name="btn_export">Ekspor</string>
+    <string name="btn_upload">Unggah</string>
+    <string name="btn_sync">Sinkronisasi</string>
+    <string name="btn_retry">Coba Lagi</string>
+
+    <!-- Dialog Titles/Messages -->
+    <string name="title_success">Berhasil</string>
+    <string name="title_error">Kesalahan</string>
+    <string name="title_warning">Peringatan</string>
+    <string name="title_duplicate_warning">Peringatan Duplikasi</string>
+    <string name="msg_duplicate_warning">Nomor dokumen \'%1$s\' sudah terdaftar di sistem. Tetap simpan sebagai status \'%2$s\' yang berbeda?</string>
+    <string name="btn_keep_save">Tetap Simpan</string>
+    <string name="msg_upload_success">Data berhasil diunggah ke database!</string>
+    <string name="msg_sync_success">Sinkronisasi berhasil!</string>
+    <string name="msg_delete_confirm">Apakah Anda yakin ingin menghapus data ini?</string>
+
+    <!-- Home Screen -->
     <string name="dashboard_subtitle">Dashboard Sistem Arsip Non-Keuangan</string>
     <string name="total_documents">Total Dokumen</string>
-    <string name="expired_documents">Dokumen Expired</string>
+    <string name="expired_documents">Dokumen Kedaluwarsa</string>
     <string name="type_sp2d">SP2D</string>
     <string name="type_spm">SPM</string>
+    <string name="type_spp">SPP</string>
     <string name="type_sp3b">SP3B</string>
+    <string name="type_spj">SPJ</string>
     <string name="type_dsb">DSB</string>
-    <string name="recently_added">Baru ditambahkan</string>
-    <string name="view_all">View All</string>
-    <string name="nav_home">Home</string>
-    <string name="nav_archive">Archive</string>
-    <string name="nav_add">Add</string>
-    <string name="nav_analytics">Analytics</string>
-    <string name="nav_profile">Profile</string>
+    <string name="recently_added">Baru Ditambahkan</string>
+    <string name="view_all">Lihat Semua</string>
+    <string name="status_warehouse">Gudang</string>
+    <string name="status_borrowed">Dipinjam</string>
+    <string name="staging_status_title">Status Staging</string>
+    <string name="staging_docs_waiting">%1$d dokumen di staging</string>
+    <string name="staging_boxes_ready">%1$d box siap di staging</string>
+    <string name="btn_review_box">Review Box</string>
+
+    <!-- Archive List Screen -->
+    <string name="archive_list_title">Daftar Arsip</string>
+    <string name="archival_repository_title">Gudang Arsip</string>
+    <string name="archival_repository_subtitle">Pilih tahun arsip untuk melihat daftar dokumen</string>
+    <string name="search_hint">Cari nomor dokumen, perihal...</string>
+    <string name="filter_year_label">Tahun %1$s</string>
+    <string name="no_docs_found">Tidak ada dokumen ditemukan</string>
+    <string name="no_year_selected">Belum ada tahun yang dipilih</string>
+    <string name="btn_select_year_dashboard">Pilih Tahun di Dashboard</string>
+    <string name="label_records">%1$d Rekaman</string>
+    <string name="label_updated">Diperbarui %1$s</string>
+    <string name="filter_all">Semua</string>
+
+    <!-- Staging Box List Screen -->
+    <string name="btn_push_to_db">Unggah ke Database</string>
+    <string name="btn_processing">Memproses...</string>
+    <string name="title_delete_staging_box">Hapus Staging Box</string>
+    <string name="msg_delete_staging_box">Apakah Anda yakin ingin menghapus box ini dari staging? Data dokumen di dalamnya akan hilang.</string>
+    <string name="empty_staging_title">Belum Ada Box di Staging</string>
+    <string name="empty_staging_desc">Gunakan tombol + untuk membuat box baru dan mulai memasukkan data arsip secara massal.</string>
+    <string name="label_box_number">Box %1$s</string>
+    <string name="label_waiting_upload">Menunggu unggahan • %1$d dokumen</string>
+    <string name="label_box_location">%1$s - Rak %2$s (%3$s)</string>
+    <string name="label_items_in_staging">%1$d item di staging •</string>
+    <string name="label_boxes_filled">%1$d / %2$d Box Terisi</string>
+
+    <!-- Rapid Input Screen -->
+    <string name="title_input_box">Input Box %1$s</string>
+    <string name="title_add_doc">Tambah Dokumen Baru</string>
+    <string name="title_edit_doc">Edit Dokumen</string>
+    <string name="title_delete_archive">Hapus Arsip</string>
+    <string name="msg_delete_archive_confirm">Apakah Anda yakin ingin menghapus arsip ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="label_nominal_transaction">Nominal Transaksi</string>
+    <string name="label_financial_dashboard">Dashboard Keuangan</string>
+    <string name="label_no_description">Tidak ada deskripsi</string>
+    <string name="label_physical_info">Informasi Arsip Fisik</string>
+    <string name="label_copy_type">Tipe Salinan</string>
+    <string name="label_amount">Jumlah</string>
+    <string name="label_sheets">%1$d Lembar</string>
+    <string name="label_bundle_transaction">Bundle Transaksi</string>
+    <string name="label_scan_doc">Scan Dokumen</string>
+    <string name="msg_processing_ocr">Memproses OCR...</string>
+    <string name="msg_camera_permission_required">Izin kamera diperlukan.</string>
+    <string name="btn_add_to_staging">Tambah ke Staging</string>
+    <string name="btn_update">Perbarui</string>
+    <string name="btn_upload_docs">Upload (%1$d) Dokumen ke Database</string>
+    <string name="btn_finish_back">Selesai &amp; Kembali</string>
+    <string name="btn_cancel_exit">Batal &amp; Keluar</string>
+    <string name="label_doc_type">Tipe Dokumen</string>
+    <string name="label_classification_code">Kode Klasifikasi</string>
+    <string name="label_physical_status">Status Fisik</string>
+    <string name="label_asli">Asli</string>
+    <string name="label_salinan">Salinan</string>
+    <string name="label_copy_count">Jumlah Salinan</string>
+    <string name="label_doc_number">Nomor Dokumen</string>
+    <string name="label_doc_number_sp2d">Nomor Dokumen SP2D</string>
+    <string name="label_doc_number_spm">Nomor Dokumen SPM</string>
+    <string name="label_description">Uraian</string>
+    <string name="label_description_spj">Deskripsi SPJ</string>
+    <string name="label_nominal">Nominal</string>
+    <string name="label_auto_bundle">Buatkan SPM dan SPJ (Auto-Bundle)</string>
+    <string name="placeholder_doc_number">Contoh: 001/SP2D/2026</string>
+    <string name="placeholder_spm_number">Contoh: 001/SPM/2026</string>
+    <string name="placeholder_subject">Contoh: Belanja ATK Kantor</string>
+    <string name="placeholder_nominal">Contoh: 10.000.000</string>
+    <string name="placeholder_copy_count">Contoh: 1</string>
+    <string name="placeholder_spj_desc">Contoh: Laporan Pertanggungjawaban ATK</string>
+    <string name="hint_enter_value">Masukkan %1$s...</string>
+    <string name="hint_select_value">Pilih %1$s...</string>
+    <string name="label_staging_list">Daftar Staging (%1$d)</string>
+    <string name="msg_empty_staging">Keranjang staging masih kosong.\nSilakan masukkan dokumen di atas.</string>
+
+    <!-- Classification Sheet -->
+    <string name="title_select_classification">Pilih Kode Klasifikasi</string>
+    <string name="label_quick_category">Kategori Cepat</string>
+    <string name="search_classification_hint">Cari kode atau nama klasifikasi...</string>
+    <string name="msg_no_classification_found">Tidak ada kode yang cocok dengan pencarian.</string>
+    <string name="label_parent_code">Induk: %1$s</string>
+
+    <!-- Add Box Dialog -->
+    <string name="title_init_new_box">Inisialisasi Box Baru</string>
+    <string name="label_warehouse">Gudang</string>
+    <string name="label_rack">Rak</string>
+    <string name="label_box">Box</string>
+    <string name="label_warehouse_caps">GUDANG</string>
+    <string name="label_rak_caps">RAK</string>
+    <string name="label_box_caps">BOX</string>
+    <string name="placeholder_warehouse">Contoh: Gedung A / Lantai 2</string>
+    <string name="placeholder_rack">Contoh: R-01</string>
+    <string name="placeholder_box">Contoh: B-101</string>
+    <string name="label_doc_year">Tahun Dokumen</string>
+    <string name="btn_create_input">Buat &amp; Input</string>
+
+    <!-- Validation Messages (Indonesian) -->
+    <string name="val_required">%1$s wajib diisi</string>
+    <string name="val_invalid_year_format">Format tahun tidak valid (4 digit)</string>
+    <string name="val_min_copy">Jumlah salinan minimal 1</string>
+    <string name="val_duplicate_doc">Nomor dokumen ini sudah ada dengan status yang sama.</string>
+    <string name="val_retention_warning">Peringatan: Arsip tahun %1$d sudah melewati batas 10 tahun dan berpotensi masuk masa retensi/pemusnahan.</string>
 
     <!-- Analytics page -->
     <string name="analytics_title">Analitik</string>
     <string name="total_budget_label">Total Anggaran</string>
     <string name="budget_helper_text">Total akumulasi dari semua arsip keuangan.</string>
-
-    <!-- Archive list -->
-    <string name="search_hint">Cari nomor dokumen, jenis...</string>
-    <string name="search_results">Hasil Pencarian</string>
-    <string name="files_found">%1$s berkas ditemukan</string>
-    <string name="filter_year">Tahun: 2024</string>
-    <string name="filter_type">Tipe Dok: SP2D</string>
-    <string name="filter_location">Lokasi</string>
-    <string name="label_building">BUILDING</string>
-    <string name="label_rack">RACK</string>
-    <string name="label_box">BOX</string>
-    <string name="status_in_warehouse">di Gudang</string>
-    <string name="status_borrowed">di Pinjam</string>
-
-    <!-- Add archive -->
-    <string name="add_archive_title">Tambah Arsip Baru</string>
-    <string name="add_archive_subtitle">Pilih metode yang sesuai untuk menambahkan dokumen ke dalam sistem arsip.</string>
-
-    <string name="method_scan_title">Scan OCR</string>
-    <string name="method_scan_desc">Pindai dokumen fisik menggunakan kamera atau scanner. Sistem akan otomatis mengekstrak teks dari gambar.</string>
-    <string name="method_scan_action">Mulai Scan \u2192</string>
-
-    <string name="method_manual_title">Tambah Manual</string>
-    <string name="method_manual_desc">Isi formulir secara manual dan unggah file PDF atau gambar dokumen ke dalam sistem.</string>
-
-    <string name="method_import_title">Impor Spreadsheet</string>
-    <string name="method_import_desc">Unggah file Excel (.xlsx) atau CSV yang berisi daftar metadata arsip untuk dimasukkan secara massal.</string>
-
-    <!-- Manual add archive -->
-    <string name="manual_add_title">Menambahkan Arsip Baru</string>
-    <string name="manual_add_subtitle">Tambahkan detail dokumen baru ke dalam sistem arsip.</string>
-
-    <string name="section_doc_detail">Detail Dokumen</string>
-    <string name="label_doc_type">Tipe Dokumen</string>
-    <string name="hint_doc_type">Pilih tipe...</string>
-    <string name="label_doc_name">Nama Dokumen</string>
-    <string name="hint_doc_name">e.x. Surat Non-keuangan</string>
-    <string name="label_doc_number">Nomor Dokumen</string>
-    <string name="hint_doc_number">e.x. 123/BPKPAD/2023</string>
-    <string name="label_department">Dinas</string>
-    <string name="hint_department">Pilih Dinas...</string>
-    <string name="label_year">Tahun</string>
-    <string name="hint_year">YYYY</string>
-    <string name="label_validity">Masa Berlaku</string>
-    <string name="hint_year_format">YYYY</string>
-    <string name="hint_validity">DD-MM-YYYY</string>
-    <string name="label_subject">Perihal</string>
-    <string name="hint_subject">Deskripsi tentang dokumen...</string>
-
-    <string name="section_location">Lokasi Gudang</string>
-    <string name="label_warehouse">Gudang</string>
-    <string name="hint_warehouse">Pilih Gudang...</string>
-    <string name="hint_rack">e.x. R-12</string>
-    <string name="hint_box">e.x. B-05</string>
-
-    <string name="btn_save_archive">Simpan Arsip</string>
-    <string name="nav_back_content_desc">back</string>
-
-    <!-- Archive detail -->
-    <string name="header_id">ID</string>
-    <string name="header_title">TITLE</string>
-    <string name="header_type">TIPE</string>
-    <string name="header_status">STATUS</string>
-    <string name="status_verified">Verified</string>
-    <string name="uploaded_info">Diunggah pada %1$s oleh %2$s</string>
-    <string name="btn_edit_detail">Edit Detail</string>
-    <string name="btn_export">Export</string>
-
-    <string name="section_digital_scan">Digital Scan</string>
-    <string name="section_metadata">Dokumen Metadata</string>
-    <string name="section_physical_location">Lokasi Berkas Fisik</string>
-
-    <string name="label_doc_date">Tanggal Dokumen</string>
-    <string name="label_nama_dokumen">NAMA DOKUMEN</string>
-    <string name="label_nomor_dokumen">NOMOR DOKUMEN</string>
-    <string name="label_dinas">DINAS</string>
-    <string name="label_tanggal_dokumen">TANGGAL DOKUMEN</string>
-    <string name="label_masa_berlaku">MASA BERLAKU</string>
-    <string name="label_gudang">GUDANG</string>
-    <string name="label_rak_caps">RAK</string>
-    <string name="label_box_caps">BOX</string>
-
-    <string name="review_feature_coming_soon">Fitur Review akan segera hadir</string>
-
-    <!-- Import excel -->
-    <string name="import_title">Import Spreadsheet</string>
-    <string name="import_subtitle">Tambahkan banyak arsip sekaligus melalui file Excel (.xlsx).</string>
-
-    <string name="step1_title">1. Unduh Template Standar</string>
-    <string name="step1_desc">Harap gunakan format template yang telah disediakan. Jangan mengubah struktur header kolom.</string>
-    <string name="btn_download_template">Download Template (.xlsx)</string>
-
-    <string name="step2_title">2. Upload File</string>
-    <string name="step2_desc">Pilih file spreadsheet yang telah diisi sesuai template.</string>
-
-    <string name="select_file_title">Pilih Berkas Spreadsheet</string>
-    <string name="select_file_subtitle">Klik untuk menelusuri dari perangkat</string>
-    <string name="select_file_format">Mendukung .xlsx, .xls (Maks. 10MB)</string>
-    <string name="file_selected_label">Berkas Terpilih</string>
-    <string name="btn_browse_file">Pilih Berkas</string>
-
-    <string name="btn_cancel">Batal</string>
-    <string name="btn_process_import">Proses Import</string>
-
-    <!--document verification-->
-    <string name="filter_title">Filter Data Arsip</string>
-    <string name="filter_subtitle">Pilih Tahun dan Tipe Dokumen untuk melihat daftar arsip.</string>
-    <string name="select_year_label">Pilih Tahun</string>
-    <string name="select_all">Pilih Semua</string>
-    <string name="btn_show_archives">Tampilkan Arsip</string>
-    <string name="type_all">Semua Tipe</string>
-    <string name="review_subtitle">Pastikan data pindaian sesuai dengan dokumen fisik SP2D sebelum disimpan.</string>
-
-    <string name="preview_doc_title">Preview Dokumen</string>
-    <string name="doc_type_detected">SP2D Terdeteksi</string>
-
-    <string name="extraction_detail_title">Detail Ekstraksi</string>
-    <string name="label_no_doc">No. Dokumen</string>
-    <string name="label_perihal">Perihal</string>
-    <string name="label_tahun_anggaran">Tahun Anggaran</string>
-    <string name="label_lokasi_fisik">Lokasi Fisik / Rak</string>
-
-    <string name="validation_switch_label">Validasi Data Sesuai Fisik</string>
-    <string name="btn_simpan">Simpan</string>
-    <string name="review_title">Halaman Archive</string>
-    <string name="no_data_for_year">Tidak ada data arsip untuk filter yang dipilih.</string>
-    <string name="try_another_filter">Silakan coba filter atau tahun lain.</string>
-
-    <!-- Navigation Routes and Keys -->
-    <string name="route_archive_flow">archive_flow</string>
-    <string name="nav_home_id">home</string>
-    <string name="nav_archive_id">archive</string>
-    <string name="nav_add_id">add</string>
-    <string name="nav_analytics_id">analytics</string>
-    <string name="key_session_id">sessionId</string>
-    <string name="key_archive_id">archiveId</string>
-    <string name="key_ocr_result">ocr_result</string>
 
 </resources>

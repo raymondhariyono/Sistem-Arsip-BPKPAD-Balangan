@@ -76,6 +76,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -117,18 +118,26 @@ fun RapidInputScreen(
     if (uiState.showDuplicateWarning) {
         AlertDialog(
             onDismissRequest = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) },
-            title = { Text("Peringatan Duplikasi") },
-            text = { Text("Nomor dokumen '${uiState.documentNumber}' sudah terdaftar di sistem. Tetap simpan sebagai status '${uiState.copyType}' yang berbeda?") },
+            title = { Text(stringResource(R.string.title_duplicate_warning)) },
+            text = { 
+                Text(
+                    stringResource(
+                        R.string.msg_duplicate_warning, 
+                        uiState.documentNumber, 
+                        uiState.copyType.name
+                    )
+                ) 
+            },
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true)) }
                 ) {
-                    Text("Tetap Simpan", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.btn_keep_save), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) }) {
-                    Text("Batal")
+                    Text(stringResource(R.string.btn_cancel))
                 }
             }
         )
@@ -139,7 +148,7 @@ fun RapidInputScreen(
     // Task 1: Success, Error, and Warning Dialogs
     uiState.successMessage?.let { msg ->
         StatusDialog(
-            title = "Berhasil",
+            title = stringResource(R.string.title_success),
             message = msg,
             onDismiss = { 
                 val isUpload = uiState.isUploadSuccess
@@ -152,7 +161,7 @@ fun RapidInputScreen(
 
     uiState.error?.let { msg ->
         StatusDialog(
-            title = "Kesalahan",
+            title = stringResource(R.string.title_error),
             message = msg,
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissError) },
             isSuccess = false
@@ -161,7 +170,7 @@ fun RapidInputScreen(
 
     uiState.warningMessage?.let { msg ->
         StatusDialog(
-            title = "Peringatan Retensi",
+            title = stringResource(R.string.title_warning),
             message = msg,
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
             isSuccess = null // Use a different icon/color for warning
@@ -204,7 +213,7 @@ fun RapidInputScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Input Box ${uiState.boxContext.box}",
+                            text = stringResource(R.string.title_input_box, uiState.boxContext.box),
                             style = MaterialTheme.typography.titleMedium, 
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
@@ -215,7 +224,7 @@ fun RapidInputScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -260,7 +269,7 @@ fun RapidInputScreen(
                                         Icon(Icons.Filled.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "Upload (${uiState.stagedDocuments.size}) Dokumen ke Database", 
+                                            text = stringResource(R.string.btn_upload_docs, uiState.stagedDocuments.size), 
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onPrimary
                                         )
@@ -280,7 +289,10 @@ fun RapidInputScreen(
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text(
-                                text = if (uiState.stagedDocuments.isEmpty()) "Selesai & Kembali" else "Batal & Keluar",
+                                text = if (uiState.stagedDocuments.isEmpty()) 
+                                    stringResource(R.string.btn_finish_back) 
+                                else 
+                                    stringResource(R.string.btn_cancel_exit),
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -311,7 +323,10 @@ fun RapidInputScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = if (uiState.editingId != null) "Edit Dokumen" else "Tambah Dokumen Baru",
+                            text = if (uiState.editingId != null) 
+                                stringResource(R.string.title_edit_doc) 
+                            else 
+                                stringResource(R.string.title_add_doc),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -321,7 +336,7 @@ fun RapidInputScreen(
 
                         // Document Type & Bundle Logic
                         FormDropdownField(
-                            label = "Tipe Dokumen",
+                            label = stringResource(R.string.label_doc_type),
                             value = uiState.docType.name,
                             // Hide SPJ from manual select per rules
                             options = listOf("SP2D", "SPM", "SPP"),
@@ -334,7 +349,7 @@ fun RapidInputScreen(
                         // Classification Code
                         Column(modifier = Modifier.padding(bottom = 8.dp)) {
                             Text(
-                                text = "Kode Klasifikasi",
+                                text = stringResource(R.string.label_classification_code),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -384,7 +399,7 @@ fun RapidInputScreen(
                                     onCheckedChange = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) }
                                 )
                                 Text(
-                                    text = "Buatkan SPM dan SPJ (Auto-Bundle)",
+                                    text = stringResource(R.string.label_auto_bundle),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -396,7 +411,7 @@ fun RapidInputScreen(
 
                         // Physical Status (Original/Copy)
                         Text(
-                            text = "Status Fisik", 
+                            text = stringResource(R.string.label_physical_status), 
                             style = MaterialTheme.typography.labelMedium, 
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -411,74 +426,77 @@ fun RapidInputScreen(
                                     selected = uiState.copyType == DocCopyType.ORIGINAL,
                                     onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.ORIGINAL)) }
                                 )
-                                Text("Asli", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(R.string.label_asli), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 RadioButton(
                                     selected = uiState.copyType == DocCopyType.COPY,
                                     onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.COPY)) }
                                 )
-                                Text("Salinan", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(R.string.label_salinan), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
 
                         // Copy Count (Visible only for COPY)
                         if (uiState.copyType == DocCopyType.COPY) {
                             FormTextField(
-                                label = "Jumlah Salinan",
+                                label = stringResource(R.string.label_copy_count),
                                 value = uiState.copyCount,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                placeholder = "Contoh: 1",
+                                placeholder = stringResource(R.string.placeholder_copy_count),
                                 error = uiState.validationErrors["copyCount"]
                             )
                         }
 
                         if (uiState.docType != DocType.SPJ || !uiState.isAutoBundleEnabled) {
                             FormTextField(
-                                label = if (uiState.isAutoBundleEnabled) "Nomor Dokumen SP2D" else "Nomor Dokumen",
+                                label = if (uiState.isAutoBundleEnabled) 
+                                    stringResource(R.string.label_doc_number_sp2d) 
+                                else 
+                                    stringResource(R.string.label_doc_number),
                                 value = uiState.documentNumber,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
-                                placeholder = "Contoh: 001/SP2D/2026",
+                                placeholder = stringResource(R.string.placeholder_doc_number),
                                 error = uiState.validationErrors["docNumber"]
                             )
                         }
                         
                         if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
                             FormTextField(
-                                label = "Nomor Dokumen SPM",
+                                label = stringResource(R.string.label_doc_number_spm),
                                 value = uiState.spmDocumentNumber,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
-                                placeholder = "Contoh: 001/SPM/2026",
+                                placeholder = stringResource(R.string.placeholder_spm_number),
                                 error = uiState.validationErrors["spmDocNumber"]
                             )
                         }
                         
                         FormTextField(
-                            label = "Uraian",
+                            label = stringResource(R.string.label_description),
                             value = uiState.subject,
                             onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
-                            placeholder = "Contoh: Belanja ATK Kantor",
+                            placeholder = stringResource(R.string.placeholder_subject),
                             error = uiState.validationErrors["subject"]
                         )
 
                         if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
                             FormTextField(
-                                label = "Deskripsi SPJ",
+                                label = stringResource(R.string.label_description_spj),
                                 value = uiState.spjDescription,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
-                                placeholder = "Contoh: Laporan Pertanggungjawaban ATK",
+                                placeholder = stringResource(R.string.placeholder_spj_desc),
                                 error = uiState.validationErrors["spjDescription"]
                             )
                         }
                         
                         FormTextField(
-                            label = "Nominal",
+                            label = stringResource(R.string.label_nominal),
                             value = uiState.nominal,
                             onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
                             visualTransformation = CurrencyVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            placeholder = "Contoh: 10.000.000"
+                            placeholder = stringResource(R.string.placeholder_nominal)
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -496,7 +514,7 @@ fun RapidInputScreen(
                                     shape = RoundedCornerShape(28.dp),
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                                 ) {
-                                    Text("Batal", fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.btn_cancel), fontWeight = FontWeight.Bold)
                                 }
                                 
                                 Button(
@@ -510,7 +528,7 @@ fun RapidInputScreen(
                                     Icon(Icons.Default.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Perbarui",
+                                        text = stringResource(R.string.btn_update),
                                         color = MaterialTheme.colorScheme.onPrimary,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -528,7 +546,7 @@ fun RapidInputScreen(
                                 Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Tambah ke Staging",
+                                    text = stringResource(R.string.btn_add_to_staging),
                                     color = MaterialTheme.colorScheme.onPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -557,7 +575,7 @@ fun RapidInputScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Daftar Staging (${uiState.stagedDocuments.size})",
+                        text = stringResource(R.string.label_staging_list, uiState.stagedDocuments.size),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
@@ -592,7 +610,7 @@ fun RapidInputScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Keranjang staging masih kosong.\nSilakan masukkan dokumen di atas.", 
+                                text = stringResource(R.string.msg_empty_staging), 
                                 color = MaterialTheme.colorScheme.onSurfaceVariant, 
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center
@@ -658,7 +676,7 @@ fun ClassificationBottomSheet(
                 .padding(horizontal = 24.dp)
         ) {
             Text(
-                text = "Pilih Kode Klasifikasi",
+                text = stringResource(R.string.title_select_classification),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -668,7 +686,7 @@ fun ClassificationBottomSheet(
 
             // Kategori Cepat (Filter Chips) - Moved above Search Bar for better reach
             Text(
-                text = "Kategori Cepat",
+                text = stringResource(R.string.label_quick_category),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
@@ -717,7 +735,7 @@ fun ClassificationBottomSheet(
                 value = uiState.classificationSearchQuery,
                 onValueChange = onSearchQueryChanged,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cari kode atau nama klasifikasi...") },
+                placeholder = { Text(stringResource(R.string.search_classification_hint)) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -756,7 +774,7 @@ fun ClassificationBottomSheet(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Tidak ada kode yang cocok dengan pencarian.",
+                                text = stringResource(R.string.msg_no_classification_found),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
@@ -811,7 +829,7 @@ fun ClassificationItem(
                 if (classification.parentCode != null) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Induk: ${classification.parentCode}",
+                        text = stringResource(R.string.label_parent_code, classification.parentCode),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold
@@ -883,10 +901,10 @@ fun StagedItemRow(
             trailingContent = {
                 Row {
                     IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.btn_edit), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     }
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                     }
                 }
             },
@@ -944,7 +962,7 @@ fun StatusDialog(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(0.5f)
                 ) {
-                    Text("Oke")
+                    Text(stringResource(R.string.btn_ok))
                 }
             }
         },
@@ -980,7 +998,7 @@ fun FormTextField(
             isError = error != null,
             placeholder = { 
                 Text(
-                    text = placeholder ?: "Masukkan $label...", 
+                    text = placeholder ?: stringResource(R.string.hint_enter_value, label), 
                     style = MaterialTheme.typography.bodyMedium, 
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 ) 
@@ -1024,7 +1042,13 @@ fun FormDropdownField(
                 value = value,
                 onValueChange = {},
                 readOnly = true,
-                placeholder = { Text("Pilih $label...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                placeholder = { 
+                    Text(
+                        stringResource(R.string.hint_select_value, label), 
+                        style = MaterialTheme.typography.bodyMedium, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    ) 
+                },
                 modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 shape = RoundedCornerShape(8.dp),

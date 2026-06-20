@@ -78,7 +78,11 @@ fun ScanScreen(
                             modifier = Modifier.size(32.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Scan Dokumen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) 
+                        Text(
+                            text = stringResource(R.string.label_scan_doc), 
+                            style = MaterialTheme.typography.titleMedium, 
+                            fontWeight = FontWeight.Bold
+                        ) 
                     }
                 },
                 navigationIcon = {
@@ -108,7 +112,7 @@ fun ScanScreen(
                 )
             } else {
                 Text(
-                    text = "Camera permission is required.",
+                    text = stringResource(R.string.msg_camera_permission_required),
                     color = Color.White,
                     modifier = Modifier.align(Alignment.Center)
                 )
@@ -124,7 +128,11 @@ fun ScanScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Memproses OCR...", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = stringResource(R.string.msg_processing_ocr), 
+                            color = Color.White, 
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -134,7 +142,7 @@ fun ScanScreen(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
                     action = {
                         TextButton(onClick = { viewModel.resetState() }) {
-                            Text("Retry", color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(R.string.btn_retry), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 ) {
