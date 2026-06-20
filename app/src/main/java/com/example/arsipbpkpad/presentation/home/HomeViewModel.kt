@@ -2,11 +2,10 @@ package com.example.arsipbpkpad.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.StagingRepository
-import com.example.arsipbpkpad.domain.usecase.GetArchivesListUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
+import com.example.arsipbpkpad.domain.usecase.GetArchivesListUseCase
 import com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,18 +72,20 @@ class HomeViewModel @Inject constructor(
                 when (result) {
                     is DomainResult.Success -> {
                         val archives = result.data
+                        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                        
                         _uiState.update { state ->
                             state.copy(
                                 isLoading = false,
                                 totalDocuments = archives.size.toString(),
-                                recentItems = archives.take(5).map { doc ->
-                                    RecentArchive(
-                                        id = doc.id,
-                                        title = doc.documentNumber ?: "-",
-                                        type = doc.type.name,
-                                        isAvailable = doc.status == DocStatus.AVAILABLE
-                                    )
-                                }
+                                expiredDocuments = archives.count { (currentYear - it.year) > 10 }.toString(),
+                                damagedDocuments = archives.count { it.condition == com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED }.toString(),
+                                lostDocuments = archives.count { it.condition == com.example.arsipbpkpad.domain.model.DocCondition.LOST }.toString(),
+                                sppCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPP }.toString(),
+                                spmCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPM }.toString(),
+                                sp2dCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SP2D }.toString(),
+                                spjCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPJ }.toString(),
+                                recentItems = archives.take(5)
                             )
                         }
                     }

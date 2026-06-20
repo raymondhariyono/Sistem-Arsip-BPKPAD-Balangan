@@ -9,6 +9,7 @@ import com.example.arsipbpkpad.data.remote.dto.ArchiveDto
 import com.example.arsipbpkpad.data.remote.dto.ClassificationCodeDto
 import com.example.arsipbpkpad.data.util.safeApiCall
 import com.example.arsipbpkpad.data.util.safeDbCall
+import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.ClassificationCode
 import com.example.arsipbpkpad.domain.model.DomainResult
@@ -57,7 +58,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     override fun getArchiveDetail(id: String): Flow<DomainResult<ArchiveDocument>> {
         return archiveDao.getArchiveById(id).map { entity ->
             if (entity != null) DomainResult.Success(entity.toDomain())
-            else DomainResult.Error("Archive not found")
+            else DomainResult.Error(DomainConstants.ERROR_ARCHIVE_NOT_FOUND)
         }
     }
 

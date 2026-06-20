@@ -1,5 +1,6 @@
 package com.example.arsipbpkpad.presentation.home.screen
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,11 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -180,18 +178,23 @@ fun HomeMainList(
 
 @Composable
 fun HomePrimaryStats(uiState: HomeUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    
+    val titleStyle = if (isLandscape) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleLarge
+    val countStyle = if (isLandscape) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.displaySmall
+    val spacing = if (isLandscape) 8.dp else 16.dp
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
         PrimaryStatCard(
             title = stringResource(R.string.total_documents),
             count = uiState.totalDocuments,
-            icon = Icons.Default.Done,
             containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
             contentColor = MaterialTheme.colorScheme.primary
         )
         PrimaryStatCard(
             title = stringResource(R.string.expired_documents),
             count = uiState.expiredDocuments,
-            icon = Icons.Default.Warning,
             containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
             contentColor = MaterialTheme.colorScheme.error
         )
@@ -200,22 +203,24 @@ fun HomePrimaryStats(uiState: HomeUiState) {
 
 @Composable
 fun HomeSecondaryStats(uiState: HomeUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val spacing = if (isLandscape) 8.dp else 16.dp
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
-                count = uiState.sp2dCount,
-                label = stringResource(R.string.type_sp2d),
-                icon = Icons.Default.Add
+                count = uiState.sppCount,
+                label = stringResource(R.string.type_spp)
             )
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
                 count = uiState.spmCount,
-                label = stringResource(R.string.type_spm),
-                icon = Icons.Default.Done
+                label = stringResource(R.string.type_spm)
             )
         }
         Row(
@@ -224,15 +229,28 @@ fun HomeSecondaryStats(uiState: HomeUiState) {
         ) {
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
-                count = uiState.sp3bCount,
-                label = stringResource(R.string.type_sp3b),
-                icon = Icons.Default.Warning
+                count = uiState.sp2dCount,
+                label = stringResource(R.string.type_sp2d)
             )
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
-                count = uiState.dsbCount,
-                label = stringResource(R.string.type_dsb),
-                icon = Icons.Default.Build
+                count = uiState.spjCount,
+                label = stringResource(R.string.type_spj)
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SecondaryStatCard(
+                modifier = Modifier.weight(1f),
+                count = uiState.damagedDocuments,
+                label = stringResource(R.string.type_damaged)
+            )
+            SecondaryStatCard(
+                modifier = Modifier.weight(1f),
+                count = uiState.lostDocuments,
+                label = stringResource(R.string.type_lost)
             )
         }
     }

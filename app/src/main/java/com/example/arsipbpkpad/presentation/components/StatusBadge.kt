@@ -18,23 +18,51 @@ import com.example.arsipbpkpad.ui.theme.White
 
 @Composable
 fun StatusBadge(
-    status: String,
+    text: String,
+    backgroundColor: Color = MaterialTheme.colorScheme.primary,
+    textColor: Color = MaterialTheme.colorScheme.onPrimary,
     modifier: Modifier = Modifier
 ) {
-    val isExpired = status.equals("Expired", ignoreCase = true)
-    val backgroundColor = if (isExpired) ErrorRed else DarkGreen
-    val textColor = White
-
     Box(
         modifier = modifier
             .background(backgroundColor, RoundedCornerShape(8.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
-            text = status.uppercase(),
+            text = text.uppercase(),
             color = textColor,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+@Composable
+fun RetentionStatusBadge(isExpired: Boolean) {
+    val backgroundColor = if (isExpired) ErrorRed else DarkGreen
+    val text = if (isExpired) "EXPIRED" else "AKTIF"
+    StatusBadge(text = text, backgroundColor = backgroundColor, textColor = White)
+}
+
+@Composable
+fun ConditionBadge(condition: String) {
+    val backgroundColor = when (condition.uppercase()) {
+        "GOOD" -> DarkGreen
+        "DAMAGED" -> Color(0xFFFFA000) // Amber
+        "LOST" -> ErrorRed
+        else -> MaterialTheme.colorScheme.secondary
+    }
+    StatusBadge(text = condition, backgroundColor = backgroundColor, textColor = White)
+}
+
+@Composable
+fun DocStatusBadge(status: String) {
+    val backgroundColor = when (status.uppercase()) {
+        "AVAILABLE" -> DarkGreen
+        "BORROWED" -> Color(0xFF1976D2) // Blue
+        "DISPOSED" -> Color(0xFF757575) // Grey
+        "UNVERIFIED" -> Color(0xFFFFA000) // Amber
+        else -> MaterialTheme.colorScheme.secondary
+    }
+    StatusBadge(text = status, backgroundColor = backgroundColor, textColor = White)
 }

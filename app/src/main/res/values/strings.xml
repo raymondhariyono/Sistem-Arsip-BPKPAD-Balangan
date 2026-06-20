@@ -48,6 +48,8 @@
     <string name="type_sp3b">SP3B</string>
     <string name="type_spj">SPJ</string>
     <string name="type_dsb">DSB</string>
+    <string name="type_damaged">Rusak (Damaged)</string>
+    <string name="type_lost">Hilang (Lost)</string>
     <string name="recently_added">Baru Ditambahkan</string>
     <string name="view_all">Lihat Semua</string>
     <string name="status_warehouse">Gudang</string>
@@ -89,6 +91,9 @@
     <string name="title_edit_doc">Edit Dokumen</string>
     <string name="title_delete_archive">Hapus Arsip</string>
     <string name="msg_delete_archive_confirm">Apakah Anda yakin ingin menghapus arsip ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="title_add_to_staging">Tambah ke Staging?</string>
+    <string name="msg_confirm_staging">Pastikan data yang Anda masukkan sudah benar.</string>
+    <string name="btn_confirm">Konfirmasi</string>
     <string name="label_nominal_transaction">Nominal Transaksi</string>
     <string name="label_financial_dashboard">Dashboard Keuangan</string>
     <string name="label_no_description">Tidak ada deskripsi</string>
@@ -101,6 +106,10 @@
     <string name="msg_processing_ocr">Memproses OCR...</string>
     <string name="msg_camera_permission_required">Izin kamera diperlukan.</string>
     <string name="btn_add_to_staging">Tambah ke Staging</string>
+    <string name="label_manual_input">Input Manual</string>
+    <string name="label_scan_ocr">Scan OCR</string>
+    <string name="status_expired">Expired</string>
+    <string name="status_active">Aktif</string>
     <string name="btn_update">Perbarui</string>
     <string name="btn_upload_docs">Upload (%1$d) Dokumen ke Database</string>
     <string name="btn_finish_back">Selesai &amp; Kembali</string>

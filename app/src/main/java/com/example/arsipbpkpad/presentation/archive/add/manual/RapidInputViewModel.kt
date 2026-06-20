@@ -147,7 +147,7 @@ class RapidInputViewModel @Inject constructor(
     private fun observeClassificationCodes() {
         viewModelScope.launch {
             archiveRepository.observeClassificationCodes().collect { codes ->
-                val quickCats = codes.filter { it.level == 1 || it.parentCode == null }
+                val quickCats = codes.filter { it.level == 3 || it.code.startsWith("900.1") && it.level <= 3 }
                 _uiState.update { it.copy(availableCodes = codes, quickCategories = quickCats) }
             }
         }
@@ -238,7 +238,13 @@ class RapidInputViewModel @Inject constructor(
 
     private fun handleDismissSuccess() {
         if (_uiState.value.isUploadSuccess) {
-            _uiState.value = RapidInputUiState()
+            _uiState.update { state ->
+                RapidInputUiState(
+                    existingStagedBoxes = state.existingStagedBoxes,
+                    availableCodes = state.availableCodes,
+                    quickCategories = state.quickCategories
+                )
+            }
         } else {
             _uiState.update { it.copy(successMessage = null) }
         }

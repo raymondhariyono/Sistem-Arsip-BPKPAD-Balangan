@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Warning
@@ -36,7 +35,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -78,7 +76,6 @@ fun ArchiveDetailScreen(
     ArchiveDetailContent(
         state = state,
         onNavigateBack = onNavigateBack,
-        onEditClick = { /* Handle Edit */ },
         onDeleteClick = {
             viewModel.deleteArchive { onNavigateBack() }
         },
@@ -90,7 +87,6 @@ fun ArchiveDetailScreen(
 fun ArchiveDetailContent(
     state: ArchiveDetailState,
     onNavigateBack: () -> Unit,
-    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onNavigateToArchive: (String) -> Unit
 ) {
@@ -119,7 +115,6 @@ fun ArchiveDetailContent(
                     ArchiveDetailMainList(
                         archive = state.archive,
                         relatedDocs = state.relatedBundleDocuments,
-                        onEditClick = onEditClick,
                         onDeleteClick = { showDeleteDialog = true },
                         onNavigateToArchive = onNavigateToArchive
                     )
@@ -193,7 +188,6 @@ fun ErrorState(message: String, modifier: Modifier = Modifier) {
 fun ArchiveDetailMainList(
     archive: ArchiveDocument,
     relatedDocs: List<ArchiveDocument>,
-    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onNavigateToArchive: (String) -> Unit
 ) {
@@ -214,7 +208,7 @@ fun ArchiveDetailMainList(
         }
 
         item {
-            DetailActionButtons(onEditClick = onEditClick, onDeleteClick = onDeleteClick)
+            DetailActionButtons(onDeleteClick = onDeleteClick)
         }
         
         item { Spacer(modifier = Modifier.height(32.dp)) }
@@ -426,20 +420,11 @@ fun RelatedArchiveItem(related: ArchiveDocument, onClick: () -> Unit) {
 }
 
 @Composable
-fun DetailActionButtons(onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
+fun DetailActionButtons(onDeleteClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.End
     ) {
-        OutlinedButton(
-            onClick = onEditClick,
-            modifier = Modifier.weight(1f).height(48.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Icon(Icons.Default.Edit, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.btn_edit_detail))
-        }
         IconButton(
             onClick = onDeleteClick,
             modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(12.dp))
@@ -513,7 +498,6 @@ fun ArchiveDetailPreview() {
         ArchiveDetailContent(
             state = ArchiveDetailState(),
             onNavigateBack = {},
-            onEditClick = {},
             onDeleteClick = {},
             onNavigateToArchive = {}
         )

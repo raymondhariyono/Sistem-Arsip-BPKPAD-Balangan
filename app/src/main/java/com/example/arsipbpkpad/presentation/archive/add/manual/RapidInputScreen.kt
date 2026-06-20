@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -68,10 +69,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -84,6 +88,7 @@ import com.example.arsipbpkpad.domain.model.ClassificationCode
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
+import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.components.FormDropdownField
 import com.example.arsipbpkpad.presentation.components.FormTextField
@@ -102,6 +107,7 @@ fun RapidInputScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showClassificationSheet by remember { mutableStateOf(false) }
+    var showStagingConfirmDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -117,6 +123,20 @@ fun RapidInputScreen(
             copyType = uiState.copyType.name,
             onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true)) },
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) }
+        )
+    }
+
+    if (showStagingConfirmDialog) {
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.title_add_to_staging),
+            message = stringResource(R.string.msg_confirm_staging),
+            confirmText = stringResource(R.string.btn_confirm),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = {
+                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                showStagingConfirmDialog = false
+            },
+            onDismiss = { showStagingConfirmDialog = false }
         )
     }
 
@@ -215,7 +235,13 @@ fun RapidInputScreen(
                     onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
                     onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
                     onClassificationClick = { showClassificationSheet = true },
-                    onAddOrUpdateClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick()) },
+                    onAddOrUpdateClick = { 
+                        if (uiState.editingId != null) {
+                            viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                        } else {
+                            showStagingConfirmDialog = true 
+                        }
+                    },
                     onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
                 )
             }
@@ -392,6 +418,8 @@ fun RapidInputForm(
     onAddOrUpdateClick: () -> Unit,
     onCancelEditClick: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+
     Card(
         modifier = Modifier
             .padding(16.dp)
@@ -444,7 +472,13 @@ fun RapidInputForm(
                     label = stringResource(R.string.label_copy_count),
                     value = uiState.copyCount,
                     onValueChange = onCopyCountChange,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
                     placeholder = stringResource(R.string.placeholder_copy_count),
                     error = uiState.validationErrors["copyCount"]
                 )
@@ -455,6 +489,8 @@ fun RapidInputForm(
                     label = if (uiState.isAutoBundleEnabled) stringResource(R.string.label_doc_number_sp2d) else stringResource(R.string.label_doc_number),
                     value = uiState.documentNumber,
                     onValueChange = onDocNumberChange,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     placeholder = stringResource(R.string.placeholder_doc_number),
                     error = uiState.validationErrors["docNumber"]
                 )
@@ -465,6 +501,8 @@ fun RapidInputForm(
                     label = stringResource(R.string.label_doc_number_spm),
                     value = uiState.spmDocumentNumber,
                     onValueChange = onSpmDocNumberChange,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     placeholder = stringResource(R.string.placeholder_spm_number),
                     error = uiState.validationErrors["spmDocNumber"]
                 )
@@ -474,6 +512,8 @@ fun RapidInputForm(
                 label = stringResource(R.string.label_description),
                 value = uiState.subject,
                 onValueChange = onSubjectChange,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 placeholder = stringResource(R.string.placeholder_subject),
                 error = uiState.validationErrors["subject"]
             )
@@ -483,6 +523,8 @@ fun RapidInputForm(
                     label = stringResource(R.string.label_description_spj),
                     value = uiState.spjDescription,
                     onValueChange = onSpjDescriptionChange,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     placeholder = stringResource(R.string.placeholder_spj_desc),
                     error = uiState.validationErrors["spjDescription"]
                 )
@@ -493,7 +535,11 @@ fun RapidInputForm(
                 value = uiState.nominal,
                 onValueChange = onNominalChange,
                 visualTransformation = CurrencyVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 placeholder = stringResource(R.string.placeholder_nominal)
             )
 
@@ -809,7 +855,7 @@ fun QuickCategorySection(
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         categories.forEach { category ->
             val isSelected = selectedCategory?.code == category.code

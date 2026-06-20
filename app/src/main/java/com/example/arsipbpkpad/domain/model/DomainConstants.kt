@@ -17,6 +17,12 @@ object DomainConstants {
     const val ERROR_BULK_INSERT_FAILED = "Gagal melakukan bulk insert"
     const val ERROR_UNKNOWN = "Terjadi kesalahan yang tidak diketahui"
 
+    // Repository Errors
+    const val ERROR_ARCHIVE_NOT_FOUND = "Archive not found"
+    const val ERROR_API_GENERAL = "Network error"
+    const val ERROR_DB_GENERAL = "Database error"
+    const val ERROR_AI_EMPTY_RESPONSE = "AI returned an empty response"
+
     // Validation
     const val VAL_DUPLICATE_DOC = "Nomor dokumen ini sudah ada dengan status yang sama."
 }

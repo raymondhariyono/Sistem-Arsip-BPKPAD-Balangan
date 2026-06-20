@@ -1,5 +1,6 @@
 package com.example.arsipbpkpad.data.util
 
+import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.DomainResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -15,7 +16,7 @@ suspend fun <T> safeDbCall(
         try {
             DomainResult.Success(call())
         } catch (e: Exception) {
-            DomainResult.Error(e.message ?: "Database error", e)
+            DomainResult.Error(e.message ?: DomainConstants.ERROR_DB_GENERAL, e)
         }
     }
 }
@@ -32,7 +33,7 @@ suspend fun <T> safeApiCall(
             DomainResult.Success(call())
         } catch (e: Exception) {
             // Map common network exceptions to friendly messages if needed
-            DomainResult.Error(e.message ?: "Network error", e)
+            DomainResult.Error(e.message ?: DomainConstants.ERROR_API_GENERAL, e)
         }
     }
 }

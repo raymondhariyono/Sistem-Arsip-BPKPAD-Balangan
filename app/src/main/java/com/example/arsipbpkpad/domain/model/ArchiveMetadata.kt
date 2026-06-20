@@ -1,9 +1,12 @@
 package com.example.arsipbpkpad.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Domain model for archive metadata.
  * Stripped of serialization dependencies.
  */
+@Serializable
 data class ArchiveMetadata(
     val bankName: String? = null,
     val accountNumber: String? = null,

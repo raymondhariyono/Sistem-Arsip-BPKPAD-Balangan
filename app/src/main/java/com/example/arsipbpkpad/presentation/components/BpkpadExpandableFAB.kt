@@ -33,8 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.arsipbpkpad.R
 
 @Composable
 fun BpkpadExpandableFAB(
@@ -43,7 +45,7 @@ fun BpkpadExpandableFAB(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val rotation by animateFloatAsState(if (expanded) 45f else 0f)
+    val rotation by animateFloatAsState(if (expanded) 45f else 0f, label = "")
 
     Column(
         modifier = modifier.padding(16.dp),
@@ -60,7 +62,7 @@ fun BpkpadExpandableFAB(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FabActionItem(
-                    label = "Input Manual",
+                    label = stringResource(R.string.label_manual_input),
                     icon = Icons.Default.Create,
                     onClick = {
                         expanded = false
@@ -68,7 +70,7 @@ fun BpkpadExpandableFAB(
                     }
                 )
                 FabActionItem(
-                    label = "Scan OCR",
+                    label = stringResource(R.string.label_scan_ocr),
                     icon = Icons.Default.Search,
                     onClick = {
                         expanded = false

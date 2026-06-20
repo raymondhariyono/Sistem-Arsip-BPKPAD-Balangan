@@ -6,6 +6,7 @@ import com.example.arsipbpkpad.data.remote.dto.GroqRequest
 import com.example.arsipbpkpad.data.remote.dto.GroqResponse
 import com.example.arsipbpkpad.data.remote.dto.GroqResponseFormat
 import com.example.arsipbpkpad.data.util.safeApiCall
+import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.model.ParsedMetadata
 import com.example.arsipbpkpad.domain.repository.AiParserRepository
@@ -74,7 +75,7 @@ class AiParserRepositoryImpl @Inject constructor(
             val responseBody = response.body<String>()
             val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
             val content = groqResponse.choices.firstOrNull()?.message?.content
-                ?: throw Exception("AI returned an empty response")
+                ?: throw Exception(DomainConstants.ERROR_AI_EMPTY_RESPONSE)
 
             json.decodeFromString<ParsedMetadata>(content)
         }
