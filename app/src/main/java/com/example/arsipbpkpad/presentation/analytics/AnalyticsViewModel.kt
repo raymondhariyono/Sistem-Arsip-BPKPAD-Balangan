@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.usecase.GetAnalyticsUseCase
+import com.example.arsipbpkpad.domain.usecase.GetAnalyticsRangeUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -17,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
     private val getAnalyticsUseCase: GetAnalyticsUseCase,
+    private val getAnalyticsRangeUseCase: GetAnalyticsRangeUseCase,
     private val getArchivedYearsUseCase: GetArchivedYearsUseCase
 ) : ViewModel() {
 
@@ -27,6 +29,9 @@ class AnalyticsViewModel @Inject constructor(
 
     init {
         observeAvailableYears()
+        loadPast10YearsAnalytics()
+        // Load initial data for the default selected year
+        _uiState.value.selectedYear?.let { loadAnalytics(it) }
     }
 
     private fun observeAvailableYears() {
@@ -40,9 +45,27 @@ class AnalyticsViewModel @Inject constructor(
         }
     }
 
+    private fun loadPast10YearsAnalytics() {
+        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+        val startYear = currentYear - 9
+        viewModelScope.launch {
+            getAnalyticsRangeUseCase(startYear, currentYear).collect { result ->
+                if (result is DomainResult.Success) {
+                    _uiState.update { it.copy(
+                        past10YearsBudgets = result.data.budgetByClassification
+                    ) }
+                }
+            }
+        }
+    }
+
     fun onYearSelected(year: Int) {
-        _uiState.update { 
-            it.copy(selectedYear = if (it.selectedYear == year) null else year) 
+        val newYear = if (_uiState.value.selectedYear == year) null else year
+        _uiState.update { it.copy(selectedYear = newYear) }
+        if (newYear != null) {
+            loadAnalytics(newYear)
+        } else {
+            _uiState.update { it.copy(totalBudget = 0.0, budgetByClassification = emptyMap()) }
         }
     }
 
@@ -54,7 +77,7 @@ class AnalyticsViewModel @Inject constructor(
 
     fun onResetFilter() {
         fetchJob?.cancel()
-        _uiState.update { it.copy(isFilterConfirmed = false, totalBudget = 0.0) }
+        _uiState.update { it.copy(isFilterConfirmed = false) }
     }
 
     private fun loadAnalytics(year: Int) {
@@ -67,6 +90,7 @@ class AnalyticsViewModel @Inject constructor(
                         _uiState.update { it.copy(
                             isLoading = false,
                             totalBudget = result.data.totalBudget,
+                            budgetByClassification = result.data.budgetByClassification,
                             errorMessage = null
                         ) }
                     }

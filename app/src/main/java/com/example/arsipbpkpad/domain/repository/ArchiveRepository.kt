@@ -4,6 +4,7 @@ import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.ClassificationCode
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.model.YearStats
+import com.example.arsipbpkpad.domain.model.AnalyticsData
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -35,7 +36,8 @@ interface ArchiveRepository {
     fun getYearStats(): Flow<List<YearStats>>
     fun getArchivesByBundleId(bundleId: String): Flow<List<ArchiveDocument>>
     
-    fun getTotalBudgetByYear(year: Int): Flow<DomainResult<Double>>
+    fun getAnalyticsData(year: Int): Flow<DomainResult<AnalyticsData>>
+    fun getAnalyticsDataForRange(startYear: Int, endYear: Int): Flow<DomainResult<AnalyticsData>>
     suspend fun uploadImage(id: String, imageByteArray: ByteArray): DomainResult<String>
     
     // Master Data

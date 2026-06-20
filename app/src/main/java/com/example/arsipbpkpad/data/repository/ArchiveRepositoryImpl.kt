@@ -2,6 +2,7 @@ package com.example.arsipbpkpad.data.repository
 
 import com.example.arsipbpkpad.data.local.dao.ArchiveDao
 import com.example.arsipbpkpad.data.local.dao.ClassificationCodeDao
+import com.example.arsipbpkpad.data.local.dao.ClassificationBudget
 import com.example.arsipbpkpad.data.mapper.toDomain
 import com.example.arsipbpkpad.data.mapper.toDto
 import com.example.arsipbpkpad.data.mapper.toEntity
@@ -14,12 +15,14 @@ import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.ClassificationCode
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.model.YearStats
+import com.example.arsipbpkpad.domain.model.AnalyticsData
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
@@ -165,9 +168,31 @@ class ArchiveRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getTotalBudgetByYear(year: Int): Flow<DomainResult<Double>> {
-        return archiveDao.getTotalBudgetByYear(year).map { total ->
-            DomainResult.Success(total ?: 0.0)
+    override fun getAnalyticsData(year: Int): Flow<DomainResult<AnalyticsData>> {
+        return combine(
+            archiveDao.getTotalBudgetByYear(year),
+            archiveDao.getBudgetByClassification(year)
+        ) { total, classificationBudgets ->
+            DomainResult.Success(
+                AnalyticsData(
+                    totalBudget = total ?: 0.0,
+                    budgetByClassification = classificationBudgets.associate { it.classificationCode to it.total }
+                )
+            )
+        }
+    }
+
+    override fun getAnalyticsDataForRange(startYear: Int, endYear: Int): Flow<DomainResult<AnalyticsData>> {
+        return combine(
+            archiveDao.getTotalBudgetForRange(startYear, endYear),
+            archiveDao.getBudgetByClassificationForRange(startYear, endYear)
+        ) { total, classificationBudgets ->
+            DomainResult.Success(
+                AnalyticsData(
+                    totalBudget = total ?: 0.0,
+                    budgetByClassification = classificationBudgets.associate { it.classificationCode to it.total }
+                )
+            )
         }
     }
 

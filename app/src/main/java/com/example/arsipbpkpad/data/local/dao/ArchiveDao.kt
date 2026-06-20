@@ -14,6 +14,11 @@ data class YearStatEntity(
     val lastUpdated: String?
 )
 
+data class ClassificationBudget(
+    val classificationCode: String,
+    val total: Double
+)
+
 @Dao
 interface ArchiveDao {
     @Query("""
@@ -34,6 +39,15 @@ interface ArchiveDao {
 
     @Query("SELECT SUM(nominal) FROM archives WHERE year = :year")
     fun getTotalBudgetByYear(year: Int): Flow<Double?>
+
+    @Query("SELECT SUM(nominal) FROM archives WHERE year BETWEEN :startYear AND :endYear")
+    fun getTotalBudgetForRange(startYear: Int, endYear: Int): Flow<Double?>
+
+    @Query("SELECT classificationCode, SUM(nominal) as total FROM archives WHERE year = :year GROUP BY classificationCode")
+    fun getBudgetByClassification(year: Int): Flow<List<ClassificationBudget>>
+
+    @Query("SELECT classificationCode, SUM(nominal) as total FROM archives WHERE year BETWEEN :startYear AND :endYear GROUP BY classificationCode")
+    fun getBudgetByClassificationForRange(startYear: Int, endYear: Int): Flow<List<ClassificationBudget>>
 
     @Query("SELECT * FROM archives WHERE id = :id")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>
