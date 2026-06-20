@@ -50,7 +50,8 @@ class StorageLocationRepositoryImpl @Inject constructor(
 
             ResultState.Success(inserted.id!!)
         } catch (e: Exception) {
-            ResultState.Error(e.message ?: "Failed to get or create storage location")
+            val userFriendlyError = com.example.arsipbpkpad.utils.handleNetworkError(e.message)
+            ResultState.Error(userFriendlyError)
         }
     }
 }

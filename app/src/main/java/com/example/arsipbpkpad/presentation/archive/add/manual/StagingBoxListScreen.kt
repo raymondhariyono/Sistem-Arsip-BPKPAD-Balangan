@@ -30,7 +30,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -43,7 +42,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,7 +61,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.StagedBox
-import com.example.arsipbpkpad.presentation.archive.list.FormTextField
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,10 +84,7 @@ fun StagingBoxListScreen(
     }
 
     LaunchedEffect(uiState.isUploadSuccess, uiState.error) {
-        if (uiState.isUploadSuccess) {
-            snackbarHostState.showSnackbar("Berhasil diunggah ke database!")
-            viewModel.onEvent(RapidInputUiEvent.ResetState)
-        } else if (uiState.error != null) {
+        if (uiState.error != null) {
             snackbarHostState.showSnackbar("Error: ${uiState.error}")
         }
     }
@@ -175,7 +170,11 @@ fun StagingBoxListScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface 
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading,
+            onRefresh = { viewModel.onEvent(RapidInputUiEvent.TriggerSync) },
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
+        ) {
             if (uiState.existingStagedBoxes.isEmpty()) {
                 EmptyStagingContent()
             } else {
@@ -224,16 +223,35 @@ fun StagingBoxListScreen(
                     }
                 )
             }
-
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            }
         }
+    }
+
+    // Task 1 Dialogs
+    uiState.successMessage?.let { msg ->
+        StatusDialog(
+            title = "Berhasil",
+            message = msg,
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissSuccess) },
+            isSuccess = true
+        )
+    }
+
+    uiState.error?.let { msg ->
+        StatusDialog(
+            title = "Kesalahan",
+            message = msg,
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissError) },
+            isSuccess = false
+        )
+    }
+
+    uiState.warningMessage?.let { msg ->
+        StatusDialog(
+            title = "Peringatan",
+            message = msg,
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
+            isSuccess = null
+        )
     }
 
     if (showAddBoxDialog) {
@@ -314,6 +332,7 @@ fun DashboardStagedBoxCard(
 
 @Composable
 fun DashboardSummary(uiState: RapidInputUiState) {
+    val filledBoxes = uiState.existingStagedBoxes.count { it.itemCount > 0 }
     val totalItems = uiState.existingStagedBoxes.sumOf { it.itemCount }
     
     Surface(
@@ -337,19 +356,30 @@ fun DashboardSummary(uiState: RapidInputUiState) {
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "${uiState.existingStagedBoxes.size} Boxes ready",
+                        text = "$filledBoxes / ${uiState.existingStagedBoxes.size} Box Terisi",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 
                 // Green Progress Bar from image
+                val progress = if (uiState.existingStagedBoxes.isNotEmpty()) {
+                    filledBoxes.toFloat() / uiState.existingStagedBoxes.size
+                } else 0f
+
                 Box(
                     modifier = Modifier
                         .width(120.dp)
                         .height(12.dp)
-                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
-                )
+                        .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .height(12.dp)
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
+                    )
+                }
             }
         }
     }
@@ -425,39 +455,52 @@ fun AddBoxDialog(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                FormTextField(
-                    label = "Gudang",
-                    value = uiState.boxContext.warehouse,
-                    onValueChange = onWarehouseChange,
-                    error = uiState.validationErrors["warehouse"]
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FormTextField(
-                        label = "Rak",
-                        value = uiState.boxContext.rack,
-                        onValueChange = onRackChange,
-                        modifier = Modifier.weight(1f),
-                        error = uiState.validationErrors["rack"]
+                        label = "Gudang",
+                        value = uiState.boxContext.warehouse,
+                        onValueChange = onWarehouseChange,
+                        placeholder = "Contoh: Gedung A / Lantai 2",
+                        error = uiState.validationErrors["warehouse"]
                     )
-                    FormTextField(
-                        label = "Nomor Box",
-                        value = uiState.boxContext.box,
-                        onValueChange = onBoxChange,
-                        modifier = Modifier.weight(1f),
-                        error = uiState.validationErrors["box"]
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                FormTextField(
-                    label = "Tahun Dokumen",
-                    value = uiState.boxContext.year,
-                    onValueChange = onYearChange,
-                    error = uiState.validationErrors["year"],
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        FormTextField(
+                            label = "Rak",
+                            value = uiState.boxContext.rack,
+                            onValueChange = onRackChange,
+                            modifier = Modifier.weight(1f),
+                            placeholder = "Contoh: R-01",
+                            error = uiState.validationErrors["rack"]
+                        )
+                        FormTextField(
+                            label = "Nomor Box",
+                            value = uiState.boxContext.box,
+                            onValueChange = onBoxChange,
+                            modifier = Modifier.weight(1f),
+                            placeholder = "Contoh: B-101",
+                            error = uiState.validationErrors["box"]
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                    val years = remember { (1990..currentYear).reversed().map { it.toString() } }
+                    FormDropdownField(
+                        label = "Tahun Dokumen",
+                        value = uiState.boxContext.year,
+                        options = years,
+                        onOptionSelected = onYearChange,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (uiState.validationErrors.containsKey("year")) {
+                        Text(
+                            text = uiState.validationErrors["year"] ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
 
                 Spacer(modifier = Modifier.height(24.dp))
 

@@ -35,7 +35,10 @@ class BulkInsertArchivesUseCase @Inject constructor(
             
             val storageLocationId = when (locationResult) {
                 is ResultState.Success -> locationResult.data
-                is ResultState.Error -> return ResultState.Error("Gagal inisialisasi lokasi: ${locationResult.message}")
+                is ResultState.Error -> {
+                    val friendlyError = com.example.arsipbpkpad.utils.handleNetworkError(locationResult.message)
+                    return ResultState.Error("Gagal inisialisasi lokasi: $friendlyError")
+                }
                 else -> return ResultState.Error("Gagal inisialisasi lokasi")
             }
 

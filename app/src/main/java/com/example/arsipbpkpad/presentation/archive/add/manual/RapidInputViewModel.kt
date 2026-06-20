@@ -59,7 +59,12 @@ data class RapidInputUiState(
     val availableCodes: List<com.example.arsipbpkpad.domain.model.ClassificationCode> = emptyList(),
     val classificationSearchQuery: String = "",
     val selectedQuickCategory: com.example.arsipbpkpad.domain.model.ClassificationCode? = null,
-    val quickCategories: List<com.example.arsipbpkpad.domain.model.ClassificationCode> = emptyList()
+    val quickCategories: List<com.example.arsipbpkpad.domain.model.ClassificationCode> = emptyList(),
+    // UX Messages
+    val successMessage: String? = null,
+    val warningMessage: String? = null,
+    val clearErrorOnDismiss: Boolean = true, // Flag to know if we should clear state.error
+    val isSyncingClassifications: Boolean = false
 )
 
 sealed class RapidInputUiEvent {
@@ -103,6 +108,11 @@ sealed class RapidInputUiEvent {
     data class OnConfirmUpload(val sessionId: String) : RapidInputUiEvent()
     data object OnConfirmAllUpload : RapidInputUiEvent()
     data object OnHandledNavigation : RapidInputUiEvent()
+    
+    // Message Dismissals
+    data object DismissSuccess : RapidInputUiEvent()
+    data object DismissError : RapidInputUiEvent()
+    data object DismissWarning : RapidInputUiEvent()
 }
 
 @HiltViewModel
@@ -128,7 +138,9 @@ class RapidInputViewModel @Inject constructor(
         
         // Trigger sync in background
         viewModelScope.launch {
+            _uiState.update { it.copy(isSyncingClassifications = true) }
             archiveRepository.syncClassificationCodes()
+            _uiState.update { it.copy(isSyncingClassifications = false) }
         }
         
         // Handle initial session if passed
@@ -172,7 +184,8 @@ class RapidInputViewModel @Inject constructor(
     private fun observeClassificationCodes() {
         viewModelScope.launch {
             archiveRepository.observeClassificationCodes().collect { codes ->
-                val quickCats = codes.filter { it.parentCode == "900.1" }
+                // Filter for top-level categories (e.g., 000, 100, 200...) to match "Kategori Cepat" requirements
+                val quickCats = codes.filter { it.level == 1 || it.parentCode == null }
                 _uiState.update { it.copy(
                     availableCodes = codes,
                     quickCategories = quickCats
@@ -261,6 +274,16 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.TriggerSync -> triggerSync()
             is RapidInputUiEvent.OnHandledNavigation -> { /* Using SharedFlow */ }
             is RapidInputUiEvent.ResetState -> _uiState.value = RapidInputUiState()
+            
+            is RapidInputUiEvent.DismissSuccess -> {
+                if (_uiState.value.isUploadSuccess) {
+                    _uiState.value = RapidInputUiState()
+                } else {
+                    _uiState.update { it.copy(successMessage = null) }
+                }
+            }
+            is RapidInputUiEvent.DismissError -> _uiState.update { it.copy(error = null) }
+            is RapidInputUiEvent.DismissWarning -> _uiState.update { it.copy(warningMessage = null) }
         }
     }
 
@@ -282,10 +305,24 @@ class RapidInputViewModel @Inject constructor(
         viewModelScope.launch {
             val ctx = _uiState.value.boxContext
             val errors = mutableMapOf<String, String>()
-            if (ctx.warehouse.isBlank()) errors["warehouse"] = "Wajib diisi"
-            if (ctx.rack.isBlank()) errors["rack"] = "Wajib diisi"
-            if (ctx.box.isBlank()) errors["box"] = "Wajib diisi"
-            if (ctx.year.length != 4) errors["year"] = "Tahun tidak valid"
+            if (ctx.warehouse.isBlank()) errors["warehouse"] = "Gudang wajib diisi"
+            if (ctx.rack.isBlank()) errors["rack"] = "Nomor rak wajib diisi"
+            if (ctx.box.isBlank()) errors["box"] = "Nomor box wajib diisi"
+            
+            val yearInt = ctx.year.toIntOrNull()
+            if (ctx.year.length != 4 || yearInt == null) {
+                errors["year"] = "Format tahun tidak valid (4 digit)"
+            } else {
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                if (currentYear - yearInt > 10 && _uiState.value.warningMessage == null) {
+                    _uiState.update { it.copy(
+                        warningMessage = "Peringatan: Arsip tahun $yearInt sudah melewati batas 10 tahun dan berpotensi masuk masa retensi/pemusnahan."
+                    ) }
+                    // We don't return here because we want them to be able to save anyway, 
+                    // but usually you want them to click "Confirm" again or have a specific flow.
+                    // For now, we show the warning and let them continue if they click again.
+                }
+            }
             
             if (errors.isEmpty()) {
                 val newId = _uiState.value.currentSessionId ?: UUID.randomUUID().toString()
@@ -318,10 +355,13 @@ class RapidInputViewModel @Inject constructor(
             val sessionId = state.currentSessionId ?: return@launch
             
             val errors = mutableMapOf<String, String>()
-            if (state.documentNumber.isBlank()) errors["docNumber"] = "Wajib diisi"
-            if (state.subject.isBlank()) errors["subject"] = "Wajib diisi"
+            if (state.documentNumber.isBlank()) errors["docNumber"] = "Nomor dokumen wajib diisi"
+            if (state.subject.isBlank()) errors["subject"] = "Uraian dokumen wajib diisi"
             if (state.isAutoBundleEnabled) {
-                if (state.spmDocumentNumber.isBlank()) errors["spmDocNumber"] = "Wajib diisi"
+                if (state.spmDocumentNumber.isBlank()) errors["spmDocNumber"] = "Nomor SPM wajib diisi"
+            }
+            if (state.copyType == DocCopyType.COPY && (state.copyCount.toIntOrNull() ?: 0) < 1) {
+                errors["copyCount"] = "Jumlah salinan minimal 1"
             }
             
             if (errors.isNotEmpty()) {
@@ -457,10 +497,15 @@ class RapidInputViewModel @Inject constructor(
             
             when (result) {
                 is ResultState.Success -> {
-                    _uiState.update { it.copy(isLoading = false, isUploadSuccess = true) }
+                    _uiState.update { it.copy(
+                        isLoading = false, 
+                        isUploadSuccess = true,
+                        successMessage = "Data berhasil diunggah ke database!"
+                    ) }
                 }
                 is ResultState.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                    val userFriendlyError = com.example.arsipbpkpad.utils.handleNetworkError(result.message)
+                    _uiState.update { it.copy(isLoading = false, error = userFriendlyError) }
                 }
                 else -> _uiState.update { it.copy(isLoading = false) }
             }
@@ -483,9 +528,14 @@ class RapidInputViewModel @Inject constructor(
             }
 
             if (allSuccess) {
-                _uiState.update { it.copy(isLoading = false, isUploadSuccess = true) }
+                _uiState.update { it.copy(
+                    isLoading = false, 
+                    isUploadSuccess = true,
+                    successMessage = "Semua data box berhasil diunggah!"
+                ) }
             } else {
-                _uiState.update { it.copy(isLoading = false, error = lastError ?: "Gagal mengupload beberapa box") }
+                val userFriendlyError = com.example.arsipbpkpad.utils.handleNetworkError(lastError)
+                _uiState.update { it.copy(isLoading = false, error = userFriendlyError) }
             }
         }
     }

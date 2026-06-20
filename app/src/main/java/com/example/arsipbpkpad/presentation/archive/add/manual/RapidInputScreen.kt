@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,12 +25,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -101,7 +104,7 @@ fun RapidInputScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showClassificationSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
     // Ensure the session observation starts as soon as we have a sessionId from route
@@ -131,11 +134,38 @@ fun RapidInputScreen(
         )
     }
 
-    LaunchedEffect(uiState.isUploadSuccess) {
-        if (uiState.isUploadSuccess) {
-            onNavigateBack()
-            viewModel.onEvent(RapidInputUiEvent.ResetState)
-        }
+    /* Auto-navigation handled by success dialog dismissal */
+
+    // Task 1: Success, Error, and Warning Dialogs
+    uiState.successMessage?.let { msg ->
+        StatusDialog(
+            title = "Berhasil",
+            message = msg,
+            onDismiss = { 
+                val isUpload = uiState.isUploadSuccess
+                viewModel.onEvent(RapidInputUiEvent.DismissSuccess)
+                if (isUpload) onNavigateBack()
+            },
+            isSuccess = true
+        )
+    }
+
+    uiState.error?.let { msg ->
+        StatusDialog(
+            title = "Kesalahan",
+            message = msg,
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissError) },
+            isSuccess = false
+        )
+    }
+
+    uiState.warningMessage?.let { msg ->
+        StatusDialog(
+            title = "Peringatan Retensi",
+            message = msg,
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
+            isSuccess = null // Use a different icon/color for warning
+        )
     }
 
     if (showClassificationSheet) {
@@ -399,6 +429,7 @@ fun RapidInputScreen(
                                 value = uiState.copyCount,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                placeholder = "Contoh: 1",
                                 error = uiState.validationErrors["copyCount"]
                             )
                         }
@@ -408,6 +439,7 @@ fun RapidInputScreen(
                                 label = if (uiState.isAutoBundleEnabled) "Nomor Dokumen SP2D" else "Nomor Dokumen",
                                 value = uiState.documentNumber,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                                placeholder = "Contoh: 001/SP2D/2026",
                                 error = uiState.validationErrors["docNumber"]
                             )
                         }
@@ -417,6 +449,7 @@ fun RapidInputScreen(
                                 label = "Nomor Dokumen SPM",
                                 value = uiState.spmDocumentNumber,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                                placeholder = "Contoh: 001/SPM/2026",
                                 error = uiState.validationErrors["spmDocNumber"]
                             )
                         }
@@ -425,6 +458,7 @@ fun RapidInputScreen(
                             label = "Uraian",
                             value = uiState.subject,
                             onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
+                            placeholder = "Contoh: Belanja ATK Kantor",
                             error = uiState.validationErrors["subject"]
                         )
 
@@ -433,6 +467,7 @@ fun RapidInputScreen(
                                 label = "Deskripsi SPJ",
                                 value = uiState.spjDescription,
                                 onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                                placeholder = "Contoh: Laporan Pertanggungjawaban ATK",
                                 error = uiState.validationErrors["spjDescription"]
                             )
                         }
@@ -442,7 +477,8 @@ fun RapidInputScreen(
                             value = uiState.nominal,
                             onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
                             visualTransformation = CurrencyVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            placeholder = "Contoh: 10.000.000"
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -640,20 +676,35 @@ fun ClassificationBottomSheet(
             
             Spacer(modifier = Modifier.height(8.dp))
 
-            LazyRow(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                items(uiState.quickCategories, key = { it.code }) { category ->
+                uiState.quickCategories.forEach { category ->
                     val isSelected = uiState.selectedQuickCategory?.code == category.code
                     FilterChip(
                         selected = isSelected,
                         onClick = { onQuickCategorySelected(category) },
-                        label = { Text(category.code) },
-                        shape = RoundedCornerShape(16.dp),
+                        label = { 
+                            Text(
+                                text = "${category.code} ${category.name}",
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            ) 
+                        },
+                        shape = RoundedCornerShape(12.dp),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = MaterialTheme.colorScheme.outlineVariant,
+                            selectedBorderColor = MaterialTheme.colorScheme.primary
                         )
                     )
                 }
@@ -683,11 +734,42 @@ fun ClassificationBottomSheet(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(filteredCodes, key = { it.code }) { classification ->
-                    ClassificationItem(
-                        classification = classification,
-                        onClick = { onCodeSelected(classification.code) }
-                    )
+                if (uiState.isSyncingClassifications && uiState.availableCodes.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                } else if (filteredCodes.isEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Tidak ada kode yang cocok dengan pencarian.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    items(filteredCodes, key = { it.code }) { classification ->
+                        ClassificationItem(
+                            classification = classification,
+                            onClick = { onCodeSelected(classification.code) }
+                        )
+                    }
                 }
             }
             
@@ -706,7 +788,10 @@ fun ClassificationItem(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -728,15 +813,16 @@ fun ClassificationItem(
                     Text(
                         text = "Induk: ${classification.parentCode}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = classification.name,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -810,6 +896,64 @@ fun StagedItemRow(
 }
 
 @Composable
+fun StatusDialog(
+    title: String,
+    message: String,
+    onDismiss: () -> Unit,
+    isSuccess: Boolean? = true // true: success, false: error, null: warning
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = when (isSuccess) {
+                    true -> Icons.Default.CheckCircle
+                    false -> Icons.Default.Cancel
+                    else -> Icons.Default.Warning
+                },
+                contentDescription = null,
+                tint = when (isSuccess) {
+                    true -> Color(0xFF4CAF50)
+                    false -> MaterialTheme.colorScheme.error
+                    else -> Color(0xFFFF9800)
+                },
+                modifier = Modifier.size(48.dp)
+            )
+        },
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(0.5f)
+                ) {
+                    Text("Oke")
+                }
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(24.dp)
+    )
+}
+
+@Composable
 fun FormTextField(
     label: String,
     value: String,
@@ -819,7 +963,8 @@ fun FormTextField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    placeholder: String? = null
 ) {
     Column(modifier = modifier.padding(bottom = 8.dp)) {
         Text(
@@ -833,7 +978,14 @@ fun FormTextField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             isError = error != null,
-            placeholder = { Text("Masukkan $label...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+            placeholder = { 
+                Text(
+                    text = placeholder ?: "Masukkan $label...", 
+                    style = MaterialTheme.typography.bodyMedium, 
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                ) 
+            },
+            supportingText = error?.let { { Text(it, style = MaterialTheme.typography.labelSmall) } },
             singleLine = singleLine,
             minLines = minLines,
             visualTransformation = visualTransformation,
@@ -844,9 +996,6 @@ fun FormTextField(
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface
             )
         )
-        if (error != null) {
-            Text(text = error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-        }
     }
 }
 
@@ -881,12 +1030,14 @@ fun FormDropdownField(
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                containerColor = Color.White // Enforce white background for dropdown
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
