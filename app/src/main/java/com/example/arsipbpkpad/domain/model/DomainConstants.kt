@@ -16,4 +16,7 @@ object DomainConstants {
     const val ERROR_BUNDLE_CREATION_FAILED = "Gagal membuat bundle transaksi"
     const val ERROR_BULK_INSERT_FAILED = "Gagal melakukan bulk insert"
     const val ERROR_UNKNOWN = "Terjadi kesalahan yang tidak diketahui"
+
+    // Validation
+    const val VAL_DUPLICATE_DOC = "Nomor dokumen ini sudah ada dengan status yang sama."
 }

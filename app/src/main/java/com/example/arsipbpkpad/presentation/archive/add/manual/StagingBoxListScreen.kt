@@ -61,7 +61,12 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.StagedBox
+import com.example.arsipbpkpad.presentation.components.BottomNavItem
+import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.FormDropdownField
+import com.example.arsipbpkpad.presentation.components.FormTextField
+import com.example.arsipbpkpad.presentation.components.StatusDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +74,7 @@ fun StagingBoxListScreen(
     viewModel: RapidInputViewModel,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToBottomNav: (com.example.arsipbpkpad.presentation.components.BottomNavItem) -> Unit
+    onNavigateToBottomNav: (BottomNavItem) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddBoxDialog by remember { mutableStateOf(false) }
@@ -93,79 +98,23 @@ fun StagingBoxListScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            BpkpadTopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.foundation.Image(
-                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.logo_balangan),
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.staging_status_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                actions = {
-                    TextButton(
-                        onClick = { 
-                            if (!uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty()) {
-                                viewModel.onEvent(RapidInputUiEvent.OnConfirmAllUpload)
-                            }
-                        },
-                        enabled = !uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty()
-                    ) {
-                        Text(
-                            text = if (uiState.isLoading) stringResource(R.string.btn_processing) else stringResource(R.string.btn_push_to_db).replace(" ", "\n"),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (uiState.existingStagedBoxes.isNotEmpty() && !uiState.isLoading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                            textAlign = TextAlign.End
-                        )
-                    }
-                    IconButton(
-                        onClick = { viewModel.onEvent(RapidInputUiEvent.TriggerSync) },
-                        enabled = !uiState.isLoading
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.btn_sync),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                containerColor = Color.Transparent
+            StagingBoxListTopBar(
+                isLoading = uiState.isLoading,
+                hasBoxes = uiState.existingStagedBoxes.isNotEmpty(),
+                onBackClick = onNavigateBack,
+                onPushAllClick = { viewModel.onEvent(RapidInputUiEvent.OnConfirmAllUpload) },
+                onSyncClick = { viewModel.onEvent(RapidInputUiEvent.TriggerSync) }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { 
-                    viewModel.onEvent(RapidInputUiEvent.CreateNewSession)
-                    showAddBoxDialog = true 
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Tambah Box")
-            }
+            AddBoxFAB(onClick = { 
+                viewModel.onEvent(RapidInputUiEvent.CreateNewSession)
+                showAddBoxDialog = true 
+            })
         },
         bottomBar = {
-            com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
-                currentRoute = com.example.arsipbpkpad.presentation.components.BottomNavItem.ADD.route,
+            BpkpadBottomNavigation(
+                currentRoute = BottomNavItem.ADD.route,
                 onNavigate = onNavigateToBottomNav
             )
         },
@@ -179,59 +128,34 @@ fun StagingBoxListScreen(
             if (uiState.existingStagedBoxes.isEmpty()) {
                 EmptyStagingContent()
             } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(uiState.existingStagedBoxes) { box ->
-                            DashboardStagedBoxCard(
-                                box = box,
-                                onContinue = { 
-                                    viewModel.onEvent(RapidInputUiEvent.SetCurrentSession(box.sessionId))
-                                    onNavigateToRapidInput(box.sessionId) 
-                                },
-                                onDelete = { boxToDelete = box.sessionId }
-                            )
-                        }
-                    }
-
-                    DashboardSummary(uiState = uiState)
-                }
+                StagingBoxListContent(
+                    boxes = uiState.existingStagedBoxes,
+                    onBoxClick = { 
+                        viewModel.onEvent(RapidInputUiEvent.SetCurrentSession(it))
+                        onNavigateToRapidInput(it) 
+                    },
+                    onBoxDelete = { boxToDelete = it },
+                    uiState = uiState
+                )
             }
 
             if (boxToDelete != null) {
-                AlertDialog(
-                    onDismissRequest = { boxToDelete = null },
-                    title = { Text(stringResource(R.string.title_delete_staging_box)) },
-                    text = { Text(stringResource(R.string.msg_delete_staging_box)) },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                boxToDelete?.let { viewModel.onEvent(RapidInputUiEvent.OnDeleteBoxSession(it)) }
-                                boxToDelete = null
-                            },
-                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text(stringResource(R.string.btn_delete))
-                        }
+                DeleteBoxDialog(
+                    onConfirm = {
+                        boxToDelete?.let { viewModel.onEvent(RapidInputUiEvent.OnDeleteBoxSession(it)) }
+                        boxToDelete = null
                     },
-                    dismissButton = {
-                        TextButton(onClick = { boxToDelete = null }) {
-                            Text(stringResource(R.string.btn_cancel))
-                        }
-                    }
+                    onDismiss = { boxToDelete = null }
                 )
             }
         }
     }
 
-    // Task 1 Dialogs
+    // Common Dialogs
     uiState.successMessage?.let { msg ->
         StatusDialog(
             title = stringResource(R.string.title_success),
-            message = msg,
+            message = msg.asString(),
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissSuccess) },
             isSuccess = true
         )
@@ -249,7 +173,7 @@ fun StagingBoxListScreen(
     uiState.warningMessage?.let { msg ->
         StatusDialog(
             title = stringResource(R.string.title_warning),
-            message = msg,
+            message = msg.asString(),
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
             isSuccess = null
         )
@@ -259,15 +183,134 @@ fun StagingBoxListScreen(
         AddBoxDialog(
             uiState = uiState,
             onDismiss = { showAddBoxDialog = false },
-            onConfirm = {
-                viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext)
-            },
+            onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext) },
             onWarehouseChange = { viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange(it)) },
             onRackChange = { viewModel.onEvent(RapidInputUiEvent.OnRackChange(it)) },
             onBoxChange = { viewModel.onEvent(RapidInputUiEvent.OnBoxChange(it)) },
             onYearChange = { viewModel.onEvent(RapidInputUiEvent.OnYearChange(it)) }
         )
     }
+}
+
+@Composable
+fun StagingBoxListTopBar(
+    isLoading: Boolean,
+    hasBoxes: Boolean,
+    onBackClick: () -> Unit,
+    onPushAllClick: () -> Unit,
+    onSyncClick: () -> Unit
+) {
+    BpkpadTopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.logo_balangan),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.staging_status_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        },
+        actions = {
+            TextButton(
+                onClick = onPushAllClick,
+                enabled = !isLoading && hasBoxes
+            ) {
+                Text(
+                    text = if (isLoading) stringResource(R.string.btn_processing) else stringResource(R.string.btn_push_to_db).replace(" ", "\n"),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (hasBoxes && !isLoading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                    textAlign = TextAlign.End
+                )
+            }
+            IconButton(
+                onClick = onSyncClick,
+                enabled = !isLoading
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = stringResource(R.string.btn_sync),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        containerColor = Color.Transparent
+    )
+}
+
+@Composable
+fun AddBoxFAB(onClick: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        shape = CircleShape
+    ) {
+        Icon(Icons.Default.Add, contentDescription = "Tambah Box")
+    }
+}
+
+@Composable
+fun StagingBoxListContent(
+    boxes: List<StagedBox>,
+    onBoxClick: (String) -> Unit,
+    onBoxDelete: (String) -> Unit,
+    uiState: RapidInputUiState
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(boxes) { box ->
+                DashboardStagedBoxCard(
+                    box = box,
+                    onContinue = { onBoxClick(box.sessionId) },
+                    onDelete = { onBoxDelete(box.sessionId) }
+                )
+            }
+        }
+        DashboardSummary(uiState = uiState)
+    }
+}
+
+@Composable
+fun DeleteBoxDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.title_delete_staging_box)) },
+        text = { Text(stringResource(R.string.msg_delete_staging_box)) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text(stringResource(R.string.btn_delete))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.btn_cancel))
+            }
+        }
+    )
 }
 
 @Composable
@@ -363,7 +406,6 @@ fun DashboardSummary(uiState: RapidInputUiState) {
                     )
                 }
                 
-                // Green Progress Bar from image
                 val progress = if (uiState.existingStagedBoxes.isNotEmpty()) {
                     filledBoxes.toFloat() / uiState.existingStagedBoxes.size
                 } else 0f

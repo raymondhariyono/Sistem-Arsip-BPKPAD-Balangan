@@ -2,8 +2,9 @@ package com.example.arsipbpkpad.presentation.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.arsipbpkpad.core.common.ResultState
+import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.usecase.GetAnalyticsUseCase
+import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
     private val getAnalyticsUseCase: GetAnalyticsUseCase,
-    private val getArchivedYearsUseCase: com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
+    private val getArchivedYearsUseCase: GetArchivedYearsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AnalyticsUiState())
@@ -59,26 +60,21 @@ class AnalyticsViewModel @Inject constructor(
     private fun loadAnalytics(year: Int) {
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             getAnalyticsUseCase(year).collect { result ->
                 when (result) {
-                    is ResultState.Loading -> {
-                        _uiState.update { it.copy(isLoading = true) }
-                    }
-                    is ResultState.Success -> {
+                    is DomainResult.Success -> {
                         _uiState.update { it.copy(
                             isLoading = false,
                             totalBudget = result.data.totalBudget,
                             errorMessage = null
                         ) }
                     }
-                    is ResultState.Error -> {
+                    is DomainResult.Error -> {
                         _uiState.update { it.copy(
                             isLoading = false,
                             errorMessage = result.message
                         ) }
-                    }
-                    else -> {
-                        _uiState.update { it.copy(isLoading = false) }
                     }
                 }
             }

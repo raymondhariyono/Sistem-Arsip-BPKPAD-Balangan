@@ -1,12 +1,12 @@
 package com.example.arsipbpkpad.presentation.archive.list
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
-import androidx.paging.filter
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
+import com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -27,22 +28,22 @@ import javax.inject.Inject
 @HiltViewModel
 class ArchiveListViewModel @Inject constructor(
     private val getArchivesUseCase: GetArchivesUseCase,
-    private val getArchivedYearsUseCase: com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase,
-    private val getYearStatsUseCase: com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase,
-    savedStateHandle: androidx.lifecycle.SavedStateHandle
+    private val getArchivedYearsUseCase: GetArchivedYearsUseCase,
+    private val getYearStatsUseCase: GetYearStatsUseCase,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArchiveListUiState())
     val uiState: StateFlow<ArchiveListUiState> = _uiState.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
     private val _selectedFilter = MutableStateFlow("Semua")
     private val _selectedYears = MutableStateFlow<Set<Int>>(emptySet())
     private val _isFilterConfirmed = MutableStateFlow(false)
 
-    val archivesPagingData: Flow<PagingData<ArchiveDocument>> = kotlinx.coroutines.flow.combine(
+    // Note: Replaced PagingData with simple Flow<List> due to Stage 1 purity rules.
+    // If Paging is strictly required, a domain abstraction or repository implementation detail would be needed.
+    val archivesFlow: Flow<List<ArchiveDocument>> = combine(
         _searchQuery.debounce(300L).distinctUntilChanged(),
         _selectedFilter,
         _selectedYears,
@@ -52,33 +53,24 @@ class ArchiveListViewModel @Inject constructor(
     }
         .flatMapLatest { params ->
             if (!params.confirmed || params.years.isEmpty()) {
-                flowOf(PagingData.empty())
+                flowOf(emptyList())
             } else {
                 getArchivesUseCase(params.query, params.years)
-                    .map { pagingData ->
+                    .map { documents ->
                         if (params.filter == "Semua") {
-                            pagingData
+                            documents
                         } else {
-                            pagingData.filter { it.type.name.equals(params.filter, ignoreCase = true) }
+                            documents.filter { it.type.name.equals(params.filter, ignoreCase = true) }
                         }
                     }
-                    .cachedIn(viewModelScope)
             }
         }
 
     init {
         val initialYear = savedStateHandle.get<String>("year")?.toIntOrNull()
         if (initialYear != null) {
-            _selectedYears.value = setOf(initialYear)
-            _isFilterConfirmed.value = true
-            _uiState.update { 
-                it.copy(
-                    selectedYears = setOf(initialYear),
-                    isFilterConfirmed = true
-                )
-            }
+            updateInitialYear(initialYear)
         }
-
         observeAvailableYears()
         observeYearStats()
     }
@@ -96,10 +88,7 @@ class ArchiveListViewModel @Inject constructor(
             _selectedYears.value = setOf(year)
             _isFilterConfirmed.value = true
             _uiState.update { 
-                it.copy(
-                    selectedYears = setOf(year),
-                    isFilterConfirmed = true
-                )
+                it.copy(selectedYears = setOf(year), isFilterConfirmed = true)
             }
         }
     }
@@ -117,12 +106,6 @@ class ArchiveListViewModel @Inject constructor(
 
     fun onEvent(event: ArchiveListUiEvent) {
         when (event) {
-            is ArchiveListUiEvent.Refresh -> {
-                // Paging3 handles refresh via the LazyPagingItems.refresh() in UI
-            }
-            is ArchiveListUiEvent.OnArchiveClick -> {
-                /* Handle navigation if needed */
-            }
             is ArchiveListUiEvent.OnSearchQueryChange -> {
                 _searchQuery.value = event.query
                 _uiState.update { it.copy(searchQuery = event.query) }
@@ -153,6 +136,7 @@ class ArchiveListViewModel @Inject constructor(
                 _isFilterConfirmed.value = false
                 _uiState.update { it.copy(isFilterConfirmed = false, selectedYears = emptySet()) }
             }
+            else -> {}
         }
     }
 

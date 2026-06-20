@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,15 +26,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.UnfoldMore
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,10 +39,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -53,7 +48,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -91,6 +85,9 @@ import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.FormDropdownField
+import com.example.arsipbpkpad.presentation.components.FormTextField
+import com.example.arsipbpkpad.presentation.components.StatusDialog
 import com.example.arsipbpkpad.utils.CurrencyVisualTransformation
 import kotlinx.coroutines.launch
 
@@ -108,7 +105,6 @@ fun RapidInputScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
-    // Ensure the session observation starts as soon as we have a sessionId from route
     LaunchedEffect(sessionId) {
         if (sessionId.isNotEmpty()) {
             viewModel.onEvent(RapidInputUiEvent.SetCurrentSession(sessionId))
@@ -116,40 +112,18 @@ fun RapidInputScreen(
     }
 
     if (uiState.showDuplicateWarning) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) },
-            title = { Text(stringResource(R.string.title_duplicate_warning)) },
-            text = { 
-                Text(
-                    stringResource(
-                        R.string.msg_duplicate_warning, 
-                        uiState.documentNumber, 
-                        uiState.copyType.name
-                    )
-                ) 
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true)) }
-                ) {
-                    Text(stringResource(R.string.btn_keep_save), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
+        DuplicateWarningDialog(
+            documentNumber = uiState.documentNumber,
+            copyType = uiState.copyType.name,
+            onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true)) },
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) }
         )
     }
 
-    /* Auto-navigation handled by success dialog dismissal */
-
-    // Task 1: Success, Error, and Warning Dialogs
     uiState.successMessage?.let { msg ->
         StatusDialog(
             title = stringResource(R.string.title_success),
-            message = msg,
+            message = msg.asString(),
             onDismiss = { 
                 val isUpload = uiState.isUploadSuccess
                 viewModel.onEvent(RapidInputUiEvent.DismissSuccess)
@@ -171,9 +145,9 @@ fun RapidInputScreen(
     uiState.warningMessage?.let { msg ->
         StatusDialog(
             title = stringResource(R.string.title_warning),
-            message = msg,
+            message = msg.asString(),
             onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
-            isSuccess = null // Use a different icon/color for warning
+            isSuccess = null
         )
     }
 
@@ -187,7 +161,6 @@ fun RapidInputScreen(
                 scope.launch { 
                     sheetState.hide() 
                     showClassificationSheet = false
-                    // Reset search state on select
                     viewModel.onEvent(RapidInputUiEvent.OnClassificationSearchQueryChanged(""))
                     viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(null))
                 }
@@ -203,106 +176,24 @@ fun RapidInputScreen(
 
     Scaffold(
         topBar = {
-            BpkpadTopAppBar(
-                title = { 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.foundation.Image(
-                            painter = painterResource(id = R.drawable.logo_balangan),
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.title_input_box, uiState.boxContext.box),
-                            style = MaterialTheme.typography.titleMedium, 
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = stringResource(R.string.back),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+            RapidInputTopBar(
+                boxName = uiState.boxContext.box,
+                onNavigateBack = onNavigateBack
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToScan,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan Document")
-            }
+            ScanFAB(onClick = onNavigateToScan)
         },
         bottomBar = {
-            Column {
-                Surface(
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        if (uiState.stagedDocuments.isNotEmpty()) {
-                            Button(
-                                onClick = { 
-                                    uiState.currentSessionId?.let { 
-                                        viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) 
-                                    }
-                                },
-                                enabled = !uiState.isLoading,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                shape = RoundedCornerShape(28.dp)
-                            ) {
-                                if (uiState.isLoading) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
-                                } else {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Filled.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = stringResource(R.string.btn_upload_docs, uiState.stagedDocuments.size), 
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                        
-                        OutlinedButton(
-                            onClick = { onNavigateBack() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                            shape = RoundedCornerShape(28.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text(
-                                text = if (uiState.stagedDocuments.isEmpty()) 
-                                    stringResource(R.string.btn_finish_back) 
-                                else 
-                                    stringResource(R.string.btn_cancel_exit),
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-                com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
-                    currentRoute = BottomNavItem.ADD.route,
-                    onNavigate = onNavigateToBottomNav
-                )
-            }
+            RapidInputBottomBar(
+                stagedCount = uiState.stagedDocuments.size,
+                isLoading = uiState.isLoading,
+                onUploadClick = { 
+                    uiState.currentSessionId?.let { viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) }
+                },
+                onExitClick = onNavigateBack,
+                onNavigateToBottomNav = onNavigateToBottomNav
+            )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
@@ -311,276 +202,26 @@ fun RapidInputScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // --- TOP SECTION: FORM ---
             item {
-                Card(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(24.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            text = if (uiState.editingId != null) 
-                                stringResource(R.string.title_edit_doc) 
-                            else 
-                                stringResource(R.string.title_add_doc),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Document Type & Bundle Logic
-                        FormDropdownField(
-                            label = stringResource(R.string.label_doc_type),
-                            value = uiState.docType.name,
-                            // Hide SPJ from manual select per rules
-                            options = listOf("SP2D", "SPM", "SPP"),
-                            onOptionSelected = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(DocType.valueOf(it))) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Classification Code
-                        Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                            Text(
-                                text = stringResource(R.string.label_classification_code),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Box {
-                                OutlinedTextField(
-                                    value = uiState.classificationCode,
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    enabled = false,
-                                    shape = RoundedCornerShape(12.dp),
-                                    trailingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.UnfoldMore,
-                                            contentDescription = "Pilih Kode",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                        disabledContainerColor = MaterialTheme.colorScheme.surface,
-                                        disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
-                                // Box overlay to make it clickable since enabled=false
-                                Box(
-                                    modifier = Modifier
-                                        .matchParentSize()
-                                        .clickable { showClassificationSheet = true }
-                                )
-                            }
-                        }
-
-                        // Auto-Bundle Checkbox
-                        if (uiState.editingId == null && uiState.docType == DocType.SP2D) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                            ) {
-                                Checkbox(
-                                    checked = uiState.isAutoBundleEnabled,
-                                    onCheckedChange = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) }
-                                )
-                                Text(
-                                    text = stringResource(R.string.label_auto_bundle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Physical Status (Original/Copy)
-                        Text(
-                            text = stringResource(R.string.label_physical_status), 
-                            style = MaterialTheme.typography.labelMedium, 
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(
-                                    selected = uiState.copyType == DocCopyType.ORIGINAL,
-                                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.ORIGINAL)) }
-                                )
-                                Text(stringResource(R.string.label_asli), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(
-                                    selected = uiState.copyType == DocCopyType.COPY,
-                                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.COPY)) }
-                                )
-                                Text(stringResource(R.string.label_salinan), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                        }
-
-                        // Copy Count (Visible only for COPY)
-                        if (uiState.copyType == DocCopyType.COPY) {
-                            FormTextField(
-                                label = stringResource(R.string.label_copy_count),
-                                value = uiState.copyCount,
-                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                placeholder = stringResource(R.string.placeholder_copy_count),
-                                error = uiState.validationErrors["copyCount"]
-                            )
-                        }
-
-                        if (uiState.docType != DocType.SPJ || !uiState.isAutoBundleEnabled) {
-                            FormTextField(
-                                label = if (uiState.isAutoBundleEnabled) 
-                                    stringResource(R.string.label_doc_number_sp2d) 
-                                else 
-                                    stringResource(R.string.label_doc_number),
-                                value = uiState.documentNumber,
-                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
-                                placeholder = stringResource(R.string.placeholder_doc_number),
-                                error = uiState.validationErrors["docNumber"]
-                            )
-                        }
-                        
-                        if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
-                            FormTextField(
-                                label = stringResource(R.string.label_doc_number_spm),
-                                value = uiState.spmDocumentNumber,
-                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
-                                placeholder = stringResource(R.string.placeholder_spm_number),
-                                error = uiState.validationErrors["spmDocNumber"]
-                            )
-                        }
-                        
-                        FormTextField(
-                            label = stringResource(R.string.label_description),
-                            value = uiState.subject,
-                            onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
-                            placeholder = stringResource(R.string.placeholder_subject),
-                            error = uiState.validationErrors["subject"]
-                        )
-
-                        if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
-                            FormTextField(
-                                label = stringResource(R.string.label_description_spj),
-                                value = uiState.spjDescription,
-                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
-                                placeholder = stringResource(R.string.placeholder_spj_desc),
-                                error = uiState.validationErrors["spjDescription"]
-                            )
-                        }
-                        
-                        FormTextField(
-                            label = stringResource(R.string.label_nominal),
-                            value = uiState.nominal,
-                            onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
-                            visualTransformation = CurrencyVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            placeholder = stringResource(R.string.placeholder_nominal)
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (uiState.editingId != null) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(56.dp),
-                                    shape = RoundedCornerShape(28.dp),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Text(stringResource(R.string.btn_cancel), fontWeight = FontWeight.Bold)
-                                }
-                                
-                                Button(
-                                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick()) },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(56.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                    shape = RoundedCornerShape(28.dp)
-                                ) {
-                                    Icon(Icons.Default.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.btn_update),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        } else {
-                            Button(
-                                onClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick()) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                shape = RoundedCornerShape(28.dp)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.btn_add_to_staging),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        
-                        uiState.error?.let {
-                            Text(
-                                text = it,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    }
-                }
+                RapidInputForm(
+                    uiState = uiState,
+                    onDocTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
+                    onAutoBundleToggle = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) },
+                    onCopyTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(it)) },
+                    onCopyCountChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
+                    onDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                    onSpmDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                    onSubjectChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
+                    onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                    onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
+                    onClassificationClick = { showClassificationSheet = true },
+                    onAddOrUpdateClick = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick()) },
+                    onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
+                )
             }
 
-            // --- SECTION HEADER ---
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.label_staging_list, uiState.stagedDocuments.size),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                    )
-                }
+                StagingListHeader(count = uiState.stagedDocuments.size)
             }
 
             items(uiState.stagedDocuments, key = { it.id }) { doc ->
@@ -594,33 +235,467 @@ fun RapidInputScreen(
             }
             
             if (uiState.stagedDocuments.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(48.dp), 
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Filled.Info,
-                                contentDescription = null, 
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.msg_empty_staging), 
-                                color = MaterialTheme.colorScheme.onSurfaceVariant, 
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
+                item { EmptyStagingState() }
             }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
+        }
+    }
+}
+
+@Composable
+fun DuplicateWarningDialog(
+    documentNumber: String,
+    copyType: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.title_duplicate_warning)) },
+        text = { 
+            Text(stringResource(R.string.msg_duplicate_warning, documentNumber, copyType)) 
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.btn_keep_save), fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.btn_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun RapidInputTopBar(boxName: String, onNavigateBack: () -> Unit) {
+    BpkpadTopAppBar(
+        title = { 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.foundation.Image(
+                    painter = painterResource(id = R.drawable.logo_balangan),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.title_input_box, boxName),
+                    style = MaterialTheme.typography.titleMedium, 
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                    contentDescription = stringResource(R.string.back),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun ScanFAB(onClick: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan Document")
+    }
+}
+
+@Composable
+fun RapidInputBottomBar(
+    stagedCount: Int,
+    isLoading: Boolean,
+    onUploadClick: () -> Unit,
+    onExitClick: () -> Unit,
+    onNavigateToBottomNav: (BottomNavItem) -> Unit
+) {
+    Column {
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 8.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                if (stagedCount > 0) {
+                    Button(
+                        onClick = onUploadClick,
+                        enabled = !isLoading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(28.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.btn_upload_docs, stagedCount), 
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                
+                OutlinedButton(
+                    onClick = onExitClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text(
+                        text = if (stagedCount == 0) stringResource(R.string.btn_finish_back) else stringResource(R.string.btn_cancel_exit),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
+            currentRoute = BottomNavItem.ADD.route,
+            onNavigate = onNavigateToBottomNav
+        )
+    }
+}
+
+@Composable
+fun RapidInputForm(
+    uiState: RapidInputUiState,
+    onDocTypeChange: (DocType) -> Unit,
+    onAutoBundleToggle: (Boolean) -> Unit,
+    onCopyTypeChange: (DocCopyType) -> Unit,
+    onCopyCountChange: (String) -> Unit,
+    onDocNumberChange: (String) -> Unit,
+    onSpmDocNumberChange: (String) -> Unit,
+    onSubjectChange: (String) -> Unit,
+    onSpjDescriptionChange: (String) -> Unit,
+    onNominalChange: (String) -> Unit,
+    onClassificationClick: () -> Unit,
+    onAddOrUpdateClick: () -> Unit,
+    onCancelEditClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = if (uiState.editingId != null) stringResource(R.string.title_edit_doc) else stringResource(R.string.title_add_doc),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FormDropdownField(
+                label = stringResource(R.string.label_doc_type),
+                value = uiState.docType.name,
+                options = listOf("SP2D", "SPM", "SPP"),
+                onOptionSelected = { onDocTypeChange(DocType.valueOf(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ClassificationSelector(
+                code = uiState.classificationCode,
+                onClick = onClassificationClick
+            )
+
+            if (uiState.editingId == null && uiState.docType == DocType.SP2D) {
+                AutoBundleCheckbox(
+                    checked = uiState.isAutoBundleEnabled,
+                    onCheckedChange = onAutoBundleToggle
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            PhysicalStatusSelector(
+                copyType = uiState.copyType,
+                onCopyTypeChange = onCopyTypeChange
+            )
+
+            if (uiState.copyType == DocCopyType.COPY) {
+                FormTextField(
+                    label = stringResource(R.string.label_copy_count),
+                    value = uiState.copyCount,
+                    onValueChange = onCopyCountChange,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    placeholder = stringResource(R.string.placeholder_copy_count),
+                    error = uiState.validationErrors["copyCount"]
+                )
+            }
+
+            if (uiState.docType != DocType.SPJ || !uiState.isAutoBundleEnabled) {
+                FormTextField(
+                    label = if (uiState.isAutoBundleEnabled) stringResource(R.string.label_doc_number_sp2d) else stringResource(R.string.label_doc_number),
+                    value = uiState.documentNumber,
+                    onValueChange = onDocNumberChange,
+                    placeholder = stringResource(R.string.placeholder_doc_number),
+                    error = uiState.validationErrors["docNumber"]
+                )
+            }
+            
+            if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                FormTextField(
+                    label = stringResource(R.string.label_doc_number_spm),
+                    value = uiState.spmDocumentNumber,
+                    onValueChange = onSpmDocNumberChange,
+                    placeholder = stringResource(R.string.placeholder_spm_number),
+                    error = uiState.validationErrors["spmDocNumber"]
+                )
+            }
+            
+            FormTextField(
+                label = stringResource(R.string.label_description),
+                value = uiState.subject,
+                onValueChange = onSubjectChange,
+                placeholder = stringResource(R.string.placeholder_subject),
+                error = uiState.validationErrors["subject"]
+            )
+
+            if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                FormTextField(
+                    label = stringResource(R.string.label_description_spj),
+                    value = uiState.spjDescription,
+                    onValueChange = onSpjDescriptionChange,
+                    placeholder = stringResource(R.string.placeholder_spj_desc),
+                    error = uiState.validationErrors["spjDescription"]
+                )
+            }
+            
+            FormTextField(
+                label = stringResource(R.string.label_nominal),
+                value = uiState.nominal,
+                onValueChange = onNominalChange,
+                visualTransformation = CurrencyVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                placeholder = stringResource(R.string.placeholder_nominal)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FormActionButtons(
+                isEditing = uiState.editingId != null,
+                onAddOrUpdateClick = onAddOrUpdateClick,
+                onCancelEditClick = onCancelEditClick
+            )
+            
+            uiState.error?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ClassificationSelector(code: String, onClick: () -> Unit) {
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            text = stringResource(R.string.label_classification_code),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Box {
+            OutlinedTextField(
+                value = code,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = false,
+                shape = RoundedCornerShape(12.dp),
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.UnfoldMore,
+                        contentDescription = "Pilih Kode",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable { onClick() }
+            )
+        }
+    }
+}
+
+@Composable
+fun AutoBundleCheckbox(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+        Text(
+            text = stringResource(R.string.label_auto_bundle),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+fun PhysicalStatusSelector(copyType: DocCopyType, onCopyTypeChange: (DocCopyType) -> Unit) {
+    Text(
+        text = stringResource(R.string.label_physical_status), 
+        style = MaterialTheme.typography.labelMedium, 
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(vertical = 8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = copyType == DocCopyType.ORIGINAL,
+                onClick = { onCopyTypeChange(DocCopyType.ORIGINAL) }
+            )
+            Text(stringResource(R.string.label_asli), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = copyType == DocCopyType.COPY,
+                onClick = { onCopyTypeChange(DocCopyType.COPY) }
+            )
+            Text(stringResource(R.string.label_salinan), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+@Composable
+fun FormActionButtons(isEditing: Boolean, onAddOrUpdateClick: () -> Unit, onCancelEditClick: () -> Unit) {
+    if (isEditing) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onCancelEditClick,
+                modifier = Modifier.weight(1f).height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+            ) {
+                Text(stringResource(R.string.btn_cancel), fontWeight = FontWeight.Bold)
+            }
+            
+            Button(
+                onClick = onAddOrUpdateClick,
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Icon(Icons.Default.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.btn_update),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    } else {
+        Button(
+            onClick = onAddOrUpdateClick,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.btn_add_to_staging),
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun StagingListHeader(count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.label_staging_list, count),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+fun EmptyStagingState() {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(48.dp), 
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.msg_empty_staging), 
+                color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -655,16 +730,7 @@ fun ClassificationBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp, 4.dp)
-                        .background(MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                )
-            }
+            BottomSheetDragHandle()
         },
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
@@ -684,115 +750,164 @@ fun ClassificationBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Kategori Cepat (Filter Chips) - Moved above Search Bar for better reach
-            Text(
-                text = stringResource(R.string.label_quick_category),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            QuickCategorySection(
+                categories = uiState.quickCategories,
+                selectedCategory = uiState.selectedQuickCategory,
+                onCategorySelected = onQuickCategorySelected
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                uiState.quickCategories.forEach { category ->
-                    val isSelected = uiState.selectedQuickCategory?.code == category.code
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onQuickCategorySelected(category) },
-                        label = { 
-                            Text(
-                                text = "${category.code} ${category.name}",
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            ) 
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected,
-                            borderColor = MaterialTheme.colorScheme.outlineVariant,
-                            selectedBorderColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Search Bar
-            OutlinedTextField(
-                value = uiState.classificationSearchQuery,
-                onValueChange = onSearchQueryChanged,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.search_classification_hint)) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                )
+            ClassificationSearchBar(
+                query = uiState.classificationSearchQuery,
+                onQueryChanged = onSearchQueryChanged
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Results List
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (uiState.isSyncingClassifications && uiState.availableCodes.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                } else if (filteredCodes.isEmpty()) {
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 48.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.msg_no_classification_found),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
-                    items(filteredCodes, key = { it.code }) { classification ->
-                        ClassificationItem(
-                            classification = classification,
-                            onClick = { onCodeSelected(classification.code) }
-                        )
-                    }
-                }
-            }
+            ClassificationResultsList(
+                codes = filteredCodes,
+                isSyncing = uiState.isSyncingClassifications && uiState.availableCodes.isEmpty(),
+                onCodeSelected = onCodeSelected
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+fun BottomSheetDragHandle() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp, 4.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant, CircleShape)
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun QuickCategorySection(
+    categories: List<ClassificationCode>,
+    selectedCategory: ClassificationCode?,
+    onCategorySelected: (ClassificationCode?) -> Unit
+) {
+    Text(
+        text = stringResource(R.string.label_quick_category),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+    )
+    
+    Spacer(modifier = Modifier.height(8.dp))
+
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        categories.forEach { category ->
+            val isSelected = selectedCategory?.code == category.code
+            FilterChip(
+                selected = isSelected,
+                onClick = { onCategorySelected(category) },
+                label = { 
+                    Text(
+                        text = "${category.code} ${category.name}",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    ) 
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant,
+                    selectedBorderColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun ClassificationSearchBar(query: String, onQueryChanged: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChanged,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text(stringResource(R.string.search_classification_hint)) },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+        )
+    )
+}
+
+@Composable
+fun ClassificationResultsList(
+    codes: List<ClassificationCode>,
+    isSyncing: Boolean,
+    onCodeSelected: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (isSyncing) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        } else if (codes.isEmpty()) {
+            item {
+                EmptyClassificationResults()
+            }
+        } else {
+            items(codes, key = { it.code }) { classification ->
+                ClassificationItem(
+                    classification = classification,
+                    onClick = { onCodeSelected(classification.code) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptyClassificationResults() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.msg_no_classification_found),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -861,52 +976,17 @@ fun StagedItemRow(
     ) {
         ListItem(
             headlineContent = { 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = doc.type.name,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = doc.documentNumber ?: "-", 
-                        fontWeight = FontWeight.Bold, 
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                StagedItemHeadline(type = doc.type.name, number = doc.documentNumber)
             },
             supportingContent = { 
-                Column {
-                    Text(
-                        text = doc.description ?: "-", 
-                        maxLines = 1, 
-                        fontSize = 12.sp, 
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Status: ${doc.copyType} | Nominal: Rp ${doc.nominal?.toLong() ?: 0}",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
-                }
+                StagedItemSupporting(
+                    description = doc.description,
+                    copyType = doc.copyType.name,
+                    nominal = doc.nominal
+                )
             },
             trailingContent = {
-                Row {
-                    IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.btn_edit), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                    }
-                    IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-                    }
-                }
+                StagedItemActions(onEdit = onEdit, onDelete = onDelete)
             },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
         )
@@ -914,165 +994,55 @@ fun StagedItemRow(
 }
 
 @Composable
-fun StatusDialog(
-    title: String,
-    message: String,
-    onDismiss: () -> Unit,
-    isSuccess: Boolean? = true // true: success, false: error, null: warning
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = when (isSuccess) {
-                    true -> Icons.Default.CheckCircle
-                    false -> Icons.Default.Cancel
-                    else -> Icons.Default.Warning
-                },
-                contentDescription = null,
-                tint = when (isSuccess) {
-                    true -> Color(0xFF4CAF50)
-                    false -> MaterialTheme.colorScheme.error
-                    else -> Color(0xFFFF9800)
-                },
-                modifier = Modifier.size(48.dp)
-            )
-        },
-        title = {
+fun StagedItemHeadline(type: String, number: String?) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shape = RoundedCornerShape(4.dp)
+        ) {
             Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
+                text = type,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
-        },
-        text = {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Button(
-                    onClick = onDismiss,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(0.5f)
-                ) {
-                    Text(stringResource(R.string.btn_ok))
-                }
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(24.dp)
-    )
-}
-
-@Composable
-fun FormTextField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    error: String? = null,
-    singleLine: Boolean = true,
-    minLines: Int = 1,
-    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    placeholder: String? = null
-) {
-    Column(modifier = modifier.padding(bottom = 8.dp)) {
+        }
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = label, 
-            style = MaterialTheme.typography.labelMedium, 
-            fontWeight = FontWeight.Bold,
+            text = number ?: "-", 
+            fontWeight = FontWeight.Bold, 
+            fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurface
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            isError = error != null,
-            placeholder = { 
-                Text(
-                    text = placeholder ?: stringResource(R.string.hint_enter_value, label), 
-                    style = MaterialTheme.typography.bodyMedium, 
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                ) 
-            },
-            supportingText = error?.let { { Text(it, style = MaterialTheme.typography.labelSmall) } },
-            singleLine = singleLine,
-            minLines = minLines,
-            visualTransformation = visualTransformation,
-            keyboardOptions = keyboardOptions,
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-            )
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FormDropdownField(
-    label: String,
-    value: String,
-    options: List<String>,
-    onOptionSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Column(modifier = modifier.padding(bottom = 8.dp)) {
+fun StagedItemSupporting(description: String?, copyType: String, nominal: Double?) {
+    Column {
         Text(
-            text = label, 
-            style = MaterialTheme.typography.labelMedium, 
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            text = description ?: "-", 
+            maxLines = 1, 
+            fontSize = 12.sp, 
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = {},
-                readOnly = true,
-                placeholder = { 
-                    Text(
-                        stringResource(R.string.hint_select_value, label), 
-                        style = MaterialTheme.typography.bodyMedium, 
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    ) 
-                },
-                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                containerColor = Color.White // Enforce white background for dropdown
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option) },
-                        onClick = {
-                            onOptionSelected(option)
-                            expanded = false
-                        }
-                    )
-                }
-            }
+        Text(
+            text = "Status: $copyType | Nominal: Rp ${nominal?.toLong() ?: 0}",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+        )
+    }
+}
+
+@Composable
+fun StagedItemActions(onEdit: () -> Unit, onDelete: () -> Unit) {
+    Row {
+        IconButton(onClick = onEdit) {
+            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.btn_edit), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        }
+        IconButton(onClick = onDelete) {
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
         }
     }
 }

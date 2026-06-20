@@ -36,7 +36,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -88,125 +87,153 @@ fun HomeContent(
     onNavigateToScan: () -> Unit
 ) {
     Scaffold(
-        topBar = {
-            BpkpadTopAppBar()
-        },
+        topBar = { BpkpadTopAppBar() },
         bottomBar = {
-            BpkpadBottomNavigation(
-                currentRoute = BottomNavItem.HOME.route,
-                onNavigate = { item ->
-                    when (item) {
-                        BottomNavItem.HOME -> { /* Already here */ }
-                        BottomNavItem.ARCHIVE -> onNavigateToArchiveList(null)
-                        BottomNavItem.ADD -> onNavigateToStagingBoxList()
-                        BottomNavItem.ANALYTICS -> onNavigateToAnalytics()
-                    }
-                }
+            HomeBottomNavigation(
+                onNavigateToArchiveList = onNavigateToArchiveList,
+                onNavigateToStagingBoxList = onNavigateToStagingBoxList,
+                onNavigateToAnalytics = onNavigateToAnalytics
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+        HomeMainList(
+            uiState = uiState,
+            paddingValues = paddingValues,
+            onNavigateToArchiveList = onNavigateToArchiveList,
+            onNavigateToDetail = onNavigateToDetail,
+            onNavigateToStagingBoxList = onNavigateToStagingBoxList
+        )
+    }
+}
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+@Composable
+fun HomeBottomNavigation(
+    onNavigateToArchiveList: (Int?) -> Unit,
+    onNavigateToStagingBoxList: () -> Unit,
+    onNavigateToAnalytics: () -> Unit
+) {
+    BpkpadBottomNavigation(
+        currentRoute = BottomNavItem.HOME.route,
+        onNavigate = { item ->
+            when (item) {
+                BottomNavItem.HOME -> { /* Already here */ }
+                BottomNavItem.ARCHIVE -> onNavigateToArchiveList(null)
+                BottomNavItem.ADD -> onNavigateToStagingBoxList()
+                BottomNavItem.ANALYTICS -> onNavigateToAnalytics()
+            }
+        }
+    )
+}
+
+@Composable
+fun HomeMainList(
+    uiState: HomeUiState,
+    paddingValues: androidx.compose.foundation.layout.PaddingValues,
+    onNavigateToArchiveList: (Int?) -> Unit,
+    onNavigateToDetail: (String) -> Unit,
+    onNavigateToStagingBoxList: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { HeaderSection() }
+
+        if (uiState.activeStagingBoxes.isNotEmpty()) {
+            item {
+                val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
+                val totalBoxes = uiState.activeStagingBoxes.size
+                StagingStatusCard(
+                    count = totalDocs,
+                    summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
+                    onClick = onNavigateToStagingBoxList,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+        }
+
+        item { HomePrimaryStats(uiState) }
+        item { HomeSecondaryStats(uiState) }
+
+        item {
+            SectionHeader(
+                title = stringResource(R.string.recently_added),
+                actionText = stringResource(R.string.view_all),
+                onActionClick = { onNavigateToArchiveList(null) }
+            )
+        }
+
+        item {
+            RecentArchiveTable(
+                items = uiState.recentItems,
+                onArchiveClick = onNavigateToDetail
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(88.dp)) }
+    }
+}
+
+@Composable
+fun HomePrimaryStats(uiState: HomeUiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        PrimaryStatCard(
+            title = stringResource(R.string.total_documents),
+            count = uiState.totalDocuments,
+            icon = Icons.Default.Done,
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            contentColor = MaterialTheme.colorScheme.primary
+        )
+        PrimaryStatCard(
+            title = stringResource(R.string.expired_documents),
+            count = uiState.expiredDocuments,
+            icon = Icons.Default.Warning,
+            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+            contentColor = MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+@Composable
+fun HomeSecondaryStats(uiState: HomeUiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { HeaderSection() }
-
-            if (uiState.activeStagingBoxes.isNotEmpty()) {
-                item {
-                    val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
-                    val totalBoxes = uiState.activeStagingBoxes.size
-
-                    StagingStatusCard(
-                        count = totalDocs,
-                        summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
-                        onClick = onNavigateToStagingBoxList,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-            }
-
-            item {
-                PrimaryStatCard(
-                    title = stringResource(R.string.total_documents),
-                    count = uiState.totalDocuments,
-                    icon = Icons.Default.Done,
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            item {
-                PrimaryStatCard(
-                    title = stringResource(R.string.expired_documents),
-                    count = uiState.expiredDocuments,
-                    icon = Icons.Default.Warning,
-                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            }
-
-            // Grid Layout
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SecondaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        count = uiState.sp2dCount,
-                        label = stringResource(R.string.type_sp2d),
-                        icon = Icons.Default.Add
-                    )
-                    SecondaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        count = uiState.spmCount,
-                        label = stringResource(R.string.type_spm),
-                        icon = Icons.Default.Done
-                    )
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SecondaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        count = uiState.sp3bCount,
-                        label = stringResource(R.string.type_sp3b),
-                        icon = Icons.Default.Warning
-                    )
-                    SecondaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        count = uiState.dsbCount,
-                        label = stringResource(R.string.type_dsb),
-                        icon = Icons.Default.Build
-                    )
-                }
-            }
-
-            item {
-                SectionHeader(
-                    title = stringResource(R.string.recently_added),
-                    actionText = stringResource(R.string.view_all),
-                    onActionClick = { onNavigateToArchiveList(null) }
-                )
-            }
-
-            item {
-                RecentArchiveTable(
-                    items = uiState.recentItems,
-                    onArchiveClick = onNavigateToDetail
-                )
-            }
-
-            item { Spacer(modifier = Modifier.height(88.dp)) }
+            SecondaryStatCard(
+                modifier = Modifier.weight(1f),
+                count = uiState.sp2dCount,
+                label = stringResource(R.string.type_sp2d),
+                icon = Icons.Default.Add
+            )
+            SecondaryStatCard(
+                modifier = Modifier.weight(1f),
+                count = uiState.spmCount,
+                label = stringResource(R.string.type_spm),
+                icon = Icons.Default.Done
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SecondaryStatCard(
+                modifier = Modifier.weight(1f),
+                count = uiState.sp3bCount,
+                label = stringResource(R.string.type_sp3b),
+                icon = Icons.Default.Warning
+            )
+            SecondaryStatCard(
+                modifier = Modifier.weight(1f),
+                count = uiState.dsbCount,
+                label = stringResource(R.string.type_dsb),
+                icon = Icons.Default.Build
+            )
         }
     }
 }
@@ -227,80 +254,91 @@ fun StagingStatusCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.staging_status_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-                
-                Text(
-                    text = stringResource(R.string.btn_review_box),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
+            StagingCardHeader()
             Spacer(modifier = Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.List,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Column {
-                    Text(
-                        text = stringResource(R.string.staging_docs_waiting, count),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        text = summary,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            
+            StagingCardContent(count = count, summary = summary)
             Spacer(modifier = Modifier.height(16.dp))
-            
-            LinearProgressIndicator(
-                progress = { 1f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(CircleShape),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.outlineVariant
+            StagingProgressBar()
+        }
+    }
+}
+
+@Composable
+fun StagingCardHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.staging_status_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+        
+        Text(
+            text = stringResource(R.string.btn_review_box),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+fun StagingCardContent(count: Int, summary: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.List,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column {
+            Text(
+                text = stringResource(R.string.staging_docs_waiting, count),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
             )
         }
     }
+}
+
+@Composable
+fun StagingProgressBar() {
+    LinearProgressIndicator(
+        progress = { 1f },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(CircleShape),
+        color = MaterialTheme.colorScheme.primary,
+        trackColor = MaterialTheme.colorScheme.outlineVariant
+    )
 }

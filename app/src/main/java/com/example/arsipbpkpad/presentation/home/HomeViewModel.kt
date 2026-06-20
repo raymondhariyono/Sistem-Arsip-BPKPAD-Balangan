@@ -2,10 +2,12 @@ package com.example.arsipbpkpad.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.arsipbpkpad.core.common.ResultState
 import com.example.arsipbpkpad.domain.model.DocStatus
+import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.usecase.GetArchivesListUseCase
+import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
+import com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,12 +16,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * ViewModel for the Home Screen.
+ * Manages dashboard state and unidirectional data flow.
+ */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getArchivesListUseCase: GetArchivesListUseCase,
     private val stagingRepository: StagingRepository,
-    private val getArchivedYearsUseCase: com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase,
-    private val getYearStatsUseCase: com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase
+    private val getArchivedYearsUseCase: GetArchivedYearsUseCase,
+    private val getYearStatsUseCase: GetYearStatsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -62,33 +68,28 @@ class HomeViewModel @Inject constructor(
 
     private fun loadDashboardData() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             getArchivesListUseCase().collect { result ->
                 when (result) {
-                    is ResultState.Loading -> {
-                        _uiState.update { it.copy(isLoading = true) }
-                    }
-                    is ResultState.Success -> {
+                    is DomainResult.Success -> {
                         val archives = result.data
                         _uiState.update { state ->
                             state.copy(
                                 isLoading = false,
                                 totalDocuments = archives.size.toString(),
-                                recentItems = archives.take(5).map {
+                                recentItems = archives.take(5).map { doc ->
                                     RecentArchive(
-                                        id = it.id,
-                                        title = it.documentNumber ?: "-",
-                                        type = it.type.name,
-                                        isAvailable = it.status == DocStatus.AVAILABLE
+                                        id = doc.id,
+                                        title = doc.documentNumber ?: "-",
+                                        type = doc.type.name,
+                                        isAvailable = doc.status == DocStatus.AVAILABLE
                                     )
                                 }
                             )
                         }
                     }
-                    is ResultState.Error -> {
+                    is DomainResult.Error -> {
                         _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
-                    }
-                    is ResultState.Idle -> {
-                        _uiState.update { it.copy(isLoading = false) }
                     }
                 }
             }

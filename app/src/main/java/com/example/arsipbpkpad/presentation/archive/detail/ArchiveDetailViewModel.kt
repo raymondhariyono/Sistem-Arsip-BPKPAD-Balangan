@@ -3,13 +3,17 @@ package com.example.arsipbpkpad.presentation.archive.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.arsipbpkpad.core.common.ResultState
+import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.DomainResult
+import com.example.arsipbpkpad.domain.repository.ArchiveRepository
+import com.example.arsipbpkpad.domain.usecase.DeleteArchiveUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchiveDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -18,8 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ArchiveDetailViewModel @Inject constructor(
     private val getArchiveDetailUseCase: GetArchiveDetailUseCase,
-    private val deleteArchiveUseCase: com.example.arsipbpkpad.domain.usecase.DeleteArchiveUseCase,
-    private val archiveRepository: com.example.arsipbpkpad.domain.repository.ArchiveRepository,
+    private val deleteArchiveUseCase: DeleteArchiveUseCase,
+    private val archiveRepository: ArchiveRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -37,11 +41,9 @@ class ArchiveDetailViewModel @Inject constructor(
     fun deleteArchive(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val result = deleteArchiveUseCase(archiveId)
-            if (result is ResultState.Success) {
-                onSuccess()
-            } else if (result is ResultState.Error) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
+            when (val result = deleteArchiveUseCase(archiveId)) {
+                is DomainResult.Success -> onSuccess()
+                is DomainResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
             }
         }
     }
@@ -49,38 +51,36 @@ class ArchiveDetailViewModel @Inject constructor(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun getArchiveDetail(id: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             getArchiveDetailUseCase(id).flatMapLatest { result ->
-                if (result is ResultState.Success) {
-                    val archive = result.data
-                    if (archive.bundleId != null) {
-                        archiveRepository.getArchivesByBundleId(archive.bundleId).map { related ->
-                            ResultState.Success(archive to related)
+                when (result) {
+                    is DomainResult.Success -> {
+                        val archive = result.data
+                        if (archive.bundleId != null) {
+                            archiveRepository.getArchivesByBundleId(archive.bundleId).map { related ->
+                                DomainResult.Success(archive to related)
+                            }
+                        } else {
+                            flowOf(DomainResult.Success(archive to emptyList()))
                         }
-                    } else {
-                        kotlinx.coroutines.flow.flowOf(ResultState.Success(archive to emptyList()))
                     }
-                } else if (result is ResultState.Error) {
-                    kotlinx.coroutines.flow.flowOf(ResultState.Error(result.message))
-                } else {
-                    kotlinx.coroutines.flow.flowOf(ResultState.Loading)
+                    is DomainResult.Error -> flowOf(DomainResult.Error(result.message))
                 }
             }.collect { result ->
                 _uiState.update { state ->
                     when (result) {
-                        is ResultState.Loading -> state.copy(isLoading = true)
-                        is ResultState.Success -> {
-                            val (archive, related) = result.data as Pair<com.example.arsipbpkpad.domain.model.ArchiveDocument, List<com.example.arsipbpkpad.domain.model.ArchiveDocument>>
+                        is DomainResult.Success -> {
+                            val (archive, related) = result.data
                             state.copy(
                                 isLoading = false,
                                 archive = archive,
                                 relatedBundleDocuments = related.filter { it.id != archive.id }
                             )
                         }
-                        is ResultState.Error -> state.copy(
+                        is DomainResult.Error -> state.copy(
                             isLoading = false,
                             errorMessage = result.message
                         )
-                        else -> state
                     }
                 }
             }
@@ -90,7 +90,7 @@ class ArchiveDetailViewModel @Inject constructor(
 
 data class ArchiveDetailState(
     val isLoading: Boolean = false,
-    val archive: com.example.arsipbpkpad.domain.model.ArchiveDocument? = null,
-    val relatedBundleDocuments: List<com.example.arsipbpkpad.domain.model.ArchiveDocument> = emptyList(),
+    val archive: ArchiveDocument? = null,
+    val relatedBundleDocuments: List<ArchiveDocument> = emptyList(),
     val errorMessage: String? = null
 )
