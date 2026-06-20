@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Refresh
@@ -132,47 +135,106 @@ fun HomeMainList(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item { HeaderSection() }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-        if (uiState.activeStagingBoxes.isNotEmpty()) {
-            item {
-                val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
-                val totalBoxes = uiState.activeStagingBoxes.size
-                StagingStatusCard(
-                    count = totalDocs,
-                    summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
-                    onClick = onNavigateToStagingBoxList,
-                    modifier = Modifier.padding(bottom = 8.dp)
+    if (isLandscape) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(0.4f)
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                HeaderSection()
+                
+                if (uiState.activeStagingBoxes.isNotEmpty()) {
+                    val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
+                    val totalBoxes = uiState.activeStagingBoxes.size
+                    StagingStatusCard(
+                        count = totalDocs,
+                        summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
+                        onClick = onNavigateToStagingBoxList
+                    )
+                }
+
+                HomePrimaryStats(uiState)
+                HomeSecondaryStats(uiState)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(0.6f)
+                    .fillMaxHeight()
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                SectionHeader(
+                    title = stringResource(R.string.recently_added),
+                    actionText = stringResource(R.string.view_all),
+                    onActionClick = { onNavigateToArchiveList(null) }
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(modifier = Modifier.weight(1f)) {
+                    RecentArchiveTable(
+                        items = uiState.recentItems,
+                        onArchiveClick = onNavigateToDetail
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { HeaderSection() }
 
-        item { HomePrimaryStats(uiState) }
-        item { HomeSecondaryStats(uiState) }
+            if (uiState.activeStagingBoxes.isNotEmpty()) {
+                item {
+                    val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
+                    val totalBoxes = uiState.activeStagingBoxes.size
+                    StagingStatusCard(
+                        count = totalDocs,
+                        summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
+                        onClick = onNavigateToStagingBoxList,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+            }
 
-        item {
-            SectionHeader(
-                title = stringResource(R.string.recently_added),
-                actionText = stringResource(R.string.view_all),
-                onActionClick = { onNavigateToArchiveList(null) }
-            )
+            item { HomePrimaryStats(uiState) }
+            item { HomeSecondaryStats(uiState) }
+
+            item {
+                SectionHeader(
+                    title = stringResource(R.string.recently_added),
+                    actionText = stringResource(R.string.view_all),
+                    onActionClick = { onNavigateToArchiveList(null) }
+                )
+            }
+
+            item {
+                RecentArchiveTable(
+                    items = uiState.recentItems,
+                    onArchiveClick = onNavigateToDetail
+                )
+            }
+
+            item { Spacer(modifier = Modifier.height(88.dp)) }
         }
-
-        item {
-            RecentArchiveTable(
-                items = uiState.recentItems,
-                onArchiveClick = onNavigateToDetail
-            )
-        }
-
-        item { Spacer(modifier = Modifier.height(88.dp)) }
     }
 }
 

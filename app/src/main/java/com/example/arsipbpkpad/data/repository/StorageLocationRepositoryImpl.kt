@@ -6,7 +6,6 @@ import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Inject
 import javax.inject.Named
@@ -28,7 +27,7 @@ class StorageLocationRepositoryImpl @Inject constructor(
         return safeApiCall(ioDispatcher) {
             // 1. Check if exists
             val existing = supabaseClient.postgrest["storage_locations"]
-                .select(columns = Columns.list("id")) {
+                .select {
                     filter {
                         eq("room", room)
                         eq("shelf", shelf)

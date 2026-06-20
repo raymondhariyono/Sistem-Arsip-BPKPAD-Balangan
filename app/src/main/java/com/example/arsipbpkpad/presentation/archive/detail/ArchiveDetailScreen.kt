@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -197,30 +198,86 @@ fun ArchiveDetailMainList(
     onDeleteClick: () -> Unit,
     onNavigateToArchive: (String) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item { ArchiveDetailHeader(archive) }
-        item { ArchiveFinancialCard(archive) }
-        item { ArchivePhysicalInfoCard(archive) }
-        
-        if (relatedDocs.isNotEmpty()) {
-            item { RelatedBundleHeader() }
-            items(relatedDocs) { related ->
-                RelatedArchiveItem(related = related, onClick = { onNavigateToArchive(related.id) })
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    if (isLandscape) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(0.55f)
+                    .fillMaxHeight(),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item { ArchiveDetailHeader(archive) }
+                item { ArchiveFinancialCard(archive) }
+                item { ArchivePhysicalInfoCard(archive) }
+                item {
+                    DetailActionButtons(
+                        onEditClick = onEditClick,
+                        onDeleteClick = onDeleteClick
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(0.45f)
+                    .fillMaxHeight()
+                    .padding(vertical = 20.dp, horizontal = 16.dp)
+            ) {
+                if (relatedDocs.isNotEmpty()) {
+                    RelatedBundleHeader()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(relatedDocs) { related ->
+                            RelatedArchiveItem(related = related, onClick = { onNavigateToArchive(related.id) })
+                        }
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Tidak ada dokumen terkait",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
             }
         }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { ArchiveDetailHeader(archive) }
+            item { ArchiveFinancialCard(archive) }
+            item { ArchivePhysicalInfoCard(archive) }
+            
+            if (relatedDocs.isNotEmpty()) {
+                item { RelatedBundleHeader() }
+                items(relatedDocs) { related ->
+                    RelatedArchiveItem(related = related, onClick = { onNavigateToArchive(related.id) })
+                }
+            }
 
-        item {
-            DetailActionButtons(
-                onEditClick = onEditClick,
-                onDeleteClick = onDeleteClick
-            )
+            item {
+                DetailActionButtons(
+                    onEditClick = onEditClick,
+                    onDeleteClick = onDeleteClick
+                )
+            }
+            
+            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
-        
-        item { Spacer(modifier = Modifier.height(32.dp)) }
     }
 }
 

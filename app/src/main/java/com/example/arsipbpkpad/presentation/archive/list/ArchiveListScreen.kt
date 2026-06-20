@@ -462,21 +462,20 @@ fun ArchiveListContentOnly(
         ) {
             Column(
                 modifier = Modifier
-                    .weight(0.4f)
+                    .weight(0.35f)
                     .fillMaxHeight()
                     .padding(start = 16.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
-                Spacer(modifier = Modifier.height(12.dp))
                 ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
-                Spacer(modifier = Modifier.height(12.dp))
                 DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Box(modifier = Modifier.weight(0.6f)) {
+            Box(modifier = Modifier.weight(0.65f)) {
                 ArchiveResultList(
                     archives = archives,
                     onArchiveClick = onArchiveClick

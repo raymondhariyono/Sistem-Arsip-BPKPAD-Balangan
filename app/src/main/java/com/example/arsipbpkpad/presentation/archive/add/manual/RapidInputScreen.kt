@@ -234,55 +234,132 @@ fun RapidInputScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            item {
-                RapidInputForm(
-                    uiState = uiState,
-                    onDocTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
-                    onAutoBundleToggle = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) },
-                    onCopyTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(it)) },
-                    onCopyCountChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
-                    onDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
-                    onSpmDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
-                    onSubjectChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
-                    onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
-                    onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
-                    onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
-                    onClassificationClick = { showClassificationSheet = true },
-                    onAddOrUpdateClick = { 
-                        if (uiState.editingId != null && sessionId.isEmpty()) {
-                            showEditConfirmDialog = true
-                        } else {
-                            viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(0.55f)
+                        .fillMaxHeight()
+                        .padding(start = 16.dp)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 16.dp)
+                    ) {
+                        item {
+                            RapidInputForm(
+                                uiState = uiState,
+                                onDocTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
+                                onAutoBundleToggle = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) },
+                                onCopyTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(it)) },
+                                onCopyCountChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
+                                onDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                                onSpmDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                                onSubjectChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
+                                onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                                onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
+                                onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
+                                onClassificationClick = { showClassificationSheet = true },
+                                onAddOrUpdateClick = { 
+                                    if (uiState.editingId != null && sessionId.isEmpty()) {
+                                        showEditConfirmDialog = true
+                                    } else {
+                                        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                                    }
+                                },
+                                onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
+                            )
                         }
-                    },
-                    onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
-                )
-            }
+                    }
+                }
 
-            item {
-                StagingListHeader(count = uiState.stagedDocuments.size)
-            }
-
-            items(uiState.stagedDocuments, key = { it.id }) { doc ->
-                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    StagedItemRow(
-                        doc = doc,
-                        onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteStagedDoc(doc.id)) },
-                        onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) }
-                    )
+                Column(
+                    modifier = Modifier
+                        .weight(0.45f)
+                        .fillMaxHeight()
+                        .padding(end = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    StagingListHeader(count = uiState.stagedDocuments.size)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(uiState.stagedDocuments, key = { it.id }) { doc ->
+                            StagedItemRow(
+                                doc = doc,
+                                onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteStagedDoc(doc.id)) },
+                                onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) }
+                            )
+                        }
+                        
+                        if (uiState.stagedDocuments.isEmpty()) {
+                            item { EmptyStagingState() }
+                        }
+                    }
                 }
             }
-            
-            if (uiState.stagedDocuments.isEmpty()) {
-                item { EmptyStagingState() }
-            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                item {
+                    RapidInputForm(
+                        uiState = uiState,
+                        onDocTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
+                        onAutoBundleToggle = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) },
+                        onCopyTypeChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(it)) },
+                        onCopyCountChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
+                        onDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                        onSpmDocNumberChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                        onSubjectChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
+                        onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                        onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
+                        onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
+                        onClassificationClick = { showClassificationSheet = true },
+                        onAddOrUpdateClick = { 
+                            if (uiState.editingId != null && sessionId.isEmpty()) {
+                                showEditConfirmDialog = true
+                            } else {
+                                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                            }
+                        },
+                        onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
+                    )
+                }
 
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+                item {
+                    StagingListHeader(count = uiState.stagedDocuments.size)
+                }
+
+                items(uiState.stagedDocuments, key = { it.id }) { doc ->
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        StagedItemRow(
+                            doc = doc,
+                            onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteStagedDoc(doc.id)) },
+                            onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) }
+                        )
+                    }
+                }
+                
+                if (uiState.stagedDocuments.isEmpty()) {
+                    item { EmptyStagingState() }
+                }
+
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+            }
         }
     }
 }

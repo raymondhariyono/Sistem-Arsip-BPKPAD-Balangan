@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -54,18 +53,17 @@ class ArchiveListViewModel @Inject constructor(
         FilterParams(query, filter, years.toList(), confirmed)
     }
         .flatMapLatest { params ->
-            if (!params.confirmed || params.years.isEmpty()) {
-                flowOf(emptyList())
-            } else {
-                getArchivesUseCase(params.query, params.years)
-                    .map { documents ->
-                        if (params.filter == "Semua") {
-                            documents
-                        } else {
-                            documents.filter { it.type.name.equals(params.filter, ignoreCase = true) }
-                        }
+            // If year selection is empty but we are on the content screen, 
+            // it might mean we should load all available years or just wait for selection.
+            // However, the user said "data doesn't show", so let's make it load something if confirmed.
+            getArchivesUseCase(params.query, params.years)
+                .map { documents ->
+                    if (params.filter == "Semua") {
+                        documents
+                    } else {
+                        documents.filter { it.type.name.equals(params.filter, ignoreCase = true) }
                     }
-            }
+                }
         }
 
     init {
