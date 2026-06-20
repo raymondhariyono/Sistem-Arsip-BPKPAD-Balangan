@@ -2,6 +2,7 @@ package com.example.arsipbpkpad.presentation.analytics
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -105,6 +106,12 @@ fun AnalyticsFilterContent(
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(modifier = Modifier.height(24.dp))
+            
+            AnalyticsBarChart(
+                budgetByClassification = uiState.past10YearsBudgets
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
             AnalyticsHeader()
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -114,6 +121,90 @@ fun AnalyticsFilterContent(
                 onYearToggle = onYearToggle,
                 onConfirmFilter = onConfirmFilter
             )
+        }
+    }
+}
+
+@Composable
+fun AnalyticsBarChart(
+    budgetByClassification: Map<String, Double>
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "Budget by Classification (Past 10 Years)",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            if (budgetByClassification.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No data available",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            } else {
+                val maxBudget = budgetByClassification.values.maxOrNull() ?: 1.0
+                
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    budgetByClassification.forEach { (classification, budget) ->
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = classification,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                val formattedBudget = NumberFormat.getCurrencyInstance(Locale("in", "ID")).apply {
+                                    maximumFractionDigits = 0
+                                }.format(budget)
+                                Text(
+                                    text = formattedBudget,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                val fraction = (budget / maxBudget).toFloat()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction)
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.primary)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

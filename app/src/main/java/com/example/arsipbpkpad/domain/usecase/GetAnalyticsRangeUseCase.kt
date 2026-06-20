@@ -7,12 +7,12 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 /**
- * UseCase for fetching analytics data for a specific year.
+ * UseCase for fetching analytics data for a specific year range.
  */
-class GetAnalyticsUseCase @Inject constructor(
+class GetAnalyticsRangeUseCase @Inject constructor(
     private val repository: ArchiveRepository
 ) {
-    operator fun invoke(year: Int): Flow<DomainResult<AnalyticsData>> {
-        return repository.getAnalyticsData(year)
+    operator fun invoke(startYear: Int, endYear: Int): Flow<DomainResult<AnalyticsData>> {
+        return repository.getAnalyticsDataForRange(startYear, endYear)
     }
 }
