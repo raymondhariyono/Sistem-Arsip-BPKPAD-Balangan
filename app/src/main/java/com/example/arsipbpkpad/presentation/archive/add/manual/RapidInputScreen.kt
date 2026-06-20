@@ -6,8 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -189,20 +189,20 @@ fun RapidInputScreen(
     if (showClassificationSheet) {
         ClassificationBottomSheet(
             uiState = uiState,
-            onSearchQueryChanged = { viewModel.onEvent(RapidInputUiEvent.OnClassificationSearchQueryChanged(it)) },
+            onSearchQueryChanged = { viewModel.onEvent(RapidInputUiEvent.OnSearchQueryChanged(it)) },
             onQuickCategorySelected = { viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(it)) },
             onCodeSelected = { code ->
                 viewModel.onEvent(RapidInputUiEvent.OnClassificationCodeChange(code))
                 scope.launch { 
                     sheetState.hide() 
                     showClassificationSheet = false
-                    viewModel.onEvent(RapidInputUiEvent.OnClassificationSearchQueryChanged(""))
+                    viewModel.onEvent(RapidInputUiEvent.OnSearchQueryChanged(""))
                     viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(null))
                 }
             },
             onDismiss = { 
                 showClassificationSheet = false 
-                viewModel.onEvent(RapidInputUiEvent.OnClassificationSearchQueryChanged(""))
+                viewModel.onEvent(RapidInputUiEvent.OnSearchQueryChanged(""))
                 viewModel.onEvent(RapidInputUiEvent.OnQuickCategorySelected(null))
             },
             sheetState = sheetState
@@ -539,7 +539,7 @@ fun RapidInputForm(
 
             if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
                 FormTextField(
-                    label = stringResource(R.string.label_description_spj),
+                    label = stringResource(R.string.label_description_spj) + " (Opsional)",
                     value = uiState.spjDescription,
                     onValueChange = onSpjDescriptionChange,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -804,22 +804,22 @@ fun EmptyStagingState() {
 fun ClassificationBottomSheet(
     uiState: RapidInputUiState,
     onSearchQueryChanged: (String) -> Unit,
-    onQuickCategorySelected: (ClassificationCode?) -> Unit,
+    onQuickCategorySelected: (String?) -> Unit,
     onCodeSelected: (String) -> Unit,
     onDismiss: () -> Unit,
     sheetState: SheetState
 ) {
     val filteredCodes = remember(
-        uiState.classificationSearchQuery, 
+        uiState.searchQuery, 
         uiState.selectedQuickCategory, 
         uiState.availableCodes
     ) {
         uiState.availableCodes.filter { code ->
             val matchesCategory = uiState.selectedQuickCategory == null || 
-                    code.code.startsWith(uiState.selectedQuickCategory.code)
+                    code.code.startsWith(uiState.selectedQuickCategory)
             
-            val matchesSearch = code.code.contains(uiState.classificationSearchQuery, ignoreCase = true) ||
-                    code.name.contains(uiState.classificationSearchQuery, ignoreCase = true)
+            val matchesSearch = code.code.contains(uiState.searchQuery, ignoreCase = true) ||
+                    code.name.contains(uiState.searchQuery, ignoreCase = true)
             
             matchesCategory && matchesSearch
         }
@@ -849,17 +849,17 @@ fun ClassificationBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            QuickCategorySection(
-                categories = uiState.quickCategories,
-                selectedCategory = uiState.selectedQuickCategory,
-                onCategorySelected = onQuickCategorySelected
+            ClassificationSearchBar(
+                query = uiState.searchQuery,
+                onQueryChanged = onSearchQueryChanged
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            ClassificationSearchBar(
-                query = uiState.classificationSearchQuery,
-                onQueryChanged = onSearchQueryChanged
+            QuickCategorySection(
+                categories = uiState.quickCategories,
+                selectedCategoryCode = uiState.selectedQuickCategory,
+                onCategorySelected = onQuickCategorySelected
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -889,32 +889,31 @@ fun BottomSheetDragHandle() {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuickCategorySection(
-    categories: List<ClassificationCode>,
-    selectedCategory: ClassificationCode?,
-    onCategorySelected: (ClassificationCode?) -> Unit
+    categories: List<com.example.arsipbpkpad.domain.model.ClassificationCode>,
+    selectedCategoryCode: String?,
+    onCategorySelected: (String?) -> Unit
 ) {
     Text(
         text = stringResource(R.string.label_quick_category),
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     
     Spacer(modifier = Modifier.height(8.dp))
 
-    FlowRow(
+    LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(bottom = 8.dp)
     ) {
-        categories.forEach { category ->
-            val isSelected = selectedCategory?.code == category.code
+        items(categories, key = { it.code }) { category ->
+            val isSelected = selectedCategoryCode == category.code
             FilterChip(
                 selected = isSelected,
-                onClick = { onCategorySelected(category) },
+                onClick = { onCategorySelected(if (isSelected) null else category.code) },
                 label = { 
                     Text(
                         text = "${category.code} ${category.name}",

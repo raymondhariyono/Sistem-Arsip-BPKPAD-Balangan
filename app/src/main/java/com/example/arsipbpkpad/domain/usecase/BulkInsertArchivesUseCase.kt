@@ -48,11 +48,12 @@ class BulkInsertArchivesUseCase @Inject constructor(
             
             for ((localId, docs) in bundlesToCreate) {
                 val sp2d = docs.find { it.type == DocType.SP2D }
-                val bundleDesc = "Bundle ${sp2d?.documentNumber ?: docs.first().documentNumber}"
+                val bundleName = sp2d?.documentNumber ?: docs.first().documentNumber ?: "Bundle"
+                val bundleDesc = "Bundle otomatis untuk transaksi $bundleName"
                 
                 val bundleResult = transactionBundleRepository.createBundle(
+                    name = bundleName,
                     description = bundleDesc,
-                    documentType = sp2d?.type?.name ?: docs.first().type.name,
                     year = stagedBox.year.toIntOrNull() ?: DomainConstants.DEFAULT_YEAR
                 )
                 

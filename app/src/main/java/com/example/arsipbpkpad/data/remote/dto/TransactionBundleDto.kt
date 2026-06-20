@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TransactionBundleDto(
     @SerialName("id") val id: String? = null,
+    @SerialName("bundle_name") val bundleName: String,
     @SerialName("description") val description: String? = null,
-    @SerialName("document_type") val documentType: String,
     @SerialName("year") val year: Int
 )

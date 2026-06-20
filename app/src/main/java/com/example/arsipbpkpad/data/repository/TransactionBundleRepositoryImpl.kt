@@ -19,14 +19,14 @@ class TransactionBundleRepositoryImpl @Inject constructor(
 ) : TransactionBundleRepository {
 
     override suspend fun createBundle(
+        name: String,
         description: String?,
-        documentType: String,
         year: Int
     ): DomainResult<String> {
         return safeApiCall(ioDispatcher) {
             val bundle = TransactionBundleDto(
+                bundleName = name,
                 description = description,
-                documentType = documentType,
                 year = year
             )
 

@@ -63,8 +63,8 @@ data class RapidInputUiState(
     val showDuplicateWarning: Boolean = false,
     val classificationCode: String = DomainConstants.DEFAULT_CLASSIFICATION_CODE,
     val availableCodes: List<ClassificationCode> = emptyList(),
-    val classificationSearchQuery: String = "",
-    val selectedQuickCategory: ClassificationCode? = null,
+    val searchQuery: String = "",
+    val selectedQuickCategory: String? = null,
     val quickCategories: List<ClassificationCode> = emptyList(),
     // UX Messages
     val successMessage: UiText? = null,
@@ -90,8 +90,8 @@ sealed class RapidInputUiEvent {
     data class OnNominalChange(val value: String) : RapidInputUiEvent()
     data class OnConditionChange(val value: DocCondition) : RapidInputUiEvent()
     data class OnClassificationCodeChange(val value: String) : RapidInputUiEvent()
-    data class OnClassificationSearchQueryChanged(val query: String) : RapidInputUiEvent()
-    data class OnQuickCategorySelected(val category: ClassificationCode?) : RapidInputUiEvent()
+    data class OnSearchQueryChanged(val query: String) : RapidInputUiEvent()
+    data class OnQuickCategorySelected(val categoryCode: String?) : RapidInputUiEvent()
     data class OnAutoBundleToggle(val enabled: Boolean) : RapidInputUiEvent()
     data class OnAddToBoxClick(val forceSave: Boolean = false) : RapidInputUiEvent()
     data class OnOcrResultReceived(val metadata: ParsedMetadata) : RapidInputUiEvent()
@@ -155,7 +155,7 @@ class RapidInputViewModel @Inject constructor(
     private fun observeClassificationCodes() {
         viewModelScope.launch {
             archiveRepository.observeClassificationCodes().collect { codes ->
-                val quickCats = codes.filter { it.level == 3 || it.code.startsWith("900.1") && it.level <= 3 }
+                val quickCats = codes.filter { it.code.count { char -> char == '.' } == 2 }
                 _uiState.update { it.copy(availableCodes = codes, quickCategories = quickCats) }
             }
         }
@@ -195,8 +195,8 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value) }
             is RapidInputUiEvent.OnConditionChange -> _uiState.update { it.copy(condition = event.value) }
             is RapidInputUiEvent.OnClassificationCodeChange -> _uiState.update { it.copy(classificationCode = event.value) }
-            is RapidInputUiEvent.OnClassificationSearchQueryChanged -> _uiState.update { it.copy(classificationSearchQuery = event.query) }
-            is RapidInputUiEvent.OnQuickCategorySelected -> handleQuickCategorySelected(event.category)
+            is RapidInputUiEvent.OnSearchQueryChanged -> _uiState.update { it.copy(searchQuery = event.query) }
+            is RapidInputUiEvent.OnQuickCategorySelected -> handleQuickCategorySelected(event.categoryCode)
             is RapidInputUiEvent.OnAutoBundleToggle -> _uiState.update { it.copy(isAutoBundleEnabled = event.enabled) }
             is RapidInputUiEvent.OnAddToBoxClick -> addToStaging(event.forceSave)
             is RapidInputUiEvent.OnOcrResultReceived -> handleOcrResult(event.metadata)
@@ -239,9 +239,9 @@ class RapidInputViewModel @Inject constructor(
         _uiState.update { it.copy(copyType = value, copyCount = newCount) }
     }
 
-    private fun handleQuickCategorySelected(category: ClassificationCode?) {
+    private fun handleQuickCategorySelected(categoryCode: String?) {
         _uiState.update { state -> 
-            val newSelection = if (state.selectedQuickCategory == category) null else category
+            val newSelection = if (state.selectedQuickCategory == categoryCode) null else categoryCode
             state.copy(selectedQuickCategory = newSelection) 
         }
     }
@@ -348,12 +348,15 @@ class RapidInputViewModel @Inject constructor(
                     type = DocType.SPM,
                     documentNumber = state.spmDocumentNumber
                 ))
-                documents.add(createBaseDocument(state, sessionId, bundleId).copy(
-                    id = UUID.randomUUID().toString(),
-                    type = DocType.SPJ,
-                    documentNumber = "SPJ-" + state.documentNumber,
-                    description = state.spjDescription.ifBlank { "SPJ dari " + state.documentNumber }
-                ))
+                
+                if (state.spjDescription.isNotBlank()) {
+                    documents.add(createBaseDocument(state, sessionId, bundleId).copy(
+                        id = UUID.randomUUID().toString(),
+                        type = DocType.SPJ,
+                        documentNumber = "SPJ-" + state.documentNumber,
+                        description = state.spjDescription
+                    ))
+                }
             }
 
             for (doc in documents) stagingRepository.insertToStaging(doc)

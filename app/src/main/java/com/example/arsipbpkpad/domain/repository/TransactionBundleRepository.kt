@@ -7,8 +7,8 @@ import com.example.arsipbpkpad.domain.model.DomainResult
  */
 interface TransactionBundleRepository {
     suspend fun createBundle(
+        name: String,
         description: String?,
-        documentType: String,
         year: Int
     ): DomainResult<String>
 }

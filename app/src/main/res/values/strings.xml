@@ -140,8 +140,8 @@
 
     <!-- Classification Sheet -->
     <string name="title_select_classification">Pilih Kode Klasifikasi</string>
-    <string name="label_quick_category">Kategori Cepat</string>
-    <string name="search_classification_hint">Cari kode atau nama klasifikasi...</string>
+    <string name="label_quick_category">Kategori Cepat (Level 3)</string>
+    <string name="search_classification_hint">Cari kode atau nama...</string>
     <string name="msg_no_classification_found">Tidak ada kode yang cocok dengan pencarian.</string>
     <string name="label_parent_code">Induk: %1$s</string>
 
