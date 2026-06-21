@@ -2,6 +2,7 @@ package com.example.arsipbpkpad.presentation.archive.list
 
 import android.content.res.Configuration
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -99,6 +100,11 @@ fun ArchiveListScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     
+    // Intercept system back button to go back to year selection if a filter is confirmed
+    BackHandler(enabled = uiState.isFilterConfirmed) {
+        viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+    }
+
     var showImportConfirm by remember { mutableStateOf(false) }
     var showExportConfirm by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf<String?>(null) }
