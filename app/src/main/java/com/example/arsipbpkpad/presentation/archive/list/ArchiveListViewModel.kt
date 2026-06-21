@@ -151,8 +151,11 @@ class ArchiveListViewModel @Inject constructor(
                 }
             }
             is ArchiveListUiEvent.ExportExcel -> {
+                if (_uiState.value.isLoading) {
+                    return
+                }
+                _uiState.update { it.copy(isLoading = true) }
                 viewModelScope.launch {
-                    _uiState.update { it.copy(isLoading = true) }
                     try {
                         exportArchivesUseCase(event.outputStream, _selectedYears.value.toList())
                         _uiState.update { it.copy(isLoading = false, excelOperationMessage = "Export Successful") }
