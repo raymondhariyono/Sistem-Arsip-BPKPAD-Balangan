@@ -7,6 +7,7 @@ import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.usecase.BulkInsertArchivesUseCase
+import com.example.arsipbpkpad.domain.usecase.GetArchiveDetailUseCase
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -30,6 +31,7 @@ class RapidInputViewModelTest {
     private val stagingRepository = mockk<StagingRepository>(relaxed = true)
     private val archiveRepository = mockk<ArchiveRepository>(relaxed = true)
     private val bulkInsertArchivesUseCase = mockk<BulkInsertArchivesUseCase>()
+    private val getArchiveDetailUseCase = mockk<GetArchiveDetailUseCase>(relaxed = true)
     private val savedStateHandle = SavedStateHandle()
     private val testDispatcher = StandardTestDispatcher()
 
@@ -46,6 +48,7 @@ class RapidInputViewModelTest {
             stagingRepository,
             archiveRepository,
             bulkInsertArchivesUseCase,
+            getArchiveDetailUseCase,
             savedStateHandle
         )
     }
@@ -71,8 +74,8 @@ class RapidInputViewModelTest {
         testDispatcher.scheduler.runCurrent()
 
         val state = viewModel.uiState.value
-        assertEquals("Wajib diisi", state.validationErrors["docNumber"])
-        assertEquals("Wajib diisi", state.validationErrors["subject"])
+        assertEquals("Nomor dokumen wajib diisi", state.validationErrors["docNumber"])
+        assertEquals("Uraian dokumen wajib diisi", state.validationErrors["subject"])
     }
 
     @Test

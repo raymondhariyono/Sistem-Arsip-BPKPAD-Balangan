@@ -1,7 +1,8 @@
 package com.example.arsipbpkpad.presentation.archive.detail
 
 import androidx.lifecycle.SavedStateHandle
-import com.example.arsipbpkpad.core.common.ResultState
+import com.example.arsipbpkpad.domain.model.DomainResult
+import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.usecase.DeleteArchiveUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchiveDetailUseCase
 import io.mockk.coEvery
@@ -23,6 +24,7 @@ class ArchiveDetailViewModelTest {
 
     private val getArchiveDetailUseCase = mockk<GetArchiveDetailUseCase>(relaxed = true)
     private val deleteArchiveUseCase = mockk<DeleteArchiveUseCase>()
+    private val archiveRepository = mockk<ArchiveRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: ArchiveDetailViewModel
 
@@ -33,6 +35,7 @@ class ArchiveDetailViewModelTest {
         viewModel = ArchiveDetailViewModel(
             getArchiveDetailUseCase,
             deleteArchiveUseCase,
+            archiveRepository,
             savedStateHandle
         )
     }
@@ -44,7 +47,7 @@ class ArchiveDetailViewModelTest {
 
     @Test
     fun `MNG_002 - deleteArchive successful`() = runTest {
-        coEvery { deleteArchiveUseCase("123") } returns ResultState.Success(Unit)
+        coEvery { deleteArchiveUseCase("123") } returns DomainResult.Success(Unit)
 
         var successCalled = false
         viewModel.deleteArchive {
@@ -57,7 +60,7 @@ class ArchiveDetailViewModelTest {
 
     @Test
     fun `MNG_005 - deleteArchive server error`() = runTest {
-        coEvery { deleteArchiveUseCase("123") } returns ResultState.Error("Server Error")
+        coEvery { deleteArchiveUseCase("123") } returns DomainResult.Error("Server Error")
 
         viewModel.deleteArchive {}
         testDispatcher.scheduler.runCurrent()
