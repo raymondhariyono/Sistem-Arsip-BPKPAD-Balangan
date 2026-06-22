@@ -187,7 +187,11 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnConfirmBoxContext -> validateBoxContext()
             is RapidInputUiEvent.OnDocTypeChange -> _uiState.update { it.copy(docType = event.value, isAutoBundleEnabled = false) }
             is RapidInputUiEvent.OnCopyTypeChange -> handleCopyTypeChange(event.value)
-            is RapidInputUiEvent.OnCopyCountChange -> _uiState.update { it.copy(copyCount = event.value) }
+            is RapidInputUiEvent.OnCopyCountChange -> {
+                if (_uiState.value.copyType != DocCopyType.ORIGINAL) {
+                    _uiState.update { it.copy(copyCount = event.value) }
+                }
+            }
             is RapidInputUiEvent.OnDocNumberChange -> _uiState.update { it.copy(documentNumber = event.value) }
             is RapidInputUiEvent.OnSpmDocNumberChange -> _uiState.update { it.copy(spmDocumentNumber = event.value) }
             is RapidInputUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value) }
@@ -286,7 +290,7 @@ class RapidInputViewModel @Inject constructor(
             
             val yearInt = ctx.year.toIntOrNull()
             if (ctx.year.length != 4 || yearInt == null) {
-                errors["year"] = "Format tahun tidak valid (4 digit)"
+                errors["year"] = "Tahun tidak valid (harus 4 digit)"
             } else {
                 val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
                 if (currentYear - yearInt > 10 && _uiState.value.warningMessage == null) {

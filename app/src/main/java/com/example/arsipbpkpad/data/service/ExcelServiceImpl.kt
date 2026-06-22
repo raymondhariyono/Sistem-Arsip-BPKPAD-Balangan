@@ -71,10 +71,10 @@ class ExcelServiceImpl @Inject constructor(
             val workbook = XSSFWorkbook(inputStream)
             val sheet = workbook.getSheetAt(0)
 
-            // Start from row 2 (index 2) as seen in screenshots (Row 1 Header, Row 2 Sub-header/Labels)
-            // Or row 3 (index 2) if row 1 is "No." and row 2 is "nomor sampul berkas"
-            // Looking at the screenshots, data starts on row 3 (index 2).
-            for (i in 2..sheet.lastRowNum) {
+            // Start from row 1 (index 1) as exported by this service
+            // Official template might have data starting at index 2 (row 3)
+            val startRow = 1 
+            for (i in startRow..sheet.lastRowNum) {
                 val row = sheet.getRow(i) ?: continue
                 
                 val classificationCode = getCellStringValue(row.getCell(1)) ?: "000.1.2.1"
