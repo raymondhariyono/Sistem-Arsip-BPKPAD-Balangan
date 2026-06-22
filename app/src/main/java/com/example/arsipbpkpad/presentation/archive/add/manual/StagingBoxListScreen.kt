@@ -79,6 +79,7 @@ fun StagingBoxListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddBoxDialog by remember { mutableStateOf(false) }
     var boxToDelete by remember { mutableStateOf<String?>(null) }
+    var showUploadConfirm by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -89,20 +90,14 @@ fun StagingBoxListScreen(
     }
 
     val errorTitle = stringResource(R.string.title_error)
-    LaunchedEffect(uiState.isUploadSuccess, uiState.error) {
-        if (uiState.error != null) {
-            snackbarHostState.showSnackbar("$errorTitle: ${uiState.error}")
-        }
-    }
-
+    val successTitle = stringResource(R.string.title_success)
+    
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             StagingBoxListTopBar(
                 isLoading = uiState.isLoading,
-                hasBoxes = uiState.existingStagedBoxes.isNotEmpty(),
                 onBackClick = onNavigateBack,
-                onPushAllClick = { viewModel.onEvent(RapidInputUiEvent.OnConfirmAllUpload) },
                 onSyncClick = { viewModel.onEvent(RapidInputUiEvent.TriggerSync) }
             )
         },
@@ -135,6 +130,7 @@ fun StagingBoxListScreen(
                         onNavigateToRapidInput(it) 
                     },
                     onBoxDelete = { boxToDelete = it },
+                    onPushAllClick = { showUploadConfirm = true },
                     uiState = uiState
                 )
             }
@@ -148,56 +144,75 @@ fun StagingBoxListScreen(
                     onDismiss = { boxToDelete = null }
                 )
             }
+
+            if (showUploadConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showUploadConfirm = false },
+                    title = { Text(text = "Konfirmasi Unggah") },
+                    text = { Text(text = "Apakah Anda yakin ingin mengunggah semua dokumen dari penyimpanan sementara ke penyimpanan permanen?") },
+                    confirmButton = {
+                        Button(onClick = {
+                            showUploadConfirm = false
+                            viewModel.onEvent(RapidInputUiEvent.OnConfirmAllUpload)
+                        }) {
+                            Text("Unggah")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showUploadConfirm = false }) {
+                            Text("Batal")
+                        }
+                    }
+                )
+            }
+
+            // Common Dialogs
+            uiState.successMessage?.let { msg ->
+                StatusDialog(
+                    title = successTitle,
+                    message = msg.asString(),
+                    onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissSuccess) },
+                    isSuccess = true
+                )
+            }
+
+            uiState.error?.let { msg ->
+                StatusDialog(
+                    title = errorTitle,
+                    message = msg,
+                    onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissError) },
+                    isSuccess = false
+                )
+            }
+
+            uiState.warningMessage?.let { msg ->
+                StatusDialog(
+                    title = stringResource(R.string.title_warning),
+                    message = msg.asString(),
+                    onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
+                    isSuccess = null
+                )
+            }
+
+            if (showAddBoxDialog) {
+                AddBoxDialog(
+                    uiState = uiState,
+                    onDismiss = { showAddBoxDialog = false },
+                    onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext) },
+                    onWarehouseChange = { viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange(it)) },
+                    onRackChange = { viewModel.onEvent(RapidInputUiEvent.OnRackChange(it)) },
+                    onBoxChange = { viewModel.onEvent(RapidInputUiEvent.OnBoxChange(it)) },
+                    onYearChange = { viewModel.onEvent(RapidInputUiEvent.OnYearChange(it)) }
+                )
+            }
         }
-    }
-
-    // Common Dialogs
-    uiState.successMessage?.let { msg ->
-        StatusDialog(
-            title = stringResource(R.string.title_success),
-            message = msg.asString(),
-            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissSuccess) },
-            isSuccess = true
-        )
-    }
-
-    uiState.error?.let { msg ->
-        StatusDialog(
-            title = stringResource(R.string.title_error),
-            message = msg,
-            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissError) },
-            isSuccess = false
-        )
-    }
-
-    uiState.warningMessage?.let { msg ->
-        StatusDialog(
-            title = stringResource(R.string.title_warning),
-            message = msg.asString(),
-            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissWarning) },
-            isSuccess = null
-        )
-    }
-
-    if (showAddBoxDialog) {
-        AddBoxDialog(
-            uiState = uiState,
-            onDismiss = { showAddBoxDialog = false },
-            onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext) },
-            onWarehouseChange = { viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange(it)) },
-            onRackChange = { viewModel.onEvent(RapidInputUiEvent.OnRackChange(it)) },
-            onBoxChange = { viewModel.onEvent(RapidInputUiEvent.OnBoxChange(it)) },
-            onYearChange = { viewModel.onEvent(RapidInputUiEvent.OnYearChange(it)) }
-        )
     }
 }
 
 @Composable
 fun StagingBoxListTopBar(
     isLoading: Boolean,
-    hasBoxes: Boolean,
     onBackClick: () -> Unit,
-    onPushAllClick: () -> Unit,
     onSyncClick: () -> Unit
 ) {
     BpkpadTopAppBar(
@@ -228,25 +243,21 @@ fun StagingBoxListTopBar(
         },
         actions = {
             TextButton(
-                onClick = onPushAllClick,
-                enabled = !isLoading && hasBoxes
-            ) {
-                Text(
-                    text = if (isLoading) stringResource(R.string.btn_processing) else stringResource(R.string.btn_push_to_db).replace(" ", "\n"),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (hasBoxes && !isLoading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                    textAlign = TextAlign.End
-                )
-            }
-            IconButton(
                 onClick = onSyncClick,
                 enabled = !isLoading
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = stringResource(R.string.btn_sync),
-                    tint = MaterialTheme.colorScheme.primary
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.btn_sync),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
@@ -271,6 +282,7 @@ fun StagingBoxListContent(
     boxes: List<StagedBox>,
     onBoxClick: (String) -> Unit,
     onBoxDelete: (String) -> Unit,
+    onPushAllClick: () -> Unit,
     uiState: RapidInputUiState
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -287,7 +299,10 @@ fun StagingBoxListContent(
                 )
             }
         }
-        DashboardSummary(uiState = uiState)
+        DashboardSummary(
+            uiState = uiState,
+            onPushAllClick = onPushAllClick
+        )
     }
 }
 
@@ -361,7 +376,7 @@ fun DashboardStagedBoxCard(
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    text = stringResource(R.string.label_box_location, box.warehouse, box.rack, box.year),
+                    text = "${box.warehouse} - Rak ${box.rack}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
                 )
@@ -375,7 +390,10 @@ fun DashboardStagedBoxCard(
 }
 
 @Composable
-fun DashboardSummary(uiState: RapidInputUiState) {
+fun DashboardSummary(
+    uiState: RapidInputUiState,
+    onPushAllClick: () -> Unit
+) {
     val filledBoxes = uiState.existingStagedBoxes.count { it.itemCount > 0 }
     val totalItems = uiState.existingStagedBoxes.sumOf { it.itemCount }
     
@@ -422,6 +440,22 @@ fun DashboardSummary(uiState: RapidInputUiState) {
                             .height(12.dp)
                             .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Button(
+                onClick = onPushAllClick,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty(),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                if (uiState.isLoading) {
+                    Text(stringResource(R.string.btn_processing))
+                } else {
+                    Text(stringResource(R.string.btn_push_to_db))
                 }
             }
         }

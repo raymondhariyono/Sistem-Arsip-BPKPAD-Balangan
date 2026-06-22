@@ -7,13 +7,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,9 +25,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.verticalScroll
-import com.example.arsipbpkpad.utils.DateUtils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -81,6 +78,7 @@ import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadExpandableFAB
 import com.example.arsipbpkpad.presentation.components.StatusDialog
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
+import com.example.arsipbpkpad.utils.DateUtils
 
 @Composable
 fun ArchiveListScreen(
@@ -289,96 +287,42 @@ fun YearSelectionGrid(
     yearStats: List<com.example.arsipbpkpad.domain.model.YearStats>,
     onYearClick: (Int) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+    ) {
+        Spacer(modifier = Modifier.height(24.dp))
+        ArchivalRepositoryHeader()
+        Spacer(modifier = Modifier.height(24.dp))
 
-    if (isLandscape) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(0.4f)
-                    .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Spacer(modifier = Modifier.height(24.dp))
-                ArchivalRepositoryHeader()
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            LazyColumn(
-                modifier = Modifier
-                    .weight(0.6f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(vertical = 24.dp)
-            ) {
-                availableYears.chunked(2).forEach { rowYears ->
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            rowYears.forEach { y ->
-                                val stats = yearStats.find { it.year == y }
-                                YearGridCard(
-                                    year = y,
-                                    recordsCount = stats?.count ?: 0,
-                                    lastUpdated = DateUtils.formatDateTime(stats?.lastUpdated),
-                                    onClick = { onYearClick(y) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (rowYears.size < 2) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
+            availableYears.chunked(2).forEach { rowYears ->
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        rowYears.forEach { y ->
+                            val stats = yearStats.find { it.year == y }
+                            YearGridCard(
+                                year = y,
+                                recordsCount = stats?.count ?: 0,
+                                lastUpdated = DateUtils.formatDateTime(stats?.lastUpdated),
+                                onClick = { onYearClick(y) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        if (rowYears.size < 2) {
+                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
             }
-        }
-    } else {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp)
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            ArchivalRepositoryHeader()
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                availableYears.chunked(2).forEach { rowYears ->
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            rowYears.forEach { y ->
-                                val stats = yearStats.find { it.year == y }
-                                YearGridCard(
-                                    year = y,
-                                    recordsCount = stats?.count ?: 0,
-                                    lastUpdated = DateUtils.formatDateTime(stats?.lastUpdated),
-                                    onClick = { onYearClick(y) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (rowYears.size < 2) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
-                item { Spacer(modifier = Modifier.height(32.dp)) }
-            }
+            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
     }
 }
@@ -493,56 +437,23 @@ fun ArchiveListContentOnly(
     onImportClick: () -> Unit,
     onExportClick: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-    if (isLandscape) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(0.35f)
-                    .fillMaxHeight()
-                    .padding(start = 16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-                ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
-                ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
-                DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
-                ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            Box(modifier = Modifier.weight(0.65f)) {
-                ArchiveResultList(
-                    archives = archives,
-                    onArchiveClick = onArchiveClick
-                )
-            }
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Spacer(modifier = Modifier.height(8.dp))
+            ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
+            Spacer(modifier = Modifier.height(12.dp))
+            ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
+            Spacer(modifier = Modifier.height(12.dp))
+            DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
+            Spacer(modifier = Modifier.height(12.dp))
+            ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick)
+            Spacer(modifier = Modifier.height(16.dp))
         }
-    } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Spacer(modifier = Modifier.height(8.dp))
-                ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
-                Spacer(modifier = Modifier.height(12.dp))
-                ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
-                Spacer(modifier = Modifier.height(12.dp))
-                DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
-                Spacer(modifier = Modifier.height(12.dp))
-                ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
-            ArchiveResultList(
-                archives = archives,
-                onArchiveClick = onArchiveClick
-            )
-        }
+        ArchiveResultList(
+            archives = archives,
+            onArchiveClick = onArchiveClick
+        )
     }
 }
 

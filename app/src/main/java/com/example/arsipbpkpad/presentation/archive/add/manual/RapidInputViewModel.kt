@@ -337,17 +337,19 @@ class RapidInputViewModel @Inject constructor(
                 }
             }
 
-            val bundleId = if (state.isAutoBundleEnabled) UUID.randomUUID().toString() else null
+            val bundleId = if (state.isAutoBundleEnabled || state.docType == DocType.SPJ) UUID.randomUUID().toString() else null
             val documents = mutableListOf<ArchiveDocument>()
             
             documents.add(createBaseDocument(state, sessionId, bundleId))
             
-            if (state.isAutoBundleEnabled && state.docType == DocType.SP2D) {
-                documents.add(createBaseDocument(state, sessionId, bundleId).copy(
-                    id = UUID.randomUUID().toString(),
-                    type = DocType.SPM,
-                    documentNumber = state.spmDocumentNumber
-                ))
+            if (state.isAutoBundleEnabled && (state.docType == DocType.SP2D || state.docType == DocType.SPM)) {
+                if (state.docType == DocType.SP2D) {
+                    documents.add(createBaseDocument(state, sessionId, bundleId).copy(
+                        id = UUID.randomUUID().toString(),
+                        type = DocType.SPM,
+                        documentNumber = state.spmDocumentNumber
+                    ))
+                }
                 
                 if (state.spjDescription.isNotBlank()) {
                     documents.add(createBaseDocument(state, sessionId, bundleId).copy(

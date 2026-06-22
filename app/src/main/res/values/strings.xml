@@ -34,7 +34,7 @@
     <string name="title_duplicate_warning">Peringatan Duplikasi</string>
     <string name="msg_duplicate_warning">Nomor dokumen \'%1$s\' sudah terdaftar di sistem. Tetap simpan sebagai status \'%2$s\' yang berbeda?</string>
     <string name="btn_keep_save">Tetap Simpan</string>
-    <string name="msg_upload_success">Data berhasil diunggah ke database!</string>
+    <string name="msg_upload_success">Data berhasil diunggah ke Penyimpanan Permanen!</string>
     <string name="msg_sync_success">Sinkronisasi berhasil!</string>
     <string name="msg_delete_confirm">Apakah Anda yakin ingin menghapus data ini?</string>
 
@@ -54,14 +54,14 @@
     <string name="view_all">Lihat Semua</string>
     <string name="status_warehouse">Gudang</string>
     <string name="status_borrowed">Dipinjam</string>
-    <string name="staging_status_title">Status Staging</string>
-    <string name="staging_docs_waiting">%1$d dokumen di staging</string>
-    <string name="staging_boxes_ready">%1$d box siap di staging</string>
+    <string name="staging_status_title">Status Penyimpanan Sementara</string>
+    <string name="staging_docs_waiting">%1$d dokumen di penyimpanan sementara</string>
+    <string name="staging_boxes_ready">%1$d box siap di penyimpanan sementara</string>
     <string name="btn_review_box">Review Box</string>
 
     <!-- Archive List Screen -->
     <string name="archive_list_title">Daftar Arsip</string>
-    <string name="archival_repository_title">Gudang Arsip</string>
+    <string name="archival_repository_title">Penyimpanan Permanen</string>
     <string name="archival_repository_subtitle">Pilih tahun arsip untuk melihat daftar dokumen</string>
     <string name="search_hint">Cari nomor dokumen, perihal...</string>
     <string name="filter_year_label">Tahun %1$s</string>
@@ -73,16 +73,16 @@
     <string name="filter_all">Semua</string>
 
     <!-- Staging Box List Screen -->
-    <string name="btn_push_to_db">Unggah ke Database</string>
+    <string name="btn_push_to_db">Unggah Semua Box ke Penyimpanan Permanen</string>
     <string name="btn_processing">Memproses...</string>
-    <string name="title_delete_staging_box">Hapus Staging Box</string>
-    <string name="msg_delete_staging_box">Apakah Anda yakin ingin menghapus box ini dari staging? Data dokumen di dalamnya akan hilang.</string>
-    <string name="empty_staging_title">Belum Ada Box di Staging</string>
+    <string name="title_delete_staging_box">Hapus Penyimpanan Sementara Box</string>
+    <string name="msg_delete_staging_box">Apakah Anda yakin ingin menghapus box ini dari penyimpanan sementara? Data dokumen di dalamnya akan hilang.</string>
+    <string name="empty_staging_title">Belum Ada Box di Penyimpanan Sementara</string>
     <string name="empty_staging_desc">Gunakan tombol + untuk membuat box baru dan mulai memasukkan data arsip secara massal.</string>
     <string name="label_box_number">Box %1$s</string>
     <string name="label_waiting_upload">Menunggu unggahan • %1$d dokumen</string>
     <string name="label_box_location">%1$s - Rak %2$s (%3$s)</string>
-    <string name="label_items_in_staging">%1$d item di staging •</string>
+    <string name="label_items_in_staging">%1$d item di Penyimpanan Sementara •</string>
     <string name="label_boxes_filled">%1$d / %2$d Box Terisi</string>
 
     <!-- Rapid Input Screen -->
@@ -111,7 +111,7 @@
     <string name="status_expired">Expired</string>
     <string name="status_active">Aktif</string>
     <string name="btn_update">Perbarui</string>
-    <string name="btn_upload_docs">Upload (%1$d) Dokumen ke Database</string>
+    <string name="btn_upload_docs">Upload (%1$d) Dokumen ke Penyimpanan Permanen</string>
     <string name="btn_finish_back">Selesai &amp; Kembali</string>
     <string name="btn_cancel_exit">Batal &amp; Keluar</string>
     <string name="label_doc_type">Tipe Dokumen</string>
@@ -135,8 +135,8 @@
     <string name="placeholder_spj_desc">Contoh: Laporan Pertanggungjawaban ATK</string>
     <string name="hint_enter_value">Masukkan %1$s...</string>
     <string name="hint_select_value">Pilih %1$s...</string>
-    <string name="label_staging_list">Daftar Staging (%1$d)</string>
-    <string name="msg_empty_staging">Keranjang staging masih kosong.\nSilakan masukkan dokumen di atas.</string>
+    <string name="label_staging_list">Daftar Penyimpanan Sementara (%1$d)</string>
+    <string name="msg_empty_staging">BOX Sementara masih kosong.\nSilakan masukkan dokumen di atas.</string>
 
     <!-- Classification Sheet -->
     <string name="title_select_classification">Pilih Kode Klasifikasi</string>

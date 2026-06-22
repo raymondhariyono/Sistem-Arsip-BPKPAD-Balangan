@@ -537,7 +537,7 @@ fun RapidInputForm(
             FormDropdownField(
                 label = stringResource(R.string.label_doc_type),
                 value = uiState.docType.name,
-                options = listOf("SP2D", "SPM", "SPP"),
+                options = listOf("SP2D", "SPM", "SPP", "SPJ"),
                 onOptionSelected = { onDocTypeChange(DocType.valueOf(it)) },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -549,7 +549,7 @@ fun RapidInputForm(
                 onClick = onClassificationClick
             )
 
-            if (uiState.editingId == null && uiState.docType == DocType.SP2D) {
+            if (uiState.editingId == null && (uiState.docType == DocType.SP2D || uiState.docType == DocType.SPM)) {
                 AutoBundleCheckbox(
                     checked = uiState.isAutoBundleEnabled,
                     onCheckedChange = onAutoBundleToggle

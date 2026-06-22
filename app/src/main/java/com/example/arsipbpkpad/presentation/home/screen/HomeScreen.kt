@@ -338,7 +338,7 @@ fun StagingCardHeader() {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Refresh,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.btn_sync),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
@@ -350,13 +350,6 @@ fun StagingCardHeader() {
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
-        
-        Text(
-            text = stringResource(R.string.btn_review_box),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
     }
 }
 
@@ -386,6 +379,7 @@ fun StagingCardContent(count: Int, summary: String) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
+            // Summary originally contained the year, but we keep it generic or rely on string resources
             Text(
                 text = summary,
                 style = MaterialTheme.typography.bodySmall,

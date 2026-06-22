@@ -58,10 +58,10 @@ fun ConditionBadge(condition: String) {
 @Composable
 fun DocStatusBadge(status: String) {
     val (backgroundColor, text) = when (status.uppercase()) {
-        "AVAILABLE" -> DarkGreen to "TERSEDIA (DI GUDANG)"
+        "AVAILABLE" -> DarkGreen to "TERSEDIA"
         "BORROWED" -> Color(0xFF1976D2) to "DIPINJAM" // Blue
         "DISPOSED" -> Color(0xFF757575) to "DIMUSNAHKAN" // Grey
-        "UNVERIFIED" -> Color(0xFFFFA000) to "BELUM DIVERIFIKASI" // Amber
+        "UNVERIFIED" -> Color(0xFFFFA000) to "BELUM VERIFIKASI" // Amber
         else -> MaterialTheme.colorScheme.secondary to status
     }
     StatusBadge(text = text, backgroundColor = backgroundColor, textColor = White)

@@ -28,7 +28,8 @@ import com.example.arsipbpkpad.ui.theme.PrimaryGreen
 @Composable
 fun ArchiveTableHeader(
     showCondition: Boolean = true,
-    showStatus: Boolean = true
+    showStatus: Boolean = true,
+    showYear: Boolean = true
 ) {
     Surface(
         color = PrimaryGreen,
@@ -42,9 +43,12 @@ fun ArchiveTableHeader(
             VerticalDivider(color = Color.White.copy(alpha = 0.3f))
             HeaderCell(text = "Kode", width = 100.dp)
             VerticalDivider(color = Color.White.copy(alpha = 0.3f))
-            HeaderCell(text = "No Dokumen", width = 200.dp)
-            VerticalDivider(color = Color.White.copy(alpha = 0.3f))
-            HeaderCell(text = "Thn", width = 64.dp)
+            HeaderCell(text = "No Dokumen", width = if (showYear) 200.dp else 264.dp)
+            
+            if (showYear) {
+                VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+                HeaderCell(text = "Thn", width = 64.dp)
+            }
             
             if (showCondition) {
                 VerticalDivider(color = Color.White.copy(alpha = 0.3f))
@@ -80,6 +84,7 @@ fun ArchiveListItemCard(
     onClick: () -> Unit,
     showCondition: Boolean = true,
     showStatus: Boolean = true,
+    showYear: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (no % 2 == 0) {
@@ -105,11 +110,13 @@ fun ArchiveListItemCard(
             VerticalDivider()
 
             // 3. No Dokumen
-            TableCell(text = archive.documentNumber ?: "-", width = 200.dp, textAlign = TextAlign.Start)
-            VerticalDivider()
+            TableCell(text = archive.documentNumber ?: "-", width = if (showYear) 200.dp else 264.dp, textAlign = TextAlign.Start)
 
             // 4. Tahun
-            TableCell(text = archive.year.toString(), width = 64.dp)
+            if (showYear) {
+                VerticalDivider()
+                TableCell(text = archive.year.toString(), width = 64.dp)
+            }
 
             // 5. Kondisi
             if (showCondition) {
