@@ -18,4 +18,5 @@ sealed class Screen(val route: String) {
         fun createRoute(archiveId: String) = "edit_archive/$archiveId"
     }
     data object Analytics : Screen("analytics")
+    data object BoxManagement : Screen("box_management")
 }

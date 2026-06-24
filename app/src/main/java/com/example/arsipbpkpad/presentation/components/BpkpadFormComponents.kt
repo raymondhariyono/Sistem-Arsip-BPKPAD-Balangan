@@ -35,6 +35,8 @@ fun FormTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     error: String? = null,
+    readOnly: Boolean = false,
+    enabled: Boolean = true,
     singleLine: Boolean = true,
     minLines: Int = 1,
     visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -47,12 +49,14 @@ fun FormTextField(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
         )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
+            readOnly = readOnly,
+            enabled = enabled,
             isError = error != null,
             placeholder = {
                 Text(

@@ -85,8 +85,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.ClassificationCode
+import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
@@ -103,7 +105,7 @@ fun RapidInputScreen(
     onNavigateBack: () -> Unit,
     onNavigateToScan: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
-    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN,
+    userRole: UserRole = UserRole.UNKNOWN,
     viewModel: RapidInputViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -269,6 +271,7 @@ fun RapidInputScreen(
                                 onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
                                 onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
                                 onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
+                                onBundleSelected = { viewModel.onEvent(RapidInputUiEvent.OnBundleSelected(it)) },
                                 onClassificationClick = { showClassificationSheet = true },
                                 onAddOrUpdateClick = { 
                                     if (uiState.editingId != null && sessionId.isEmpty()) {
@@ -330,6 +333,7 @@ fun RapidInputScreen(
                         onSpjDescriptionChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
                         onNominalChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
                         onConditionChange = { viewModel.onEvent(RapidInputUiEvent.OnConditionChange(it)) },
+                        onBundleSelected = { viewModel.onEvent(RapidInputUiEvent.OnBundleSelected(it)) },
                         onClassificationClick = { showClassificationSheet = true },
                         onAddOrUpdateClick = { 
                             if (uiState.editingId != null && sessionId.isEmpty()) {
@@ -441,7 +445,7 @@ fun RapidInputBottomBar(
     onUploadClick: () -> Unit,
     onExitClick: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
-    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN
+    userRole: UserRole = UserRole.UNKNOWN
 ) {
     Column {
         Surface(
@@ -513,7 +517,8 @@ fun RapidInputForm(
     onSubjectChange: (String) -> Unit,
     onSpjDescriptionChange: (String) -> Unit,
     onNominalChange: (String) -> Unit,
-    onConditionChange: (com.example.arsipbpkpad.domain.model.DocCondition) -> Unit,
+    onConditionChange: (DocCondition) -> Unit,
+    onBundleSelected: (String?) -> Unit,
     onClassificationClick: () -> Unit,
     onAddOrUpdateClick: () -> Unit,
     onCancelEditClick: () -> Unit
@@ -560,6 +565,22 @@ fun RapidInputForm(
                 )
             }
 
+            if (uiState.docType == DocType.SPJ && !uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val bundleOptions = listOf("None") + uiState.stagedBundles.map { it.name }
+                val selectedBundle = uiState.stagedBundles.find { it.id == uiState.selectedBundleId }
+                FormDropdownField(
+                    label = "Pilih Bundle (Opsional)",
+                    value = selectedBundle?.name ?: "None",
+                    options = bundleOptions,
+                    onOptionSelected = {
+                        if (it == "None") onBundleSelected(null)
+                        else onBundleSelected(uiState.stagedBundles.find { b -> b.name == it }?.id)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             PhysicalStatusSelector(
@@ -592,7 +613,7 @@ fun RapidInputForm(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     placeholder = stringResource(R.string.placeholder_doc_number),
-                    error = uiState.validationErrors["docNumber"]
+                    error = uiState.documentNumberError ?: uiState.validationErrors["docNumber"]
                 )
             }
             
@@ -634,6 +655,7 @@ fun RapidInputForm(
                 label = stringResource(R.string.label_nominal),
                 value = uiState.nominal,
                 onValueChange = onNominalChange,
+                readOnly = uiState.selectedBundleId != null && uiState.docType == DocType.SPJ,
                 visualTransformation = CurrencyVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
@@ -644,7 +666,7 @@ fun RapidInputForm(
                     onAddOrUpdateClick()
                 }),
                 placeholder = stringResource(R.string.placeholder_nominal),
-                error = uiState.validationErrors["nominal"]
+                error = uiState.nominalError
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -660,22 +682,22 @@ fun RapidInputForm(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
-                    selected = uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.GOOD,
-                    onClick = { onConditionChange(com.example.arsipbpkpad.domain.model.DocCondition.GOOD) },
+                    selected = uiState.condition == DocCondition.GOOD,
+                    onClick = { onConditionChange(DocCondition.GOOD) },
                     label = { Text("Baik") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    leadingIcon = if (uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.GOOD) {
+                    leadingIcon = if (uiState.condition == DocCondition.GOOD) {
                         { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp)) }
                     } else null
                 )
                 FilterChip(
-                    selected = uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED,
-                    onClick = { onConditionChange(com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED) },
+                    selected = uiState.condition == DocCondition.DAMAGED,
+                    onClick = { onConditionChange(DocCondition.DAMAGED) },
                     label = { Text("Rusak") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    leadingIcon = if (uiState.condition == com.example.arsipbpkpad.domain.model.DocCondition.DAMAGED) {
+                    leadingIcon = if (uiState.condition == DocCondition.DAMAGED) {
                         { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp)) }
                     } else null
                 )
@@ -976,7 +998,7 @@ fun BottomSheetDragHandle() {
 
 @Composable
 fun QuickCategorySection(
-    categories: List<com.example.arsipbpkpad.domain.model.ClassificationCode>,
+    categories: List<ClassificationCode>,
     selectedCategoryCode: String?,
     onCategorySelected: (String?) -> Unit
 ) {

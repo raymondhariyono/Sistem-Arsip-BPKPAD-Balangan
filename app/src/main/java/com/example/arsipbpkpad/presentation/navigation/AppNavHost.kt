@@ -25,6 +25,7 @@ import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
 import com.example.arsipbpkpad.presentation.auth.screen.LoginScreen
 import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
+import com.example.arsipbpkpad.presentation.storage.BoxManagementScreen
 
 @Composable
 fun AppNavHost(
@@ -41,6 +42,7 @@ fun AppNavHost(
     val archiveFlowRoute = stringResource(R.string.route_archive_flow)
     val navHomeId = stringResource(R.string.nav_home_id)
     val navArchiveId = stringResource(R.string.nav_archive_id)
+    val navStorageId = "box_management"
     val navAddId = stringResource(R.string.nav_add_id)
     val navAnalyticsId = stringResource(R.string.nav_analytics_id)
     val sessionIdKey = stringResource(R.string.key_session_id)
@@ -136,13 +138,16 @@ fun AppNavHost(
                             navController.navigate(Screen.Scan.route)
                         }
                     },
-                    onNavigateBack = {
-                        navController.popBackStack()
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
                     },
                     onNavigateToBottomNav = { item ->
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> { /* Already here */ }
+                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
                             navAddId -> {
                                 if (currentUserRole != UserRole.KASSUBAG) {
                                     navController.navigate(Screen.StagingBoxList.route)
@@ -200,6 +205,7 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
+                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
                             navAddId -> { /* Already here */ }
                             navAnalyticsId -> {
                                 if (currentUserRole != UserRole.ARSIPARIS) {
@@ -250,6 +256,7 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
+                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
                             navAddId -> navController.navigate(Screen.StagingBoxList.route)
                             navAnalyticsId -> {
                                 if (currentUserRole != UserRole.ARSIPARIS) {
@@ -297,6 +304,7 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
+                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
                             navAddId -> navController.navigate(Screen.StagingBoxList.route)
                             navAnalyticsId -> {
                                 if (currentUserRole != UserRole.ARSIPARIS) {
@@ -347,12 +355,36 @@ fun AppNavHost(
                     when (item.route) {
                         navHomeId -> navController.navigate(Screen.Home.route)
                         navArchiveId -> navController.navigate(archiveFlowRoute)
+                        navStorageId -> navController.navigate(Screen.BoxManagement.route)
                         navAddId -> {
                             if (currentUserRole != UserRole.KASSUBAG) {
                                 navController.navigate(Screen.StagingBoxList.route)
                             }
                         }
                         navAnalyticsId -> { /* Already here */ }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.BoxManagement.route) {
+            BoxManagementScreen(
+                userRole = currentUserRole,
+                onNavigateToBottomNav = { item ->
+                    when (item.route) {
+                        navHomeId -> navController.navigate(Screen.Home.route)
+                        navArchiveId -> navController.navigate(archiveFlowRoute)
+                        navStorageId -> { /* Already here */ }
+                        navAddId -> {
+                            if (currentUserRole != UserRole.KASSUBAG) {
+                                navController.navigate(Screen.StagingBoxList.route)
+                            }
+                        }
+                        navAnalyticsId -> {
+                            if (currentUserRole != UserRole.ARSIPARIS) {
+                                navController.navigate(Screen.Analytics.route)
+                            }
+                        }
                     }
                 }
             )

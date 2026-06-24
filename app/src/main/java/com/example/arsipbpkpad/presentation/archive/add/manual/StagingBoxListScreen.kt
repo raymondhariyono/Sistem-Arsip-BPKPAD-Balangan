@@ -65,7 +65,7 @@ import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.components.FormDropdownField
-import com.example.arsipbpkpad.presentation.components.FormTextField
+import com.example.arsipbpkpad.presentation.components.HierarchicalLocationSelector
 import com.example.arsipbpkpad.presentation.components.StatusDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,9 +201,13 @@ fun StagingBoxListScreen(
                     uiState = uiState,
                     onDismiss = { showAddBoxDialog = false },
                     onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext) },
-                    onWarehouseChange = { viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange(it)) },
-                    onRackChange = { viewModel.onEvent(RapidInputUiEvent.OnRackChange(it)) },
-                    onBoxChange = { viewModel.onEvent(RapidInputUiEvent.OnBoxChange(it)) },
+                    onRoomChange = { viewModel.onEvent(RapidInputUiEvent.OnRoomChange(it)) },
+                    onRoomSelected = { viewModel.onEvent(RapidInputUiEvent.OnRoomSelected(it)) },
+                    onCreateRoom = { viewModel.onEvent(RapidInputUiEvent.OnCreateRoom(it)) },
+                    onShelfChange = { viewModel.onEvent(RapidInputUiEvent.OnShelfChange(it)) },
+                    onShelfSelected = { viewModel.onEvent(RapidInputUiEvent.OnShelfSelected(it)) },
+                    onCreateShelf = { viewModel.onEvent(RapidInputUiEvent.OnCreateShelf(it)) },
+                    onBoxLocationChange = { viewModel.onEvent(RapidInputUiEvent.OnBoxLocationChange(it)) },
                     onYearChange = { viewModel.onEvent(RapidInputUiEvent.OnYearChange(it)) }
                 )
             }
@@ -509,9 +513,13 @@ fun AddBoxDialog(
     uiState: RapidInputUiState,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    onWarehouseChange: (String) -> Unit,
-    onRackChange: (String) -> Unit,
-    onBoxChange: (String) -> Unit,
+    onRoomChange: (String) -> Unit,
+    onRoomSelected: (com.example.arsipbpkpad.domain.model.Room?) -> Unit,
+    onCreateRoom: (String) -> Unit,
+    onShelfChange: (String) -> Unit,
+    onShelfSelected: (com.example.arsipbpkpad.domain.model.Shelf?) -> Unit,
+    onCreateShelf: (String) -> Unit,
+    onBoxLocationChange: (String) -> Unit,
     onYearChange: (String) -> Unit
 ) {
     Dialog(
@@ -534,52 +542,43 @@ fun AddBoxDialog(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                    FormTextField(
-                        label = stringResource(R.string.label_warehouse),
-                        value = uiState.boxContext.warehouse,
-                        onValueChange = onWarehouseChange,
-                        placeholder = stringResource(R.string.placeholder_warehouse),
-                        error = uiState.validationErrors["warehouse"]
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                HierarchicalLocationSelector(
+                    roomsList = uiState.roomsList,
+                    shelvesList = uiState.shelvesList,
+                    selectedRoom = uiState.selectedRoom,
+                    selectedShelf = uiState.selectedShelf,
+                    typedRoom = uiState.typedRoom,
+                    typedShelf = uiState.typedShelf,
+                    typedBox = uiState.typedBox,
+                    onRoomChange = onRoomChange,
+                    onRoomSelected = onRoomSelected,
+                    onCreateRoom = onCreateRoom,
+                    onShelfChange = onShelfChange,
+                    onShelfSelected = onShelfSelected,
+                    onCreateShelf = onCreateShelf,
+                    onBoxChange = onBoxLocationChange,
+                    boxError = uiState.validationErrors["box"]
+                )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        FormTextField(
-                            label = stringResource(R.string.label_rack),
-                            value = uiState.boxContext.rack,
-                            onValueChange = onRackChange,
-                            modifier = Modifier.weight(1f),
-                            placeholder = stringResource(R.string.placeholder_rack),
-                            error = uiState.validationErrors["rack"]
-                        )
-                        FormTextField(
-                            label = stringResource(R.string.label_box),
-                            value = uiState.boxContext.box,
-                            onValueChange = onBoxChange,
-                            modifier = Modifier.weight(1f),
-                            placeholder = stringResource(R.string.placeholder_box),
-                            error = uiState.validationErrors["box"]
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-                    val years = remember { (1990..currentYear).reversed().map { it.toString() } }
-                    FormDropdownField(
-                        label = stringResource(R.string.label_doc_year),
-                        value = uiState.boxContext.year,
-                        options = years,
-                        onOptionSelected = onYearChange,
-                        modifier = Modifier.fillMaxWidth()
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                val years = remember { (1990..currentYear).reversed().map { it.toString() } }
+                FormDropdownField(
+                    label = stringResource(R.string.label_doc_year),
+                    value = uiState.boxContext.year,
+                    options = years,
+                    onOptionSelected = onYearChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (uiState.validationErrors.containsKey("year")) {
+                    Text(
+                        text = uiState.validationErrors["year"] ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
-                    if (uiState.validationErrors.containsKey("year")) {
-                        Text(
-                            text = uiState.validationErrors["year"] ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
