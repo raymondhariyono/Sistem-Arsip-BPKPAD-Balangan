@@ -196,11 +196,20 @@ fun ArchiveListScreen(
         topBar = {
             ArchiveListTopBar(
                 isFilterConfirmed = uiState.isFilterConfirmed,
+                isExportEnabled = archives.isNotEmpty(),
                 onBackClick = {
                     if (uiState.isFilterConfirmed) {
                         viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
                     } else {
                         onNavigateBack()
+                    }
+                },
+                onImportClick = {
+                    importLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                },
+                onExportClick = {
+                    if (archives.isNotEmpty()) {
+                        showExportConfirm = true
                     }
                 }
             )
@@ -247,8 +256,11 @@ fun ArchiveListScreen(
                         importLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     },
                     onExportClick = {
-                        showExportConfirm = true
+                        if (archives.isNotEmpty()) {
+                            showExportConfirm = true
+                        }
                     },
+                    isExportEnabled = archives.isNotEmpty(),
                     paddingValues = paddingValues
                 )
             }
@@ -263,7 +275,10 @@ fun ArchiveListScreen(
 @Composable
 fun ArchiveListTopBar(
     isFilterConfirmed: Boolean,
-    onBackClick: () -> Unit
+    isExportEnabled: Boolean,
+    onBackClick: () -> Unit,
+    onImportClick: () -> Unit,
+    onExportClick: () -> Unit
 ) {
     com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
         title = {
@@ -280,6 +295,25 @@ fun ArchiveListTopBar(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
                     tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onImportClick) {
+                Icon(
+                    imageVector = Icons.Default.FileUpload,
+                    contentDescription = "Import Excel",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(
+                onClick = onExportClick,
+                enabled = isExportEnabled
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FileDownload,
+                    contentDescription = "Export Excel",
+                    tint = if (isExportEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                 )
             }
         }
@@ -443,6 +477,7 @@ fun ArchiveListContentOnly(
     onArchiveClick: (String) -> Unit,
     onImportClick: () -> Unit,
     onExportClick: () -> Unit,
+    isExportEnabled: Boolean = true,
     paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -454,7 +489,7 @@ fun ArchiveListContentOnly(
             Spacer(modifier = Modifier.height(12.dp))
             DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
             Spacer(modifier = Modifier.height(12.dp))
-            ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick)
+            ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick, isExportEnabled = isExportEnabled)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -467,7 +502,7 @@ fun ArchiveListContentOnly(
 }
 
 @Composable
-fun ExcelActionButtons(onImportClick: () -> Unit, onExportClick: () -> Unit) {
+fun ExcelActionButtons(onImportClick: () -> Unit, onExportClick: () -> Unit, isExportEnabled: Boolean = true) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -485,9 +520,13 @@ fun ExcelActionButtons(onImportClick: () -> Unit, onExportClick: () -> Unit) {
         }
         Button(
             onClick = onExportClick,
+            enabled = isExportEnabled,
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                disabledContainerColor = MaterialTheme.colorScheme.outlineVariant
+            )
         ) {
             Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
