@@ -162,7 +162,13 @@ fun AppNavHost(
                 val archiveId = entry.arguments?.getString(archiveIdKey) ?: ""
                 ArchiveDetailScreen(
                     archiveId = archiveId,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = {
+                        navController.navigate(Screen.ArchiveList.route) {
+                            popUpTo(Screen.ArchiveList.route) {
+                                inclusive = false
+                            }
+                        }
+                    },
                     onNavigateToArchive = { id ->
                         navController.navigate(Screen.ArchiveDetail.createRoute(id))
                     },

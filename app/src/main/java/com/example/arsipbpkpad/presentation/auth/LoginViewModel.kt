@@ -2,17 +2,13 @@ package com.example.arsipbpkpad.presentation.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import com.example.arsipbpkpad.domain.repository.AuthRepository
 import com.example.arsipbpkpad.domain.model.DomainResult
-import io.github.jan.supabase.SupabaseClient
-import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.client.plugins.ResponseException
+import com.example.arsipbpkpad.domain.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.net.UnknownHostException
 import javax.inject.Inject
 
 data class LoginUiState(
@@ -45,12 +41,17 @@ class LoginViewModel @Inject constructor(
     }
 
     fun authenticateAdmin() {
-        val email = _uiState.value.email
+        val email = _uiState.value.email.trim()
         val password = _uiState.value.password
         val rememberMe = _uiState.value.rememberMe
 
         if (email.isBlank() || password.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Email dan password tidak boleh kosong.") }
+            return
+        }
+
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _uiState.update { it.copy(errorMessage = "Format email tidak valid.") }
             return
         }
 

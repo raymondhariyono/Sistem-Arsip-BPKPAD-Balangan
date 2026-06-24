@@ -44,13 +44,16 @@ class AuthRepositoryImpl @Inject constructor(
             
             DomainResult.Success(Unit)
         } catch (e: Exception) {
-            val message = when (e) {
-                is UnknownHostException, is HttpRequestTimeoutException -> "Koneksi internet bermasalah. Silakan periksa jaringan Anda."
-                is ResponseException -> {
-                    if (e.response.status.value == 400) "Email atau password salah."
-                    else "Terjadi kesalahan pada server (${e.response.status.value})."
-                }
-                else -> e.localizedMessage ?: "Gagal masuk. Silakan coba lagi."
+            val message = when {
+                e is UnknownHostException || e is HttpRequestTimeoutException -> 
+                    "Koneksi internet bermasalah. Silakan periksa jaringan Anda."
+                e is ResponseException && e.response.status.value == 400 -> 
+                    "Email atau password salah."
+                e is ResponseException && e.response.status.value == 429 ->
+                    "Terlalu banyak percobaan masuk. Silakan tunggu beberapa saat."
+                e.message?.contains("invalid_credentials", ignoreCase = true) == true ->
+                    "Email atau password salah."
+                else -> "Gagal masuk. Pastikan kredensial benar atau hubungi admin."
             }
             DomainResult.Error(message)
         }

@@ -3,6 +3,7 @@ package com.example.arsipbpkpad.presentation.home.component
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -166,38 +169,51 @@ fun SectionHeader(title: String, actionText: String, onActionClick: () -> Unit) 
 
 @Composable
 fun RecentArchiveTable(items: List<ArchiveDocument>, onArchiveClick: (String) -> Unit) {
-    Column(
+    val scrollState = rememberScrollState()
+    
+    androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
     ) {
-        ArchiveTableHeader(showCondition = false, showStatus = false, showYear = false)
+        val minTableWidth = 412.dp // Sum of fixed widths + min for No Dokumen (48+100+200+64)
+        val tableWidth = maxOf(maxWidth, minTableWidth)
 
-        items.forEachIndexed { index, item ->
-            ArchiveListItemCard(
-                no = index + 1,
-                archive = item,
-                onClick = { onArchiveClick(item.id) },
-                showCondition = false,
-                showStatus = false,
-                showYear = false
-            )
-        }
-        
-        if (items.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.no_docs_found),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState)
+        ) {
+            Column(modifier = Modifier.width(tableWidth)) {
+                ArchiveTableHeader(showCondition = false, showStatus = false, showYear = true)
+
+                items.forEachIndexed { index, item ->
+                    ArchiveListItemCard(
+                        no = index + 1,
+                        archive = item,
+                        onClick = { onArchiveClick(item.id) },
+                        showCondition = false,
+                        showStatus = false,
+                        showYear = true
+                    )
+                }
+                
+                if (items.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.no_docs_found),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }

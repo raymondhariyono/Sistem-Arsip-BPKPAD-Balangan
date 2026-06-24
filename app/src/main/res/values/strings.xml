@@ -118,7 +118,11 @@
     <string name="label_classification_code">Kode Klasifikasi</string>
     <string name="label_physical_status">Status Fisik</string>
     <string name="label_asli">Asli</string>
-    <string name="label_salinan">Salinan</string>
+    <string name="label_salinan">Fotokopi</string>
+    <string name="label_kondisi">Kondisi Dokumen</string>
+    <string name="cond_good">Baik</string>
+    <string name="cond_damaged">Rusak</string>
+    <string name="cond_lost">Hilang</string>
     <string name="label_copy_count">Jumlah Salinan</string>
     <string name="label_doc_number">Nomor Dokumen</string>
     <string name="label_doc_number_sp2d">Nomor Dokumen SP2D</string>

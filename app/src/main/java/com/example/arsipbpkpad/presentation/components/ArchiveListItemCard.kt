@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,47 +30,57 @@ import com.example.arsipbpkpad.ui.theme.PrimaryGreen
 fun ArchiveTableHeader(
     showCondition: Boolean = true,
     showStatus: Boolean = true,
-    showYear: Boolean = true
+    showYear: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
+    // Calculate a reasonable min width based on visible columns
+    val minWidth = 48.dp + 100.dp + 200.dp + 
+                  (if (showYear) 64.dp else 0.dp) + 
+                  (if (showCondition) 100.dp else 0.dp) + 
+                  (if (showStatus) 120.dp else 0.dp)
+
     Surface(
         color = PrimaryGreen,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth().widthIn(min = minWidth)
     ) {
         Row(
             modifier = Modifier.height(48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HeaderCell(text = "No", width = 48.dp)
+            HeaderCell(text = "No", modifier = Modifier.width(48.dp))
             VerticalDivider(color = Color.White.copy(alpha = 0.3f))
-            HeaderCell(text = "Kode", width = 100.dp)
+            HeaderCell(text = "Kode", modifier = Modifier.width(100.dp))
             VerticalDivider(color = Color.White.copy(alpha = 0.3f))
-            HeaderCell(text = "No Dokumen", width = if (showYear) 200.dp else 264.dp)
+            
+            // "No Dokumen" takes the remaining space (weight 1f) but has a minimum width
+            HeaderCell(
+                text = "No Dokumen", 
+                modifier = Modifier.weight(1f).widthIn(min = 200.dp)
+            )
             
             if (showYear) {
                 VerticalDivider(color = Color.White.copy(alpha = 0.3f))
-                HeaderCell(text = "Thn", width = 64.dp)
+                HeaderCell(text = "Thn", modifier = Modifier.width(64.dp))
             }
             
             if (showCondition) {
                 VerticalDivider(color = Color.White.copy(alpha = 0.3f))
-                HeaderCell(text = "Kondisi", width = 100.dp)
+                HeaderCell(text = "Kondisi", modifier = Modifier.width(100.dp))
             }
             
             if (showStatus) {
                 VerticalDivider(color = Color.White.copy(alpha = 0.3f))
-                HeaderCell(text = "Status", width = 120.dp)
+                HeaderCell(text = "Status", modifier = Modifier.width(120.dp))
             }
         }
     }
 }
 
 @Composable
-fun HeaderCell(text: String, width: androidx.compose.ui.unit.Dp) {
+fun HeaderCell(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        modifier = Modifier
-            .width(width)
-            .padding(horizontal = 4.dp),
+        modifier = modifier.padding(horizontal = 4.dp),
         style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.ExtraBold,
         color = Color.White,
@@ -93,7 +104,12 @@ fun ArchiveListItemCard(
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    val minWidth = 48.dp + 100.dp + 200.dp + 
+                  (if (showYear) 64.dp else 0.dp) + 
+                  (if (showCondition) 100.dp else 0.dp) + 
+                  (if (showStatus) 120.dp else 0.dp)
+
+    Column(modifier = modifier.fillMaxWidth().widthIn(min = minWidth)) {
         Row(
             modifier = Modifier
                 .background(backgroundColor)
@@ -102,20 +118,24 @@ fun ArchiveListItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 1. No
-            TableCell(text = "$no.", width = 48.dp)
+            TableCell(text = "$no.", modifier = Modifier.width(48.dp))
             VerticalDivider()
 
             // 2. Kode
-            TableCell(text = archive.classificationCode, width = 100.dp, isBold = true, color = PrimaryGreen)
+            TableCell(text = archive.classificationCode, modifier = Modifier.width(100.dp), isBold = true, color = PrimaryGreen)
             VerticalDivider()
 
             // 3. No Dokumen
-            TableCell(text = archive.documentNumber ?: "-", width = if (showYear) 200.dp else 264.dp, textAlign = TextAlign.Start)
+            TableCell(
+                text = archive.documentNumber ?: "-", 
+                modifier = Modifier.weight(1f).widthIn(min = 200.dp), 
+                textAlign = TextAlign.Start
+            )
 
             // 4. Tahun
             if (showYear) {
                 VerticalDivider()
-                TableCell(text = archive.year.toString(), width = 64.dp)
+                TableCell(text = archive.year.toString(), modifier = Modifier.width(64.dp))
             }
 
             // 5. Kondisi
@@ -147,16 +167,14 @@ fun ArchiveListItemCard(
 @Composable
 fun TableCell(
     text: String,
-    width: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
     isBold: Boolean = false,
     textAlign: TextAlign = TextAlign.Center,
-    color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+    color: Color = MaterialTheme.colorScheme.onSurface
 ) {
     Text(
         text = text,
-        modifier = Modifier
-            .width(width)
-            .padding(horizontal = 8.dp),
+        modifier = modifier.padding(horizontal = 8.dp),
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
         color = color,

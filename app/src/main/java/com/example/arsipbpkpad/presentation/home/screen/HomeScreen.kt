@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -162,120 +163,54 @@ fun HomeMainList(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            top = paddingValues.calculateTopPadding() + 16.dp,
+            bottom = paddingValues.calculateBottomPadding() + 88.dp,
+            start = 20.dp,
+            end = 20.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { HeaderSection() }
 
-    if (isLandscape) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(0.4f)
-                    .fillMaxHeight()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-                HeaderSection()
-                
-                if (userRole != UserRole.KASSUBAG && uiState.activeStagingBoxes.isNotEmpty()) {
-                    val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
-                    val totalBoxes = uiState.activeStagingBoxes.size
-                    StagingStatusCard(
-                        count = totalDocs,
-                        summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
-                        onClick = onNavigateToStagingBoxList
-                    )
-                }
-
-                HomePrimaryStats(uiState)
-                HomeSecondaryStats(uiState)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(0.6f)
-                    .fillMaxHeight()
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                SectionHeader(
-                    title = stringResource(R.string.recently_added),
-                    actionText = stringResource(R.string.view_all),
-                    onActionClick = { onNavigateToArchiveList(null) }
+        if (userRole != UserRole.KASSUBAG && uiState.activeStagingBoxes.isNotEmpty()) {
+            item {
+                val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
+                val totalBoxes = uiState.activeStagingBoxes.size
+                StagingStatusCard(
+                    count = totalDocs,
+                    summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
+                    onClick = onNavigateToStagingBoxList,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    RecentArchiveTable(
-                        items = uiState.recentItems,
-                        onArchiveClick = onNavigateToDetail
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item { HeaderSection() }
 
-            if (userRole != UserRole.KASSUBAG && uiState.activeStagingBoxes.isNotEmpty()) {
-                item {
-                    val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
-                    val totalBoxes = uiState.activeStagingBoxes.size
-                    StagingStatusCard(
-                        count = totalDocs,
-                        summary = stringResource(R.string.staging_boxes_ready, totalBoxes),
-                        onClick = onNavigateToStagingBoxList,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-            }
-// ... rest of the file ...
+        item { HomePrimaryStats(uiState) }
+        item { HomeSecondaryStats(uiState) }
 
-            item { HomePrimaryStats(uiState) }
-            item { HomeSecondaryStats(uiState) }
+        item {
+            SectionHeader(
+                title = stringResource(R.string.recently_added),
+                actionText = stringResource(R.string.view_all),
+                onActionClick = { onNavigateToArchiveList(null) }
+            )
+        }
 
-            item {
-                SectionHeader(
-                    title = stringResource(R.string.recently_added),
-                    actionText = stringResource(R.string.view_all),
-                    onActionClick = { onNavigateToArchiveList(null) }
-                )
-            }
-
-            item {
-                RecentArchiveTable(
-                    items = uiState.recentItems,
-                    onArchiveClick = onNavigateToDetail
-                )
-            }
-
-            item { Spacer(modifier = Modifier.height(88.dp)) }
+        item {
+            RecentArchiveTable(
+                items = uiState.recentItems,
+                onArchiveClick = onNavigateToDetail
+            )
         }
     }
 }
 
 @Composable
 fun HomePrimaryStats(uiState: HomeUiState) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    
-    val titleStyle = if (isLandscape) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleLarge
-    val countStyle = if (isLandscape) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.displaySmall
-    val spacing = if (isLandscape) 8.dp else 16.dp
-
-    Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         PrimaryStatCard(
             title = stringResource(R.string.total_documents),
             count = uiState.totalDocuments,
@@ -293,11 +228,7 @@ fun HomePrimaryStats(uiState: HomeUiState) {
 
 @Composable
 fun HomeSecondaryStats(uiState: HomeUiState) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val spacing = if (isLandscape) 8.dp else 16.dp
-
-    Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)

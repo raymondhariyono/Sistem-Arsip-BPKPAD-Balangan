@@ -70,6 +70,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.DocStatus
+import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.components.ArchiveListItemCard
 import com.example.arsipbpkpad.presentation.components.ArchiveTableHeader
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
@@ -79,8 +80,6 @@ import com.example.arsipbpkpad.presentation.components.BpkpadExpandableFAB
 import com.example.arsipbpkpad.presentation.components.StatusDialog
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import com.example.arsipbpkpad.utils.DateUtils
-
-import com.example.arsipbpkpad.domain.model.UserRole
 
 @Composable
 fun ArchiveListScreen(
@@ -225,12 +224,13 @@ fun ArchiveListScreen(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             if (uiState.selectedYears.isEmpty() && !uiState.isFilterConfirmed) {
                 YearSelectionGrid(
                     availableYears = uiState.availableYears,
                     yearStats = uiState.yearStats,
-                    onYearClick = { viewModel.onEvent(ArchiveListUiEvent.OnYearToggle(it)) }
+                    onYearClick = { viewModel.onEvent(ArchiveListUiEvent.OnYearToggle(it)) },
+                    paddingValues = paddingValues
                 )
             } else {
                 ArchiveListContentOnly(
@@ -248,12 +248,13 @@ fun ArchiveListScreen(
                     },
                     onExportClick = {
                         showExportConfirm = true
-                    }
+                    },
+                    paddingValues = paddingValues
                 )
             }
             
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center).padding(paddingValues))
             }
         }
     }
@@ -289,19 +290,21 @@ fun ArchiveListTopBar(
 fun YearSelectionGrid(
     availableYears: List<Int>,
     yearStats: List<com.example.arsipbpkpad.domain.model.YearStats>,
-    onYearClick: (Int) -> Unit
+    onYearClick: (Int) -> Unit,
+    paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 20.dp)
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 24.dp))
         ArchivalRepositoryHeader()
         Spacer(modifier = Modifier.height(24.dp))
 
         LazyColumn(
             modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding() + 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             availableYears.chunked(2).forEach { rowYears ->
@@ -439,11 +442,12 @@ fun ArchiveListContentOnly(
     onFilterChange: (String) -> Unit,
     onArchiveClick: (String) -> Unit,
     onImportClick: () -> Unit,
-    onExportClick: () -> Unit
+    onExportClick: () -> Unit,
+    paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 8.dp))
             ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
             Spacer(modifier = Modifier.height(12.dp))
             ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
@@ -456,7 +460,8 @@ fun ArchiveListContentOnly(
 
         ArchiveResultList(
             archives = archives,
-            onArchiveClick = onArchiveClick
+            onArchiveClick = onArchiveClick,
+            paddingValues = paddingValues
         )
     }
 }
@@ -584,44 +589,60 @@ fun DocTypeFilterRow(selectedFilter: String, onFilterChange: (String) -> Unit) {
 @Composable
 fun ArchiveResultList(
     archives: List<ArchiveDocument>,
-    onArchiveClick: (String) -> Unit
+    onArchiveClick: (String) -> Unit,
+    paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
     val scrollState = rememberScrollState()
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .horizontalScroll(scrollState)
-    ) {
-        ArchiveTableHeader()
-        
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 16.dp),
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val minTableWidth = 632.dp // Total of min widths from ArchiveTableHeader
+        val tableWidth = maxOf(maxWidth, minTableWidth)
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(scrollState)
         ) {
-            items(archives.size) { index ->
-                val archive = archives[index]
-                ArchiveListItemCard(
-                    no = index + 1,
-                    archive = archive,
-                    onClick = { onArchiveClick(archive.id) }
-                )
+            Column(modifier = Modifier.width(tableWidth)) {
+                ArchiveTableHeader()
+                
+                if (archives.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(
+                            bottom = paddingValues.calculateBottomPadding() + 88.dp
+                        ),
+                    ) {
+                        items(archives.size) { index ->
+                            val archive = archives[index]
+                            ArchiveListItemCard(
+                                no = index + 1,
+                                archive = archive,
+                                onClick = { onArchiveClick(archive.id) }
+                            )
+                        }
+                    }
+                }
             }
+        }
 
-            if (archives.isEmpty()) {
-                item { EmptyArchiveSearchResults() }
-            }
-
-            item { Spacer(modifier = Modifier.height(88.dp)) }
+        if (archives.isEmpty()) {
+            EmptyArchiveSearchResults(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 48.dp)
+                    .padding(bottom = paddingValues.calculateBottomPadding())
+            )
         }
     }
 }
 
 @Composable
-fun EmptyArchiveSearchResults() {
+fun EmptyArchiveSearchResults(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = Icons.Default.Info, 
