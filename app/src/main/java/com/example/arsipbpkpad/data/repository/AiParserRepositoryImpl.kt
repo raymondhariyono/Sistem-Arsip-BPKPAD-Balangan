@@ -39,11 +39,16 @@ class AiParserRepositoryImpl @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun parseMetadata(rawText: String): DomainResult<ParsedMetadata> {
+        if (rawText.isBlank()) {
+            return DomainResult.Error("No text provided for parsing")
+        }
+
         return safeApiCall(ioDispatcher) {
             val systemPrompt = """
                 You are an expert archive data extraction assistant for BPKPAD Balangan, Indonesia.
                 Your task is to extract structured metadata from raw OCR text of government documents, primarily 'Surat Perintah Pencairan Dana' (SP2D).
-                ...
+                
+                You MUST return the results in JSON format with the following structure:
                 {
                   "docNumber": "string or null",
                   "year": integer or null,
@@ -51,6 +56,9 @@ class AiParserRepositoryImpl @Inject constructor(
                   "docType": "string or null",
                   "nominal": number or null
                 }
+                
+                Ensure "docType" is one of: SPP, SPM, SP2D, SPJ.
+                Only return the JSON object.
             """.trimIndent()
 
             val response: HttpResponse = client.post(baseUrl) {
@@ -61,7 +69,7 @@ class AiParserRepositoryImpl @Inject constructor(
                         model = "llama-3.3-70b-versatile",
                         messages = listOf(
                             GroqMessage(role = "system", content = systemPrompt),
-                            GroqMessage(role = "user", content = "Extract metadata from this text:\n\n$rawText")
+                            GroqMessage(role = "user", content = "Extract JSON metadata from this text:\n\n$rawText")
                         ),
                         responseFormat = GroqResponseFormat(type = "json_object")
                     )
