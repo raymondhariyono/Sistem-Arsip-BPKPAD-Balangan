@@ -643,7 +643,8 @@ fun RapidInputForm(
                     focusManager.clearFocus()
                     onAddOrUpdateClick()
                 }),
-                placeholder = stringResource(R.string.placeholder_nominal)
+                placeholder = stringResource(R.string.placeholder_nominal),
+                error = uiState.validationErrors["nominal"]
             )
 
             Spacer(modifier = Modifier.height(16.dp))

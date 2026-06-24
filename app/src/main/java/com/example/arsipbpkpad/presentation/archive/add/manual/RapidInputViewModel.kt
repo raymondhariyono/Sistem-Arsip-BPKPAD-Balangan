@@ -322,6 +322,12 @@ class RapidInputViewModel @Inject constructor(
             if (state.isAutoBundleEnabled && state.spmDocumentNumber.isBlank()) errors["spmDocNumber"] = "Nomor SPM wajib diisi"
             if (state.copyType == DocCopyType.COPY && (state.copyCount.toIntOrNull() ?: 0) < 1) errors["copyCount"] = "Jumlah salinan minimal 1"
             
+            // New Validation: Nominal can't be less than zero
+            val nominalValue = state.nominal.toDoubleOrNull()
+            if (nominalValue != null && nominalValue < 0) {
+                errors["nominal"] = "Nominal tidak boleh kurang dari nol"
+            }
+            
             if (errors.isNotEmpty()) {
                 _uiState.update { it.copy(validationErrors = errors) }
                 return@launch
@@ -422,6 +428,19 @@ class RapidInputViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _uiState.value
             val archiveId = state.editingId ?: return@launch
+
+            val errors = mutableMapOf<String, String>()
+            if (state.documentNumber.isBlank()) errors["docNumber"] = "Nomor dokumen wajib diisi"
+            if (state.subject.isBlank()) errors["subject"] = "Uraian dokumen wajib diisi"
+            val nominalValue = state.nominal.toDoubleOrNull()
+            if (nominalValue != null && nominalValue < 0) {
+                errors["nominal"] = "Nominal tidak boleh kurang dari nol"
+            }
+
+            if (errors.isNotEmpty()) {
+                _uiState.update { it.copy(validationErrors = errors) }
+                return@launch
+            }
             
             _uiState.update { it.copy(isLoading = true) }
             
