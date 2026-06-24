@@ -12,6 +12,8 @@ import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import com.example.arsipbpkpad.domain.repository.TransactionBundleRepository
 import com.example.arsipbpkpad.data.repository.OcrRepositoryImpl
 import com.example.arsipbpkpad.domain.repository.OcrRepository
+import com.example.arsipbpkpad.data.repository.ActivityLogRepositoryImpl
+import com.example.arsipbpkpad.domain.repository.ActivityLogRepository
 import com.example.arsipbpkpad.data.repository.AuthRepositoryImpl
 import com.example.arsipbpkpad.domain.repository.AuthRepository
 import dagger.Binds
@@ -64,4 +66,10 @@ abstract class RepositoryModule {
     abstract fun bindOcrRepository(
         ocrRepositoryImpl: OcrRepositoryImpl
     ): OcrRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindActivityLogRepository(
+        activityLogRepositoryImpl: ActivityLogRepositoryImpl
+    ): ActivityLogRepository
 }

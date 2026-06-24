@@ -143,6 +143,9 @@ fun AppNavHost(
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
                     },
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
                     onNavigateToBottomNav = { item ->
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)

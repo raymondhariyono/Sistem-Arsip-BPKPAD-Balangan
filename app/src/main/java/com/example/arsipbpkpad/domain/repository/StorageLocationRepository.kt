@@ -25,8 +25,16 @@ interface StorageLocationRepository {
     fun getAllBoxes(): Flow<ResultState<List<BoxDetails>>>
 
     suspend fun createRoom(name: String): Result<Room>
+    suspend fun updateRoom(id: String, name: String): Result<Unit>
+    suspend fun deleteRoom(id: String): Result<Unit>
+
     suspend fun createShelf(roomId: String, name: String): Result<Shelf>
+    suspend fun updateShelf(id: String, name: String): Result<Unit>
+    suspend fun deleteShelf(id: String): Result<Unit>
+
     suspend fun createBox(shelfId: String, name: String): Result<Box>
+    suspend fun updateBox(id: String, name: String): Result<Unit>
+    suspend fun deleteBox(id: String): Result<Unit>
     
     suspend fun getRoomByName(name: String): Room?
     suspend fun getShelfByName(roomId: String, name: String): Shelf?

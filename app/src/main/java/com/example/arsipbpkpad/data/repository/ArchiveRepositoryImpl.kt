@@ -36,6 +36,8 @@ class ArchiveRepositoryImpl @Inject constructor(
     private val archiveDao: ArchiveDao,
     private val classificationCodeDao: ClassificationCodeDao,
     private val supabaseClient: SupabaseClient,
+    private val activityLogRepository: com.example.arsipbpkpad.domain.repository.ActivityLogRepository,
+    private val authRepository: com.example.arsipbpkpad.domain.repository.AuthRepository,
     @Named("ioDispatcher") private val ioDispatcher: CoroutineDispatcher
 ) : ArchiveRepository {
 
@@ -75,6 +77,7 @@ class ArchiveRepositoryImpl @Inject constructor(
 
     override suspend fun saveArchive(archive: ArchiveDocument): DomainResult<Unit> {
         return safeDbCall(ioDispatcher) {
+            val isUpdate = archiveDao.getArchiveByIdSync(archive.id) != null
             val entity = archive.toEntity(syncStatus = "DRAFT")
             archiveDao.insertArchive(entity)
             
@@ -85,6 +88,17 @@ class ArchiveRepositoryImpl @Inject constructor(
             
             if (apiResult is DomainResult.Success) {
                 archiveDao.insertArchive(entity.copy(syncStatus = "SYNCED"))
+                
+                // Log Activity
+                activityLogRepository.logActivity(
+                    com.example.arsipbpkpad.domain.model.ActivityLog(
+                        actorId = authRepository.getCurrentUserId(),
+                        action = if (isUpdate) "UPDATE" else "CREATE",
+                        entityType = "ARCHIVE",
+                        entityId = archive.id,
+                        details = "Document Number: ${archive.documentNumber}"
+                    )
+                )
             }
             // We return Success(Unit) if local save worked, even if remote is pending sync
             Unit
@@ -103,6 +117,19 @@ class ArchiveRepositoryImpl @Inject constructor(
             if (apiResult is DomainResult.Success) {
                 val syncedEntities = entities.map { it.copy(syncStatus = "SYNCED") }
                 archiveDao.insertArchives(syncedEntities)
+
+                // Log Activity for each document
+                archives.forEach { archive ->
+                    activityLogRepository.logActivity(
+                        com.example.arsipbpkpad.domain.model.ActivityLog(
+                            actorId = authRepository.getCurrentUserId(),
+                            action = "UPSERT",
+                            entityType = "ARCHIVE",
+                            entityId = archive.id,
+                            details = "Bulk Save/Update: ${archive.documentNumber}"
+                        )
+                    )
+                }
             }
             Unit
         }
@@ -112,12 +139,25 @@ class ArchiveRepositoryImpl @Inject constructor(
         val dbResult = safeDbCall(ioDispatcher) { archiveDao.deleteArchiveById(id) }
         if (dbResult is DomainResult.Error) return dbResult
 
-        return safeApiCall(ioDispatcher) {
+        val apiResult = safeApiCall(ioDispatcher) {
             supabaseClient.postgrest[tableName].delete {
                 filter { eq("id", id) }
             }
             Unit
         }
+
+        if (apiResult is DomainResult.Success) {
+            activityLogRepository.logActivity(
+                com.example.arsipbpkpad.domain.model.ActivityLog(
+                    actorId = authRepository.getCurrentUserId(),
+                    action = "DELETE",
+                    entityType = "ARCHIVE",
+                    entityId = id,
+                    details = "Deleted Archive ID: $id"
+                )
+            )
+        }
+        return apiResult
     }
 
     override suspend fun syncArchives(): DomainResult<Unit> {

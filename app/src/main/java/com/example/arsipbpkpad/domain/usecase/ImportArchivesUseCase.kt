@@ -13,6 +13,9 @@ class ImportArchivesUseCase @Inject constructor(
     suspend operator fun invoke(inputStream: InputStream): DomainResult<Unit> {
         return try {
             val archives = excelService.importFromExcel(inputStream)
+            if (archives.isEmpty()) {
+                return DomainResult.Error("File Excel kosong, tidak ada data untuk diimpor")
+            }
             repository.saveArchives(archives)
         } catch (e: Exception) {
             DomainResult.Error("Failed to import Excel: ${e.message}")

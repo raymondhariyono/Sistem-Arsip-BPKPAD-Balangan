@@ -43,6 +43,8 @@ data class ShelfWithRoomDto(
  */
 class StorageLocationRepositoryImpl @Inject constructor(
     private val supabaseClient: SupabaseClient,
+    private val activityLogRepository: com.example.arsipbpkpad.domain.repository.ActivityLogRepository,
+    private val authRepository: com.example.arsipbpkpad.domain.repository.AuthRepository,
     @Named("ioDispatcher") private val ioDispatcher: CoroutineDispatcher
 ) : StorageLocationRepository {
 
@@ -138,7 +140,51 @@ class StorageLocationRepositoryImpl @Inject constructor(
         val inserted = supabaseClient.postgrest["rooms"]
             .insert(dto) { select() }
             .decodeSingle<RoomDto>()
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "CREATE",
+                entityType = "LOCATION_ROOM",
+                entityId = inserted.id!!,
+                details = "Created Room: $name"
+            )
+        )
         Room(inserted.id!!, inserted.name)
+    }
+
+    override suspend fun updateRoom(id: String, name: String): Result<Unit> = runCatching {
+        supabaseClient.postgrest["rooms"].update({
+            "name" to name
+        }) {
+            filter { eq("id", id) }
+        }
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "UPDATE",
+                entityType = "LOCATION_ROOM",
+                entityId = id,
+                details = "Updated Room Name to: $name"
+            )
+        )
+    }
+
+    override suspend fun deleteRoom(id: String): Result<Unit> = runCatching {
+        supabaseClient.postgrest["rooms"].delete {
+            filter { eq("id", id) }
+        }
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "DELETE",
+                entityType = "LOCATION_ROOM",
+                entityId = id,
+                details = "Deleted Room ID: $id"
+            )
+        )
     }
 
     override suspend fun createShelf(roomId: String, name: String): Result<Shelf> = runCatching {
@@ -146,7 +192,51 @@ class StorageLocationRepositoryImpl @Inject constructor(
         val inserted = supabaseClient.postgrest["shelves"]
             .insert(dto) { select() }
             .decodeSingle<ShelfDto>()
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "CREATE",
+                entityType = "LOCATION_SHELF",
+                entityId = inserted.id!!,
+                details = "Created Shelf: $name in Room ID: $roomId"
+            )
+        )
         Shelf(inserted.id!!, inserted.roomId, inserted.name)
+    }
+
+    override suspend fun updateShelf(id: String, name: String): Result<Unit> = runCatching {
+        supabaseClient.postgrest["shelves"].update({
+            "name" to name
+        }) {
+            filter { eq("id", id) }
+        }
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "UPDATE",
+                entityType = "LOCATION_SHELF",
+                entityId = id,
+                details = "Updated Shelf Name to: $name"
+            )
+        )
+    }
+
+    override suspend fun deleteShelf(id: String): Result<Unit> = runCatching {
+        supabaseClient.postgrest["shelves"].delete {
+            filter { eq("id", id) }
+        }
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "DELETE",
+                entityType = "LOCATION_SHELF",
+                entityId = id,
+                details = "Deleted Shelf ID: $id"
+            )
+        )
     }
 
     override suspend fun createBox(shelfId: String, name: String): Result<Box> = runCatching {
@@ -154,7 +244,51 @@ class StorageLocationRepositoryImpl @Inject constructor(
         val inserted = supabaseClient.postgrest["boxes"]
             .insert(dto) { select() }
             .decodeSingle<BoxDto>()
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "CREATE",
+                entityType = "LOCATION_BOX",
+                entityId = inserted.id!!,
+                details = "Created Box: $name in Shelf ID: $shelfId"
+            )
+        )
         Box(inserted.id!!, inserted.shelfId, inserted.name)
+    }
+
+    override suspend fun updateBox(id: String, name: String): Result<Unit> = runCatching {
+        supabaseClient.postgrest["boxes"].update({
+            "name" to name
+        }) {
+            filter { eq("id", id) }
+        }
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "UPDATE",
+                entityType = "LOCATION_BOX",
+                entityId = id,
+                details = "Updated Box Name to: $name"
+            )
+        )
+    }
+
+    override suspend fun deleteBox(id: String): Result<Unit> = runCatching {
+        supabaseClient.postgrest["boxes"].delete {
+            filter { eq("id", id) }
+        }
+        
+        activityLogRepository.logActivity(
+            com.example.arsipbpkpad.domain.model.ActivityLog(
+                actorId = authRepository.getCurrentUserId(),
+                action = "DELETE",
+                entityType = "LOCATION_BOX",
+                entityId = id,
+                details = "Deleted Box ID: $id"
+            )
+        )
     }
 
     override suspend fun getRoomByName(name: String): Room? {

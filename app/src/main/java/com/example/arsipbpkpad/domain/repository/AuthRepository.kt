@@ -11,4 +11,5 @@ interface AuthRepository {
     suspend fun login(email: String, password: String, rememberMe: Boolean): DomainResult<Unit>
     suspend fun logout(): DomainResult<Unit>
     suspend fun checkSession(): Boolean
+    fun getCurrentUserId(): String?
 }

@@ -52,6 +52,9 @@ interface ArchiveDao {
     @Query("SELECT * FROM archives WHERE id = :id")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>
 
+    @Query("SELECT * FROM archives WHERE id = :id")
+    suspend fun getArchiveByIdSync(id: String): ArchiveEntity?
+
     @Query("SELECT * FROM archives WHERE bundleId = :bundleId")
     fun getArchivesByBundleId(bundleId: String): Flow<List<ArchiveEntity>>
 

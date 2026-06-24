@@ -74,6 +74,10 @@ class AuthRepositoryImpl @Inject constructor(
         return checkSessionSync()
     }
 
+    override fun getCurrentUserId(): String? {
+        return supabase.auth.currentUserOrNull()?.id
+    }
+
     private fun checkSessionSync(): Boolean {
         val session = supabase.auth.currentSessionOrNull()
         val user = supabase.auth.currentUserOrNull()
