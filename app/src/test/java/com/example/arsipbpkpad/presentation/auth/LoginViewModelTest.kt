@@ -1,9 +1,7 @@
 package com.example.arsipbpkpad.presentation.auth
 
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.providers.builtin.Email
+import com.example.arsipbpkpad.domain.repository.AuthRepository
+import com.example.arsipbpkpad.domain.model.DomainResult
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -25,22 +23,18 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
 
-    private val supabase = mockk<SupabaseClient>()
-    private val auth = mockk<Auth>(relaxed = true)
+    private val authRepository = mockk<AuthRepository>()
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: LoginViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockkStatic("io.github.jan.supabase.auth.AuthKt")
-        every { supabase.auth } returns auth
-        viewModel = LoginViewModel(supabase)
+        viewModel = LoginViewModel(authRepository)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic("io.github.jan.supabase.auth.AuthKt")
         Dispatchers.resetMain()
     }
 
@@ -49,10 +43,7 @@ class LoginViewModelTest {
         viewModel.onEmailChange("valid@example.com")
         viewModel.onPasswordChange("password")
         
-        // Mocking the extension function might be tricky. 
-        // Let's try to mock the internal call if possible, 
-        // or ensure the extension is correctly mocked.
-        coEvery { auth.signInWith(any<Email>(), any(), any()) } returns Unit
+        coEvery { authRepository.login(any(), any(), any()) } returns DomainResult.Success(Unit)
 
         viewModel.authenticateAdmin()
         advanceUntilIdle()
@@ -67,7 +58,7 @@ class LoginViewModelTest {
         viewModel.onEmailChange("wrong@example.com")
         viewModel.onPasswordChange("wrong")
 
-        coEvery { auth.signInWith(any<Email>(), any(), any()) } throws Exception("Invalid credentials")
+        coEvery { authRepository.login(any(), any(), any()) } returns DomainResult.Error("Gagal masuk: Invalid credentials")
 
         viewModel.authenticateAdmin()
         testDispatcher.scheduler.runCurrent()
