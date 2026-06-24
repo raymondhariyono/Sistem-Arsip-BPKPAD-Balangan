@@ -45,18 +45,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.BoxDetails
 import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
-import com.example.arsipbpkpad.ui.theme.DarkGreen
 import com.example.arsipbpkpad.utils.ResultState
 
 @Composable
@@ -68,16 +69,17 @@ fun BoxManagementScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
     var selectedBoxForView by remember { mutableStateOf<BoxDetails?>(null) }
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     Scaffold(
         topBar = {
             BpkpadTopAppBar(
                 title = {
                     Text(
-                        text = "Manajemen Lokasi",
+                        text = stringResource(R.string.title_location_management),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = DarkGreen
+                        color = primaryColor
                     )
                 }
             )
@@ -95,19 +97,19 @@ fun BoxManagementScreen(
             Card(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkGreen.copy(alpha = 0.1f))
+                colors = CardDefaults.cardColors(containerColor = primaryColor.copy(alpha = 0.1f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Filter Lokasi",
+                        text = stringResource(R.string.title_location_filter),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = DarkGreen
+                        color = primaryColor
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     ReadOnlyLocationDropdown(
-                        label = "Pilih Gudang",
+                        label = stringResource(R.string.label_select_warehouse),
                         value = uiState.selectedFilterRoom?.name ?: "",
                         options = uiState.rooms,
                         onOptionSelected = { viewModel.setFilterRoom(it) },
@@ -117,7 +119,7 @@ fun BoxManagementScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     ReadOnlyLocationDropdown(
-                        label = "Pilih Rak",
+                        label = stringResource(R.string.label_select_rack),
                         value = uiState.selectedFilterShelf?.name ?: "",
                         options = uiState.filterShelves,
                         onOptionSelected = { viewModel.setFilterShelf(it) },
@@ -129,11 +131,11 @@ fun BoxManagementScreen(
 
             Box(modifier = Modifier.fillMaxSize().weight(1f)) {
                 when (val boxesState = uiState.boxes) {
-                    is ResultState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = DarkGreen)
+                    is ResultState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = primaryColor)
                     is ResultState.Success -> {
                         if (boxesState.data.isEmpty()) {
                             EmptyBoxState(
-                                text = "Tidak ada box di rak ini",
+                                text = stringResource(R.string.msg_no_box_in_rack),
                                 modifier = Modifier.align(Alignment.Center)
                             )
                         } else {
@@ -155,7 +157,7 @@ fun BoxManagementScreen(
                     }
                     is ResultState.Idle -> {
                         EmptyBoxState(
-                            text = "Pilih Gudang dan Rak untuk melihat Box",
+                            text = stringResource(R.string.msg_select_location_hint),
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
@@ -192,6 +194,7 @@ fun <T> ReadOnlyLocationDropdown(
     enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     ExposedDropdownMenuBox(
         expanded = expanded && enabled,
@@ -210,9 +213,9 @@ fun <T> ReadOnlyLocationDropdown(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.12f),
-                focusedLabelColor = DarkGreen,
-                focusedBorderColor = DarkGreen,
-                cursorColor = DarkGreen
+                focusedLabelColor = primaryColor,
+                focusedBorderColor = primaryColor,
+                cursorColor = primaryColor
             )
         )
 
@@ -236,6 +239,7 @@ fun <T> ReadOnlyLocationDropdown(
 
 @Composable
 fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
+    val primaryColor = MaterialTheme.colorScheme.primary
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -251,22 +255,22 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(DarkGreen.copy(alpha = 0.1f), CircleShape),
+                    .background(primaryColor.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Inventory,
                     contentDescription = null,
-                    tint = DarkGreen
+                    tint = primaryColor
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = "Box ${box.name}",
+                    text = stringResource(R.string.label_box_number, box.name),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = DarkGreen
+                    color = primaryColor
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -288,7 +292,8 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
 }
 
 @Composable
-fun EmptyBoxState(text: String = "Belum ada box yang terdaftar", modifier: Modifier = Modifier) {
+fun EmptyBoxState(text: String, modifier: Modifier = Modifier) {
+    val primaryColor = MaterialTheme.colorScheme.primary
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -297,13 +302,13 @@ fun EmptyBoxState(text: String = "Belum ada box yang terdaftar", modifier: Modif
             Icons.Default.Inventory,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = DarkGreen.copy(alpha = 0.3f)
+            tint = primaryColor.copy(alpha = 0.3f)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,
-            color = DarkGreen.copy(alpha = 0.6f),
+            color = primaryColor.copy(alpha = 0.6f),
             fontWeight = FontWeight.Medium
         )
     }
@@ -318,6 +323,7 @@ fun BoxFormDialog(
     val boxName = existingBox?.name ?: ""
     val typedRoom = existingBox?.roomName ?: ""
     val typedShelf = existingBox?.shelfName ?: ""
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Card(
@@ -327,18 +333,18 @@ fun BoxFormDialog(
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = "Detail Lokasi Box", 
+                    text = stringResource(R.string.title_box_location_detail), 
                     style = MaterialTheme.typography.titleLarge, 
                     fontWeight = FontWeight.Bold,
-                    color = DarkGreen
+                    color = primaryColor
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                ReadOnlyField(label = "Nama Box", value = boxName)
+                ReadOnlyField(label = stringResource(R.string.label_box), value = boxName)
                 Spacer(modifier = Modifier.height(12.dp))
-                ReadOnlyField(label = "Gudang", value = typedRoom)
+                ReadOnlyField(label = stringResource(R.string.label_warehouse), value = typedRoom)
                 Spacer(modifier = Modifier.height(12.dp))
-                ReadOnlyField(label = "Rak", value = typedShelf)
+                ReadOnlyField(label = stringResource(R.string.label_rack), value = typedShelf)
 
                 if (generalError != null) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -352,7 +358,7 @@ fun BoxFormDialog(
                     modifier = Modifier.align(Alignment.End),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Tutup", color = DarkGreen, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.btn_close), color = primaryColor, fontWeight = FontWeight.Bold)
                 }
             }
         }

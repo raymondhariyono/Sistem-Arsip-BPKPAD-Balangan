@@ -90,7 +90,7 @@ fun ArchiveListScreen(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToRapidInput: () -> Unit,
     onNavigateToScan: () -> Unit,
-    onNavigateBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -101,8 +101,12 @@ fun ArchiveListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     
     // Intercept system back button to go back to year selection if a filter is confirmed
-    BackHandler(enabled = uiState.isFilterConfirmed) {
-        viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+    BackHandler(enabled = true) {
+        if (uiState.isFilterConfirmed) {
+            viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+        } else {
+            onNavigateToHome()
+        }
     }
 
     var showImportConfirm by remember { mutableStateOf(false) }
@@ -201,7 +205,7 @@ fun ArchiveListScreen(
                     if (uiState.isFilterConfirmed) {
                         viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
                     } else {
-                        onNavigateBack()
+                        onNavigateToHome()
                     }
                 },
                 onImportClick = {

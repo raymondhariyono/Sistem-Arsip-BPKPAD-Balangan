@@ -17,7 +17,7 @@ data class ArchiveDto(
     @SerialName("condition") val condition: String,
     @SerialName("status") val status: String,
     @SerialName("metadata") val metadata: ArchiveMetadataDto? = null,
-    @SerialName("storage_location_id") val idStorageLocation: String? = null,
+    @SerialName("box_id") val idStorageLocation: String? = null,
     @SerialName("bundle_id") val bundleId: String? = null,
     @SerialName("created_by") val createdBy: String? = null,
     @SerialName("created_at") val createdAt: String? = null,

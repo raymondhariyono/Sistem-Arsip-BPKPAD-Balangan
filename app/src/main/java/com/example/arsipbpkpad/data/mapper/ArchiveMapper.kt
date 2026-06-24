@@ -84,7 +84,7 @@ fun ArchiveDocument.toEntity(syncStatus: String = "SYNCED"): ArchiveEntity {
 
 fun ArchiveDocument.toDto(): ArchiveDto {
     return ArchiveDto(
-        id = if (id.isEmpty()) null else id,
+        id = if (id.length < 30) null else id, // Only send if it looks like a real UUID, not a local draft ID
         type = type.name,
         documentNumber = documentNumber,
         copyType = copyType.name,

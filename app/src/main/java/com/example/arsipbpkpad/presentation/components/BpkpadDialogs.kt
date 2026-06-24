@@ -21,7 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.arsipbpkpad.R
-import com.example.arsipbpkpad.ui.theme.PrimaryGreen
+import com.example.arsipbpkpad.ui.theme.DarkGreen
+import com.example.arsipbpkpad.ui.theme.ErrorRed
+import com.example.arsipbpkpad.ui.theme.SuccessGreen
 
 @Composable
 fun StatusDialog(
@@ -41,8 +43,8 @@ fun StatusDialog(
                 },
                 contentDescription = null,
                 tint = when (isSuccess) {
-                    true -> Color(0xFF4CAF50)
-                    false -> MaterialTheme.colorScheme.error
+                    true -> SuccessGreen
+                    false -> ErrorRed
                     else -> Color(0xFFFF9800)
                 },
                 modifier = Modifier.size(64.dp)
@@ -71,7 +73,7 @@ fun StatusDialog(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(12.dp),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = PrimaryGreen
+                    containerColor = DarkGreen
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {

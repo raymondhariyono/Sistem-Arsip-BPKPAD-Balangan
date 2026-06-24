@@ -73,6 +73,9 @@ fun ArchiveDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Handle back button specifically
+    androidx.activity.compose.BackHandler(onBack = onNavigateBack)
+
     ArchiveDetailContent(
         state = state,
         onNavigateBack = onNavigateBack,

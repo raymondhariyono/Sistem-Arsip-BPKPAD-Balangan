@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.UnfoldMore
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -121,15 +120,6 @@ fun RapidInputScreen(
         }
     }
 
-    if (uiState.showDuplicateWarning) {
-        DuplicateWarningDialog(
-            documentNumber = uiState.documentNumber,
-            copyType = uiState.copyType.name,
-            onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true)) },
-            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) }
-        )
-    }
-
     if (showUploadConfirmDialog) {
         BpkpadConfirmDialog(
             title = stringResource(R.string.btn_push_to_db),
@@ -146,9 +136,9 @@ fun RapidInputScreen(
 
     if (showEditConfirmDialog) {
         BpkpadConfirmDialog(
-            title = "Simpan Perubahan?",
-            message = "Apakah Anda yakin ingin menyimpan perubahan pada data arsip ini?",
-            confirmText = "Simpan",
+            title = stringResource(R.string.title_save_changes),
+            message = stringResource(R.string.msg_save_changes_confirm),
+            confirmText = stringResource(R.string.btn_save),
             dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 viewModel.onEvent(RapidInputUiEvent.OnSaveArchiveUpdate)
@@ -371,32 +361,6 @@ fun RapidInputScreen(
 }
 
 @Composable
-fun DuplicateWarningDialog(
-    documentNumber: String,
-    copyType: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.title_duplicate_warning)) },
-        text = { 
-            Text(stringResource(R.string.msg_duplicate_warning, documentNumber, copyType)) 
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.btn_keep_save), fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.btn_cancel))
-            }
-        }
-    )
-}
-
-@Composable
 fun RapidInputTopBar(boxName: String, onNavigateBack: () -> Unit) {
     BpkpadTopAppBar(
         title = { 
@@ -567,14 +531,15 @@ fun RapidInputForm(
 
             if (uiState.docType == DocType.SPJ && !uiState.isAutoBundleEnabled && uiState.editingId == null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                val bundleOptions = listOf("None") + uiState.stagedBundles.map { it.name }
+                val bundleOptions = listOf(stringResource(R.string.label_none)) + uiState.stagedBundles.map { it.name }
                 val selectedBundle = uiState.stagedBundles.find { it.id == uiState.selectedBundleId }
+                val labelNone = stringResource(R.string.label_none)
                 FormDropdownField(
-                    label = "Pilih Bundle (Opsional)",
-                    value = selectedBundle?.name ?: "None",
+                    label = stringResource(R.string.label_select_bundle_optional),
+                    value = selectedBundle?.name ?: labelNone,
                     options = bundleOptions,
                     onOptionSelected = {
-                        if (it == "None") onBundleSelected(null)
+                        if (it == labelNone) onBundleSelected(null)
                         else onBundleSelected(uiState.stagedBundles.find { b -> b.name == it }?.id)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -613,7 +578,7 @@ fun RapidInputForm(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     placeholder = stringResource(R.string.placeholder_doc_number),
-                    error = uiState.documentNumberError ?: uiState.validationErrors["docNumber"]
+                    error = uiState.validationErrors["docNumber"]
                 )
             }
             
@@ -641,7 +606,7 @@ fun RapidInputForm(
 
             if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
                 FormTextField(
-                    label = stringResource(R.string.label_description_spj) + " (Opsional)",
+                    label = stringResource(R.string.label_description_spj_optional),
                     value = uiState.spjDescription,
                     onValueChange = onSpjDescriptionChange,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -666,13 +631,13 @@ fun RapidInputForm(
                     onAddOrUpdateClick()
                 }),
                 placeholder = stringResource(R.string.placeholder_nominal),
-                error = uiState.nominalError
+                error = uiState.validationErrors["nominal"]
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Kondisi Dokumen",
+                text = stringResource(R.string.label_doc_condition),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -684,7 +649,7 @@ fun RapidInputForm(
                 FilterChip(
                     selected = uiState.condition == DocCondition.GOOD,
                     onClick = { onConditionChange(DocCondition.GOOD) },
-                    label = { Text("Baik") },
+                    label = { Text(stringResource(R.string.label_condition_good)) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = if (uiState.condition == DocCondition.GOOD) {
@@ -694,7 +659,7 @@ fun RapidInputForm(
                 FilterChip(
                     selected = uiState.condition == DocCondition.DAMAGED,
                     onClick = { onConditionChange(DocCondition.DAMAGED) },
-                    label = { Text("Rusak") },
+                    label = { Text(stringResource(R.string.label_condition_damaged)) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = if (uiState.condition == DocCondition.DAMAGED) {
@@ -1232,8 +1197,9 @@ fun StagedItemSupporting(description: String?, copyType: String, nominal: Double
             fontSize = 12.sp, 
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        val copyLabel = if (copyType == "ORIGINAL") stringResource(R.string.label_asli) else stringResource(R.string.label_salinan)
         Text(
-            text = "Status: $copyType | Nominal: Rp ${nominal?.toLong() ?: 0}",
+            text = "Status: $copyLabel | Nominal: Rp ${nominal?.toLong() ?: 0}",
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
         )

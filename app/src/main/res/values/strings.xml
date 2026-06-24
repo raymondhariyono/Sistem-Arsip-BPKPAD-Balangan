@@ -31,12 +31,13 @@
     <string name="title_success">Berhasil</string>
     <string name="title_error">Kesalahan</string>
     <string name="title_warning">Peringatan</string>
-    <string name="title_duplicate_warning">Peringatan Duplikasi</string>
-    <string name="msg_duplicate_warning">Nomor dokumen \'%1$s\' sudah terdaftar di sistem. Tetap simpan sebagai status \'%2$s\' yang berbeda?</string>
     <string name="btn_keep_save">Tetap Simpan</string>
     <string name="msg_upload_success">Data berhasil diunggah ke Penyimpanan Permanen!</string>
     <string name="msg_sync_success">Sinkronisasi berhasil!</string>
     <string name="msg_delete_confirm">Apakah Anda yakin ingin menghapus data ini?</string>
+    <string name="msg_save_changes_confirm">Apakah Anda yakin ingin menyimpan perubahan pada data arsip ini?</string>
+    <string name="title_save_changes">Simpan Perubahan?</string>
+    <string name="msg_data_updated">Data Berhasil Diperbarui</string>
 
     <!-- Home Screen -->
     <string name="dashboard_subtitle">Dashboard Sistem Arsip Non-Keuangan</string>
@@ -128,7 +129,8 @@
     <string name="label_doc_number_sp2d">Nomor Dokumen SP2D</string>
     <string name="label_doc_number_spm">Nomor Dokumen SPM</string>
     <string name="label_description">Uraian</string>
-    <string name="label_description_spj">Deskripsi SPJ</string>
+    <string name="label_description_spj">Uraian SPJ</string>
+    <string name="label_description_spj_optional">Uraian SPJ (Opsional)</string>
     <string name="label_nominal">Nominal</string>
     <string name="label_auto_bundle">Buatkan SPM dan SPJ (Auto-Bundle)</string>
     <string name="placeholder_doc_number">Contoh: 001/SP2D/2026</string>
@@ -141,6 +143,11 @@
     <string name="hint_select_value">Pilih %1$s...</string>
     <string name="label_staging_list">Daftar Penyimpanan Sementara (%1$d)</string>
     <string name="msg_empty_staging">BOX Sementara masih kosong.\nSilakan masukkan dokumen di atas.</string>
+    <string name="label_select_bundle_optional">Pilih Bundle (Opsional)</string>
+    <string name="label_doc_condition">Kondisi Dokumen</string>
+    <string name="label_condition_good">Baik</string>
+    <string name="label_condition_damaged">Rusak</string>
+    <string name="label_none">None</string>
 
     <!-- Classification Sheet -->
     <string name="title_select_classification">Pilih Kode Klasifikasi</string>
@@ -162,6 +169,24 @@
     <string name="placeholder_box">Contoh: B-101</string>
     <string name="label_doc_year">Tahun Dokumen</string>
     <string name="btn_create_input">Buat &amp; Input</string>
+    <string name="title_location_management">Manajemen Lokasi</string>
+    <string name="title_location_filter">Filter Lokasi</string>
+    <string name="label_select_warehouse">Pilih Gudang</string>
+    <string name="label_select_rack">Pilih Rak</string>
+    <string name="msg_no_box_in_rack">Tidak ada box di rak ini</string>
+    <string name="msg_select_location_hint">Pilih Gudang dan Rak untuk melihat Box</string>
+    <string name="title_box_location_detail">Detail Lokasi Box</string>
+    <string name="msg_warehouse_required">Gudang wajib dipilih</string>
+    <string name="msg_rack_required">Nomor rak wajib dipilih</string>
+    <string name="msg_box_name_required">Nama Box wajib diisi</string>
+    <string name="msg_duplicate_box_error">Box dengan nomor ini sudah ada di rak tersebut</string>
+    <string name="msg_invalid_year">Tahun tidak valid (harus 4 digit)</string>
+    <string name="msg_nominal_non_negative">Nominal tidak boleh kurang dari nol</string>
+    <string name="msg_subject_required">Uraian dokumen wajib diisi</string>
+    <string name="msg_doc_number_required">Nomor dokumen wajib diisi</string>
+    <string name="msg_spm_number_required">Nomor SPM wajib diisi</string>
+    <string name="msg_nominal_positive">Nominal harus berupa angka lebih dari 0</string>
+    <string name="msg_copy_count_min">Jumlah salinan minimal 1</string>
 
     <!-- Validation Messages (Indonesian) -->
     <string name="val_required">%1$s wajib diisi</string>

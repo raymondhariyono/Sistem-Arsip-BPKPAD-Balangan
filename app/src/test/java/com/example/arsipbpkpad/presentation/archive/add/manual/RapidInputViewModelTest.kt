@@ -97,10 +97,9 @@ class RapidInputViewModelTest {
         viewModel.onEvent(RapidInputUiEvent.OnNominalChange("-1"))
         viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
         testDispatcher.scheduler.runCurrent()
-        // Current implementation allows any nominal string and converts to double.
-        // If it's -1, it saves. Let's see if there's any restriction in domain/data.
-        // INSTRUCTION-TESTING.md says nominal -1 and 0 should be rejected.
-        // I might need to update the ViewModel to enforce this.
+        
+        val state = viewModel.uiState.value
+        assertEquals("Nominal tidak boleh kurang dari nol", state.validationErrors["nominal"])
     }
 
     @Test
@@ -121,12 +120,12 @@ class RapidInputViewModelTest {
         viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
         testDispatcher.scheduler.runCurrent()
         
-        // RapidInputViewModel uses nominal.toDoubleOrNull()
-        // If it's "abc", it becomes null.
+        val state = viewModel.uiState.value
+        assertEquals("Nominal harus berupa angka lebih dari 0", state.validationErrors["nominal"])
     }
 
     @Test
-    fun `test duplicate document number handling`() = runTest {
+    fun `test document number duplicates are allowed`() = runTest {
         // Setup valid state
         viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange("Gedung A"))
         viewModel.onEvent(RapidInputUiEvent.OnRackChange("Rak 1"))
@@ -138,13 +137,13 @@ class RapidInputViewModelTest {
         viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange("DUP-001"))
         viewModel.onEvent(RapidInputUiEvent.OnSubjectChange("Test"))
 
-        coEvery { archiveRepository.checkDocumentNumberAndTypeExists("DUP-001", "ORIGINAL") } returns true
-
+        // We no longer check for duplicates in ViewModel
         viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
         testDispatcher.scheduler.runCurrent()
 
         val state = viewModel.uiState.value
-        assertEquals("Nomor dokumen ini sudah ada dengan status yang sama.", state.error)
+        assertEquals(null, state.error)
+        coVerify { stagingRepository.insertToStaging(any()) }
     }
 
     @Test
@@ -164,9 +163,6 @@ class RapidInputViewModelTest {
         viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange("SPM-BUNDLE-001"))
         viewModel.onEvent(RapidInputUiEvent.OnSubjectChange("Bundle Subject"))
         viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange("SPJ Description"))
-
-        coEvery { archiveRepository.checkDocumentNumberAndTypeExists(any(), any()) } returns false
-        coEvery { archiveRepository.checkDocumentNumberExists(any()) } returns false
 
         viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
         testDispatcher.scheduler.runCurrent()
@@ -228,33 +224,6 @@ class RapidInputViewModelTest {
         
         val state = viewModel.uiState.value
         assertEquals("5", state.copyCount)
-    }
-
-    @Test
-    fun `INP_010 - duplicate allowed if copy status different`() = runTest {
-        // Setup box context
-        viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange("Gedung A"))
-        viewModel.onEvent(RapidInputUiEvent.OnRackChange("Rak 1"))
-        viewModel.onEvent(RapidInputUiEvent.OnBoxChange("Box 1"))
-        viewModel.onEvent(RapidInputUiEvent.OnYearChange("2026"))
-        viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext)
-        testDispatcher.scheduler.runCurrent()
-
-        viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange("DUP-123"))
-        viewModel.onEvent(RapidInputUiEvent.OnSubjectChange("Test"))
-        viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.COPY))
-
-        // Mock: Number exists but with status ORIGINAL
-        coEvery { archiveRepository.checkDocumentNumberAndTypeExists("DUP-123", "COPY") } returns false
-        coEvery { archiveRepository.checkDocumentNumberExists("DUP-123") } returns true
-
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
-        testDispatcher.scheduler.runCurrent()
-
-        // Should show duplicate warning but NOT error
-        val state = viewModel.uiState.value
-        assertEquals(true, state.showDuplicateWarning)
-        assertEquals(null, state.error)
     }
 
     @Test

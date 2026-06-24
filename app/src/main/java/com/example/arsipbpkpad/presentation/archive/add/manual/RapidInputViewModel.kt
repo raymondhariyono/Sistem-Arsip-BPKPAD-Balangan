@@ -67,12 +67,9 @@ data class RapidInputUiState(
     val isAutoBundleEnabled: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val documentNumberError: String? = null,
-    val nominalError: String? = null,
     val validationErrors: Map<String, String> = emptyMap(),
     val isUploadSuccess: Boolean = false,
     val editingId: String? = null,
-    val showDuplicateWarning: Boolean = false,
     val classificationCode: String = DomainConstants.DEFAULT_CLASSIFICATION_CODE,
     val availableCodes: List<ClassificationCode> = emptyList(),
     val searchQuery: String = "",
@@ -128,7 +125,6 @@ sealed class RapidInputUiEvent {
     data class OnBundleSelected(val bundleId: String?) : RapidInputUiEvent()
     data class OnAddToBoxClick(val unused: Boolean = false) : RapidInputUiEvent()
     data class OnOcrResultReceived(val metadata: ParsedMetadata) : RapidInputUiEvent()
-    data object DismissDuplicateWarning : RapidInputUiEvent()
     data class OnDeleteStagedDoc(val id: String) : RapidInputUiEvent()
     data class OnEditStagedDoc(val doc: ArchiveDocument) : RapidInputUiEvent()
     data object CancelEditing : RapidInputUiEvent()
@@ -247,11 +243,11 @@ class RapidInputViewModel @Inject constructor(
                     _uiState.update { it.copy(copyCount = event.value) }
                 }
             }
-            is RapidInputUiEvent.OnDocNumberChange -> _uiState.update { it.copy(documentNumber = event.value, documentNumberError = null) }
-            is RapidInputUiEvent.OnSpmDocNumberChange -> _uiState.update { it.copy(spmDocumentNumber = event.value) }
-            is RapidInputUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value) }
+            is RapidInputUiEvent.OnDocNumberChange -> _uiState.update { it.copy(documentNumber = event.value, validationErrors = it.validationErrors - "docNumber") }
+            is RapidInputUiEvent.OnSpmDocNumberChange -> _uiState.update { it.copy(spmDocumentNumber = event.value, validationErrors = it.validationErrors - "spmDocNumber") }
+            is RapidInputUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value, validationErrors = it.validationErrors - "subject") }
             is RapidInputUiEvent.OnSpjDescriptionChange -> _uiState.update { it.copy(spjDescription = event.value) }
-            is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value, nominalError = null) }
+            is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value, validationErrors = it.validationErrors - "nominal") }
             is RapidInputUiEvent.OnConditionChange -> _uiState.update { it.copy(condition = event.value) }
             is RapidInputUiEvent.OnClassificationCodeChange -> _uiState.update { it.copy(classificationCode = event.value) }
             is RapidInputUiEvent.OnSearchQueryChanged -> _uiState.update { it.copy(searchQuery = event.query) }
@@ -260,7 +256,6 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnBundleSelected -> handleBundleSelected(event.bundleId)
             is RapidInputUiEvent.OnAddToBoxClick -> addToStaging()
             is RapidInputUiEvent.OnOcrResultReceived -> handleOcrResult(event.metadata)
-            is RapidInputUiEvent.DismissDuplicateWarning -> _uiState.update { it.copy(showDuplicateWarning = false) }
             is RapidInputUiEvent.OnDeleteStagedDoc -> viewModelScope.launch { stagingRepository.deleteFromStaging(event.id) }
             is RapidInputUiEvent.OnEditStagedDoc -> startEditing(event.doc)
             is RapidInputUiEvent.CancelEditing -> cancelEditing()
@@ -332,8 +327,7 @@ class RapidInputViewModel @Inject constructor(
             docType = value,
             isAutoBundleEnabled = false,
             selectedBundleId = null,
-            documentNumberError = null,
-            nominalError = null
+            validationErrors = emptyMap()
         ) }
     }
 
@@ -343,18 +337,21 @@ class RapidInputViewModel @Inject constructor(
             state.copy(
                 selectedBundleId = bundleId,
                 nominal = bundle?.nominal?.toLong()?.toString() ?: state.nominal,
-                nominalError = null
+                validationErrors = state.validationErrors - "nominal"
             )
         }
     }
 
     private fun validateInput(): Boolean {
         val state = _uiState.value
+        val errors = state.validationErrors.toMutableMap()
         var isValid = true
 
         if (state.documentNumber.isBlank()) {
-            _uiState.update { it.copy(documentNumberError = "Nomor dokumen wajib diisi") }
+            errors["docNumber"] = "Nomor dokumen wajib diisi"
             isValid = false
+        } else {
+            errors.remove("docNumber")
         }
 
         val nominalValue = state.nominal.toDoubleOrNull() ?: 0.0
@@ -365,10 +362,16 @@ class RapidInputViewModel @Inject constructor(
         }
 
         if (isNominalRequired && (state.nominal.isBlank() || nominalValue <= 0)) {
-            _uiState.update { it.copy(nominalError = "Nominal harus berupa angka lebih dari 0") }
+            errors["nominal"] = "Nominal harus berupa angka lebih dari 0"
             isValid = false
+        } else if (nominalValue < 0) {
+            errors["nominal"] = "Nominal tidak boleh kurang dari nol"
+            isValid = false
+        } else {
+            errors.remove("nominal")
         }
 
+        _uiState.update { it.copy(validationErrors = errors) }
         return isValid
     }
 
@@ -498,16 +501,10 @@ class RapidInputViewModel @Inject constructor(
             val state = _uiState.value
             val sessionId = state.currentSessionId ?: return@launch
             
-            val errors = mutableMapOf<String, String>()
+            val errors = state.validationErrors.toMutableMap()
             if (state.subject.isBlank()) errors["subject"] = "Uraian dokumen wajib diisi"
             if (state.isAutoBundleEnabled && state.spmDocumentNumber.isBlank()) errors["spmDocNumber"] = "Nomor SPM wajib diisi"
             if (state.copyType == DocCopyType.COPY && (state.copyCount.toIntOrNull() ?: 0) < 1) errors["copyCount"] = "Jumlah salinan minimal 1"
-            
-            // New Validation: Nominal can't be less than zero
-            val nominalValue = state.nominal.toDoubleOrNull()
-            if (nominalValue != null && nominalValue < 0) {
-                errors["nominal"] = "Nominal tidak boleh kurang dari nol"
-            }
             
             if (errors.isNotEmpty()) {
                 _uiState.update { it.copy(validationErrors = errors) }
@@ -545,8 +542,7 @@ class RapidInputViewModel @Inject constructor(
             _uiState.update { it.copy(
                 documentNumber = "", spmDocumentNumber = "", subject = "", spjDescription = "",
                 nominal = "", isAutoBundleEnabled = false, editingId = null,
-                selectedBundleId = null, documentNumberError = null, nominalError = null,
-                validationErrors = emptyMap(), error = null, showDuplicateWarning = false
+                selectedBundleId = null, validationErrors = emptyMap(), error = null
             ) }
         }
     }
@@ -601,13 +597,8 @@ class RapidInputViewModel @Inject constructor(
             val state = _uiState.value
             val archiveId = state.editingId ?: return@launch
 
-            val errors = mutableMapOf<String, String>()
-            if (state.documentNumber.isBlank()) errors["docNumber"] = "Nomor dokumen wajib diisi"
+            val errors = state.validationErrors.toMutableMap()
             if (state.subject.isBlank()) errors["subject"] = "Uraian dokumen wajib diisi"
-            val nominalValue = state.nominal.toDoubleOrNull()
-            if (nominalValue != null && nominalValue < 0) {
-                errors["nominal"] = "Nominal tidak boleh kurang dari nol"
-            }
 
             if (errors.isNotEmpty()) {
                 _uiState.update { it.copy(validationErrors = errors) }
@@ -636,7 +627,7 @@ class RapidInputViewModel @Inject constructor(
                     _uiState.update { it.copy(
                         isLoading = false,
                         isUploadSuccess = true,
-                        successMessage = UiText.DynamicString("Data Berhasil Diperbarui")
+                        successMessage = UiText.StringResource(R.string.msg_data_updated)
                     ) }
                 } else {
                     _uiState.update { it.copy(isLoading = false, error = (saveResult as DomainResult.Error).message) }
