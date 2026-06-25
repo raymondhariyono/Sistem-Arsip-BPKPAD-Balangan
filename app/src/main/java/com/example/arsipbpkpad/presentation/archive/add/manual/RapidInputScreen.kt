@@ -57,7 +57,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -267,7 +266,7 @@ fun RapidInputScreen(
                                     if (uiState.editingId != null && sessionId.isEmpty()) {
                                         showEditConfirmDialog = true
                                     } else {
-                                        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                                        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
                                     }
                                 },
                                 onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
@@ -329,7 +328,7 @@ fun RapidInputScreen(
                             if (uiState.editingId != null && sessionId.isEmpty()) {
                                 showEditConfirmDialog = true
                             } else {
-                                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+                                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
                             }
                         },
                         onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }

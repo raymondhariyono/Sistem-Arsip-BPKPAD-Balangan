@@ -72,7 +72,7 @@ class RapidInputViewModelTest {
         testDispatcher.scheduler.runCurrent()
 
         // Try to add with empty doc number and subject
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
         testDispatcher.scheduler.runCurrent()
 
         val state = viewModel.uiState.value
@@ -95,7 +95,7 @@ class RapidInputViewModelTest {
 
         // Test nominal -1
         viewModel.onEvent(RapidInputUiEvent.OnNominalChange("-1"))
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
         testDispatcher.scheduler.runCurrent()
         
         val state = viewModel.uiState.value
@@ -117,7 +117,7 @@ class RapidInputViewModelTest {
 
         // Test nominal "abc"
         viewModel.onEvent(RapidInputUiEvent.OnNominalChange("abc"))
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
         testDispatcher.scheduler.runCurrent()
         
         val state = viewModel.uiState.value
@@ -138,7 +138,7 @@ class RapidInputViewModelTest {
         viewModel.onEvent(RapidInputUiEvent.OnSubjectChange("Test"))
 
         // We no longer check for duplicates in ViewModel
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
         testDispatcher.scheduler.runCurrent()
 
         val state = viewModel.uiState.value
@@ -164,7 +164,7 @@ class RapidInputViewModelTest {
         viewModel.onEvent(RapidInputUiEvent.OnSubjectChange("Bundle Subject"))
         viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange("SPJ Description"))
 
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
         testDispatcher.scheduler.runCurrent()
 
         // Verify that 3 documents were inserted to staging
@@ -201,7 +201,7 @@ class RapidInputViewModelTest {
         // Change values
         viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange("NEW-NUM"))
         
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
         testDispatcher.scheduler.runCurrent()
 
         // Verify it inserted to staging
@@ -242,7 +242,7 @@ class RapidInputViewModelTest {
         viewModel.onEvent(RapidInputUiEvent.OnSubjectChange("Subject"))
         viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange("")) // Empty SPM
 
-        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
+        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
         testDispatcher.scheduler.runCurrent()
 
         val state = viewModel.uiState.value

@@ -138,11 +138,6 @@ fun AppNavHost(
                             navController.navigate(Screen.Scan.route)
                         }
                     },
-                    onNavigateToHome = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Home.route) { inclusive = true }
-                        }
-                    },
                     onNavigateBack = {
                         navController.popBackStack()
                     },
