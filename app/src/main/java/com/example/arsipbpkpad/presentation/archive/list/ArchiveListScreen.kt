@@ -71,6 +71,7 @@ import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canExport
 import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.ArchiveListItemCard
 import com.example.arsipbpkpad.presentation.components.ArchiveTableHeader
@@ -519,7 +520,7 @@ fun ExcelActionButtons(
         }
         Button(
             onClick = onExportClick,
-            enabled = isExportEnabled,
+            enabled = isExportEnabled && userRole.canExport(),
             modifier = if (userRole.canMutateArchive()) Modifier.weight(1f) else Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(

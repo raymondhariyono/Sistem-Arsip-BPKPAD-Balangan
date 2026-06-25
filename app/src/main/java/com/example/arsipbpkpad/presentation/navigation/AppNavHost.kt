@@ -18,7 +18,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.domain.model.canManageStaging
+import com.example.arsipbpkpad.domain.model.canManageStorage
 import com.example.arsipbpkpad.domain.model.canMutateArchive
+import com.example.arsipbpkpad.domain.model.canViewAnalytics
 import com.example.arsipbpkpad.presentation.analytics.AnalyticsScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent
@@ -86,12 +89,14 @@ fun AppNavHost(
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                 },
                 onNavigateToStagingBoxList = {
-                    if (currentUserRole.canMutateArchive()) {
+                    if (currentUserRole.canManageStaging()) {
                         navController.navigate(Screen.StagingBoxList.route)
                     }
                 },
                 onNavigateToBoxManagement = {
-                    navController.navigate(Screen.BoxManagement.route)
+                    if (currentUserRole.canManageStorage()) {
+                        navController.navigate(Screen.BoxManagement.route)
+                    }
                 },
                 onNavigateToRapidInput = { sessionId ->
                     if (currentUserRole.canMutateArchive()) {
@@ -103,7 +108,7 @@ fun AppNavHost(
                     }
                 },
                 onNavigateToAnalytics = {
-                    if (!currentUserRole.canMutateArchive()) {
+                    if (currentUserRole.canViewAnalytics()) {
                         navController.navigate(Screen.Analytics.route)
                     }
                 },
@@ -165,14 +170,18 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> { /* Already here */ }
-                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
+                            navStorageId -> {
+                                if (currentUserRole.canManageStorage()) {
+                                    navController.navigate(Screen.BoxManagement.route)
+                                }
+                            }
                             navAddId -> {
-                                if (currentUserRole.canMutateArchive()) {
+                                if (currentUserRole.canManageStaging()) {
                                     navController.navigate(Screen.StagingBoxList.route)
                                 }
                             }
                             navAnalyticsId -> {
-                                if (!currentUserRole.canMutateArchive()) {
+                                if (currentUserRole.canViewAnalytics()) {
                                     navController.navigate(Screen.Analytics.route)
                                 }
                             }
@@ -205,7 +214,7 @@ fun AppNavHost(
             }
 
             composable(Screen.StagingBoxList.route) { entry ->
-                if (!currentUserRole.canMutateArchive()) {
+                if (!currentUserRole.canManageStaging()) {
                     navController.popBackStack()
                     return@composable
                 }
@@ -224,10 +233,14 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
-                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
+                            navStorageId -> {
+                                if (currentUserRole.canManageStorage()) {
+                                    navController.navigate(Screen.BoxManagement.route)
+                                }
+                            }
                             navAddId -> { /* Already here */ }
                             navAnalyticsId -> {
-                                if (!currentUserRole.canMutateArchive()) {
+                                if (currentUserRole.canViewAnalytics()) {
                                     navController.navigate(Screen.Analytics.route)
                                 }
                             }
@@ -275,10 +288,18 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
-                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
-                            navAddId -> navController.navigate(Screen.StagingBoxList.route)
+                            navStorageId -> {
+                                if (currentUserRole.canManageStorage()) {
+                                    navController.navigate(Screen.BoxManagement.route)
+                                }
+                            }
+                            navAddId -> {
+                                if (currentUserRole.canManageStaging()) {
+                                    navController.navigate(Screen.StagingBoxList.route)
+                                }
+                            }
                             navAnalyticsId -> {
-                                if (!currentUserRole.canMutateArchive()) {
+                                if (currentUserRole.canViewAnalytics()) {
                                     navController.navigate(Screen.Analytics.route)
                                 }
                             }
@@ -323,10 +344,18 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
-                            navStorageId -> navController.navigate(Screen.BoxManagement.route)
-                            navAddId -> navController.navigate(Screen.StagingBoxList.route)
+                            navStorageId -> {
+                                if (currentUserRole.canManageStorage()) {
+                                    navController.navigate(Screen.BoxManagement.route)
+                                }
+                            }
+                            navAddId -> {
+                                if (currentUserRole.canManageStaging()) {
+                                    navController.navigate(Screen.StagingBoxList.route)
+                                }
+                            }
                             navAnalyticsId -> {
-                                if (!currentUserRole.canMutateArchive()) {
+                                if (currentUserRole.canViewAnalytics()) {
                                     navController.navigate(Screen.Analytics.route)
                                 }
                             }
@@ -363,7 +392,7 @@ fun AppNavHost(
         }
 
         composable(Screen.Analytics.route) {
-            if (currentUserRole.canMutateArchive()) {
+            if (!currentUserRole.canViewAnalytics()) {
                 navController.popBackStack()
                 return@composable
             }
@@ -374,9 +403,13 @@ fun AppNavHost(
                     when (item.route) {
                         navHomeId -> navController.navigate(Screen.Home.route)
                         navArchiveId -> navController.navigate(archiveFlowRoute)
-                        navStorageId -> navController.navigate(Screen.BoxManagement.route)
+                        navStorageId -> {
+                            if (currentUserRole.canManageStorage()) {
+                                navController.navigate(Screen.BoxManagement.route)
+                            }
+                        }
                         navAddId -> {
-                            if (currentUserRole.canMutateArchive()) {
+                            if (currentUserRole.canManageStaging()) {
                                 navController.navigate(Screen.StagingBoxList.route)
                             }
                         }
@@ -387,6 +420,11 @@ fun AppNavHost(
         }
 
         composable(Screen.BoxManagement.route) {
+            if (!currentUserRole.canManageStorage()) {
+                navController.popBackStack()
+                return@composable
+            }
+
             BoxManagementScreen(
                 userRole = currentUserRole,
                 onNavigateToBottomNav = { item ->
@@ -395,12 +433,12 @@ fun AppNavHost(
                         navArchiveId -> navController.navigate(archiveFlowRoute)
                         navStorageId -> { /* Already here */ }
                         navAddId -> {
-                            if (currentUserRole.canMutateArchive()) {
+                            if (currentUserRole.canManageStaging()) {
                                 navController.navigate(Screen.StagingBoxList.route)
                             }
                         }
                         navAnalyticsId -> {
-                            if (!currentUserRole.canMutateArchive()) {
+                            if (currentUserRole.canViewAnalytics()) {
                                 navController.navigate(Screen.Analytics.route)
                             }
                         }

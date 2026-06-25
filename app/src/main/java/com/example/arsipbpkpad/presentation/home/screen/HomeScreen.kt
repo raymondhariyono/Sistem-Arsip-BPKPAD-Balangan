@@ -42,7 +42,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.UserRole
-import com.example.arsipbpkpad.domain.model.canMutateArchive
+import com.example.arsipbpkpad.domain.model.canManageStaging
+import com.example.arsipbpkpad.domain.model.canManageStorage
+import com.example.arsipbpkpad.domain.model.canViewAnalytics
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
@@ -65,7 +67,7 @@ fun HomeScreen(
     onNavigateToScan: () -> Unit,
     onLogout: () -> Unit,
     userRole: UserRole = UserRole.UNKNOWN,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -147,9 +149,21 @@ fun HomeBottomNavigation(
             when (item) {
                 BottomNavItem.HOME -> { /* Already here */ }
                 BottomNavItem.ARCHIVE -> onNavigateToArchiveList(null)
-                BottomNavItem.ADD -> onNavigateToStagingBoxList()
-                BottomNavItem.STORAGE -> onNavigateToBoxManagement()
-                BottomNavItem.ANALYTICS -> onNavigateToAnalytics()
+                BottomNavItem.ADD -> {
+                    if (userRole.canManageStaging()) {
+                        onNavigateToStagingBoxList()
+                    }
+                }
+                BottomNavItem.STORAGE -> {
+                    if (userRole.canManageStorage()) {
+                        onNavigateToBoxManagement()
+                    }
+                }
+                BottomNavItem.ANALYTICS -> {
+                    if (userRole.canViewAnalytics()) {
+                        onNavigateToAnalytics()
+                    }
+                }
             }
         }
     )
@@ -176,7 +190,7 @@ fun HomeMainList(
     ) {
         item { HeaderSection() }
 
-        if (userRole.canMutateArchive() && uiState.activeStagingBoxes.isNotEmpty()) {
+        if (userRole.canManageStaging() && uiState.activeStagingBoxes.isNotEmpty()) {
             item {
                 val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
                 val totalBoxes = uiState.activeStagingBoxes.size

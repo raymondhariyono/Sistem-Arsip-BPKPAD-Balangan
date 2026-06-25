@@ -226,7 +226,8 @@ fun ArchiveDetailMainList(
             item {
                 DetailActionButtons(
                     onEditClick = onEditClick,
-                    onDeleteClick = onDeleteClick
+                    onDeleteClick = onDeleteClick,
+                    userRole = userRole
                 )
             }
         }
@@ -444,8 +445,11 @@ fun RelatedArchiveItem(related: ArchiveDocument, onClick: () -> Unit) {
 @Composable
 fun DetailActionButtons(
     onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
 ) {
+    if (!userRole.canMutateArchive()) return
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
