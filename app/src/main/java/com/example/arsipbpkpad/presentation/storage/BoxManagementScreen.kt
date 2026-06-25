@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -53,10 +54,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.BoxDetails
+import com.example.arsipbpkpad.domain.model.Room
+import com.example.arsipbpkpad.domain.model.Shelf
 import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import com.example.arsipbpkpad.utils.ResultState
 
 @Composable
@@ -66,6 +70,26 @@ fun BoxManagementScreen(
     viewModel: BoxManagementViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    BoxManagementContent(
+        uiState = uiState,
+        userRole = userRole,
+        onNavigateToBottomNav = onNavigateToBottomNav,
+        onFilterRoomSelected = { viewModel.setFilterRoom(it) },
+        onFilterShelfSelected = { viewModel.setFilterShelf(it) },
+        onClearErrors = { viewModel.clearErrors() }
+    )
+}
+
+@Composable
+fun BoxManagementContent(
+    uiState: BoxManagementUiState,
+    userRole: UserRole,
+    onNavigateToBottomNav: (BottomNavItem) -> Unit,
+    onFilterRoomSelected: (Room) -> Unit,
+    onFilterShelfSelected: (Shelf) -> Unit,
+    onClearErrors: () -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedBoxForView by remember { mutableStateOf<BoxDetails?>(null) }
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -97,32 +121,32 @@ fun BoxManagementScreen(
             Card(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.title_location_filter),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
                     ReadOnlyLocationDropdown(
                         label = stringResource(R.string.label_select_warehouse),
                         value = uiState.selectedFilterRoom?.name ?: "",
                         options = uiState.rooms,
-                        onOptionSelected = { viewModel.setFilterRoom(it) },
+                        onOptionSelected = { onFilterRoomSelected(it) },
                         getItemName = { it.name }
                     )
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
                     ReadOnlyLocationDropdown(
                         label = stringResource(R.string.label_select_rack),
                         value = uiState.selectedFilterShelf?.name ?: "",
                         options = uiState.filterShelves,
-                        onOptionSelected = { viewModel.setFilterShelf(it) },
+                        onOptionSelected = { onFilterShelfSelected(it) },
                         getItemName = { it.name },
                         enabled = uiState.selectedFilterRoom != null
                     )
@@ -176,7 +200,7 @@ fun BoxManagementScreen(
             box = selectedBoxForView!!,
             onDismiss = { 
                 showDialog = false
-                viewModel.clearErrors()
+                onClearErrors()
             }
         )
     }
@@ -211,11 +235,11 @@ fun <T> ReadOnlyLocationDropdown(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                focusedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                focusedBorderColor = MaterialTheme.colorScheme.onPrimary,
                 cursorColor = MaterialTheme.colorScheme.primary,
-                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                unfocusedLabelColor = if (value.isNotEmpty()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                unfocusedBorderColor = if (value.isNotEmpty()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
             )
         )
 
@@ -256,7 +280,7 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), CircleShape),
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -310,7 +334,6 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
 
 @Composable
 fun EmptyBoxState(text: String, modifier: Modifier = Modifier) {
-    val primaryColor = MaterialTheme.colorScheme.primary
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -452,6 +475,40 @@ fun DetailItem(label: String, value: String) {
         Spacer(modifier = Modifier.height(4.dp))
         androidx.compose.material3.HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BoxManagementScreenPreview() {
+    val sampleRooms = listOf(
+        Room("1", "Gudang A"),
+        Room("2", "Gudang B")
+    )
+    val sampleShelves = listOf(
+        Shelf("1", "1", "Rak 01"),
+        Shelf("2", "1", "Rak 02")
+    )
+    val sampleBoxes = listOf(
+        BoxDetails("1", "BOX-001", "1", "Rak 01", "1", "Gudang A", 15),
+        BoxDetails("2", "BOX-002", "1", "Rak 01", "1", "Gudang A", 8)
+    )
+
+    ArsipBPKPADTheme {
+        BoxManagementContent(
+            uiState = BoxManagementUiState(
+                rooms = sampleRooms,
+                filterShelves = sampleShelves,
+                selectedFilterRoom = sampleRooms[0],
+                selectedFilterShelf = sampleShelves[0],
+                boxes = ResultState.Success(sampleBoxes)
+            ),
+            userRole = UserRole.ARSIPARIS,
+            onNavigateToBottomNav = {},
+            onFilterRoomSelected = {},
+            onFilterShelfSelected = {},
+            onClearErrors = {}
         )
     }
 }

@@ -133,7 +133,13 @@ class ArchiveListViewModel @Inject constructor(
                 val current = _selectedYears.value
                 val updated = if (current.contains(event.year)) current - event.year else current + event.year
                 _selectedYears.value = updated
-                _uiState.update { it.copy(selectedYears = updated) }
+                // Automatically confirm when a year is selected from the grid
+                if (updated.isNotEmpty()) {
+                    _isFilterConfirmed.value = true
+                    _uiState.update { it.copy(selectedYears = updated, isFilterConfirmed = true) }
+                } else {
+                    _uiState.update { it.copy(selectedYears = updated) }
+                }
             }
             is ArchiveListUiEvent.OnSelectAllYears -> {
                 val allYears = _uiState.value.availableYears.toSet()

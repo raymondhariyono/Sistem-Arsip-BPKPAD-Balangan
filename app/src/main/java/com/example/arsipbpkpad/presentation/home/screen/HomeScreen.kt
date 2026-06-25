@@ -58,6 +58,7 @@ fun HomeScreen(
     onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
+    onNavigateToBoxManagement: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateToAnalytics: () -> Unit,
     onNavigateToScan: () -> Unit,
@@ -73,6 +74,7 @@ fun HomeScreen(
         onNavigateToArchiveList = onNavigateToArchiveList,
         onNavigateToDetail = onNavigateToDetail,
         onNavigateToStagingBoxList = onNavigateToStagingBoxList,
+        onNavigateToBoxManagement = onNavigateToBoxManagement,
         onNavigateToRapidInput = onNavigateToRapidInput,
         onNavigateToAnalytics = onNavigateToAnalytics,
         onNavigateToScan = onNavigateToScan,
@@ -87,6 +89,7 @@ fun HomeContent(
     onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
+    onNavigateToBoxManagement: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateToAnalytics: () -> Unit,
     onNavigateToScan: () -> Unit,
@@ -111,6 +114,7 @@ fun HomeContent(
                 userRole = userRole,
                 onNavigateToArchiveList = onNavigateToArchiveList,
                 onNavigateToStagingBoxList = onNavigateToStagingBoxList,
+                onNavigateToBoxManagement = onNavigateToBoxManagement,
                 onNavigateToAnalytics = onNavigateToAnalytics
             )
         },
@@ -132,6 +136,7 @@ fun HomeBottomNavigation(
     userRole: UserRole,
     onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
+    onNavigateToBoxManagement: () -> Unit,
     onNavigateToAnalytics: () -> Unit
 ) {
     BpkpadBottomNavigation(
@@ -142,7 +147,7 @@ fun HomeBottomNavigation(
                 BottomNavItem.HOME -> { /* Already here */ }
                 BottomNavItem.ARCHIVE -> onNavigateToArchiveList(null)
                 BottomNavItem.ADD -> onNavigateToStagingBoxList()
-                BottomNavItem.STORAGE -> onNavigateToStagingBoxList() // Or separate navigation if needed
+                BottomNavItem.STORAGE -> onNavigateToBoxManagement()
                 BottomNavItem.ANALYTICS -> onNavigateToAnalytics()
             }
         }

@@ -1,9 +1,13 @@
 package com.example.arsipbpkpad.presentation.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -36,7 +40,15 @@ fun AppNavHost(
     val authRepository = authViewModel.authRepository
     val isUserLoggedIn by authRepository.isUserLoggedIn.collectAsStateWithLifecycle()
     val currentUserRole by authRepository.currentUserRole.collectAsStateWithLifecycle()
+    val isSessionChecked by authRepository.isSessionChecked.collectAsStateWithLifecycle()
     
+    if (!isSessionChecked) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     val startDestination = if (isUserLoggedIn) Screen.Home.route else Screen.Login.route
 
     val archiveFlowRoute = stringResource(R.string.route_archive_flow)
@@ -78,6 +90,9 @@ fun AppNavHost(
                         navController.navigate(Screen.StagingBoxList.route)
                     }
                 },
+                onNavigateToBoxManagement = {
+                    navController.navigate(Screen.BoxManagement.route)
+                },
                 onNavigateToRapidInput = { sessionId ->
                     if (currentUserRole == UserRole.ARSIPARIS) {
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
@@ -94,6 +109,7 @@ fun AppNavHost(
                     }
                 },
                 onLogout = {
+                    authViewModel.logout()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
