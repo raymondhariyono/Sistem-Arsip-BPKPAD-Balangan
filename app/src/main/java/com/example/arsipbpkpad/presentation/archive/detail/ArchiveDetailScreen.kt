@@ -114,7 +114,7 @@ fun ArchiveDetailContent(
         topBar = {
             ArchiveDetailTopBar(onNavigateBack = onNavigateBack)
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when {

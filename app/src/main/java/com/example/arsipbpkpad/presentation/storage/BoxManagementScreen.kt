@@ -44,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -90,21 +89,22 @@ fun BoxManagementScreen(
                 userRole = userRole,
                 onNavigate = onNavigateToBottomNav
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             // Top Section (Filters)
             Card(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = primaryColor.copy(alpha = 0.1f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.title_location_filter),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = primaryColor
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     
@@ -129,7 +129,7 @@ fun BoxManagementScreen(
                 }
             }
 
-            Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+            Box(modifier = Modifier.fillMaxSize().weight(1f).background(MaterialTheme.colorScheme.surface)) {
                 when (val boxesState = uiState.boxes) {
                     is ResultState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = primaryColor)
                     is ResultState.Success -> {
@@ -171,10 +171,9 @@ fun BoxManagementScreen(
         }
     }
 
-    if (showDialog) {
-        BoxFormDialog(
-            existingBox = selectedBoxForView,
-            generalError = uiState.error,
+    if (showDialog && selectedBoxForView != null) {
+        BoxDetailDialog(
+            box = selectedBoxForView!!,
             onDismiss = { 
                 showDialog = false
                 viewModel.clearErrors()
@@ -194,7 +193,6 @@ fun <T> ReadOnlyLocationDropdown(
     enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val primaryColor = MaterialTheme.colorScheme.primary
 
     ExposedDropdownMenuBox(
         expanded = expanded && enabled,
@@ -212,21 +210,23 @@ fun <T> ReadOnlyLocationDropdown(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.12f),
-                focusedLabelColor = primaryColor,
-                focusedBorderColor = primaryColor,
-                cursorColor = primaryColor
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                cursorColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
 
         ExposedDropdownMenu(
             expanded = expanded && enabled,
             onDismissRequest = { expanded = false },
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(getItemName(option)) },
+                    text = { Text(getItemName(option), color = MaterialTheme.colorScheme.onSurface) },
                     onClick = {
                         onOptionSelected(option)
                         expanded = false
@@ -246,7 +246,8 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -254,14 +255,15 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .background(primaryColor.copy(alpha = 0.1f), CircleShape),
+                    .size(56.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Inventory,
                     contentDescription = null,
-                    tint = primaryColor
+                    tint = primaryColor,
+                    modifier = Modifier.size(28.dp)
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -270,8 +272,9 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
                     text = stringResource(R.string.label_box_number, box.name),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = primaryColor
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
@@ -286,12 +289,19 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${box.itemCount} Arsip",
+                    text = box.itemCount.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor
+                )
+                Text(
+                    text = "Arsip",
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(top = 2.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -308,64 +318,116 @@ fun EmptyBoxState(text: String, modifier: Modifier = Modifier) {
         Icon(
             Icons.Default.Inventory,
             contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = primaryColor.copy(alpha = 0.3f)
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.outlineVariant
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,
-            color = primaryColor.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium
         )
     }
 }
 
 @Composable
-fun BoxFormDialog(
-    existingBox: BoxDetails?,
-    generalError: String?,
+fun BoxDetailDialog(
+    box: BoxDetails,
     onDismiss: () -> Unit
 ) {
-    val boxName = existingBox?.name ?: ""
-    val typedRoom = existingBox?.roomName ?: ""
-    val typedShelf = existingBox?.shelfName ?: ""
     val primaryColor = MaterialTheme.colorScheme.primary
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Card(
             modifier = Modifier.fillMaxWidth().padding(24.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = stringResource(R.string.title_box_location_detail), 
-                    style = MaterialTheme.typography.titleLarge, 
-                    fontWeight = FontWeight.Bold,
-                    color = primaryColor
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Inventory,
+                            contentDescription = null,
+                            tint = primaryColor
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = stringResource(R.string.title_box_location_detail), 
+                            style = MaterialTheme.typography.labelLarge, 
+                            color = primaryColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = stringResource(R.string.label_box_number, box.name),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(24.dp))
 
-                ReadOnlyField(label = stringResource(R.string.label_box), value = boxName)
-                Spacer(modifier = Modifier.height(12.dp))
-                ReadOnlyField(label = stringResource(R.string.label_warehouse), value = typedRoom)
-                Spacer(modifier = Modifier.height(12.dp))
-                ReadOnlyField(label = stringResource(R.string.label_rack), value = typedShelf)
-
-                if (generalError != null) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(generalError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                // Stats Section
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 20.dp, horizontal = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = box.itemCount.toString(),
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "TOTAL DOKUMEN ARSIP",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                DetailItem(label = stringResource(R.string.label_warehouse), value = box.roomName)
+                Spacer(modifier = Modifier.height(12.dp))
+                DetailItem(label = stringResource(R.string.label_rack), value = box.shelfName)
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        containerColor = primaryColor,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
-                    Text(stringResource(R.string.btn_close), color = primaryColor, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(R.string.btn_close),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
                 }
             }
         }
@@ -373,19 +435,23 @@ fun BoxFormDialog(
 }
 
 @Composable
-fun ReadOnlyField(label: String, value: String) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
-        enabled = false,
-        readOnly = true,
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = MaterialTheme.colorScheme.onSurface,
-            disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+fun DetailItem(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold
         )
-    )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        androidx.compose.material3.HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+    }
 }

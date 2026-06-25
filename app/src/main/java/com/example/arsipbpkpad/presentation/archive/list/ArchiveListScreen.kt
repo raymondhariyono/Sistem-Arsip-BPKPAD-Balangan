@@ -223,6 +223,7 @@ fun ArchiveListScreen(
                 onNavigate = onNavigateToBottomNav
             )
         },
+        containerColor = MaterialTheme.colorScheme.surface,
         floatingActionButton = {
             if (uiState.isFilterConfirmed && userRole == UserRole.ARSIPARIS) {
                 BpkpadExpandableFAB(

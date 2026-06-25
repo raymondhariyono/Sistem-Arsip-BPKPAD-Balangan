@@ -114,7 +114,7 @@ fun HomeContent(
                 onNavigateToAnalytics = onNavigateToAnalytics
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
         HomeMainList(
             uiState = uiState,
@@ -209,13 +209,13 @@ fun HomePrimaryStats(uiState: HomeUiState) {
         PrimaryStatCard(
             title = stringResource(R.string.total_documents),
             count = uiState.totalDocuments,
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
             contentColor = MaterialTheme.colorScheme.primary
         )
         PrimaryStatCard(
             title = stringResource(R.string.expired_documents),
             count = uiState.expiredDocuments,
-            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
             contentColor = MaterialTheme.colorScheme.error
         )
     }

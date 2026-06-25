@@ -124,7 +124,7 @@ sealed class RapidInputUiEvent {
     data class OnQuickCategorySelected(val categoryCode: String?) : RapidInputUiEvent()
     data class OnAutoBundleToggle(val enabled: Boolean) : RapidInputUiEvent()
     data class OnBundleSelected(val bundleId: String?) : RapidInputUiEvent()
-    data object OnAddToBoxClick : RapidInputUiEvent()
+    data class OnAddToBoxClick(val forceSave: Boolean = false) : RapidInputUiEvent()
     data class OnOcrResultReceived(val metadata: ParsedMetadata) : RapidInputUiEvent()
     data class OnDeleteStagedDoc(val id: String) : RapidInputUiEvent()
     data class OnEditStagedDoc(val doc: ArchiveDocument) : RapidInputUiEvent()
@@ -256,7 +256,7 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnQuickCategorySelected -> handleQuickCategorySelected(event.categoryCode)
             is RapidInputUiEvent.OnAutoBundleToggle -> _uiState.update { it.copy(isAutoBundleEnabled = event.enabled) }
             is RapidInputUiEvent.OnBundleSelected -> handleBundleSelected(event.bundleId)
-            is RapidInputUiEvent.OnAddToBoxClick -> addToStaging()
+            is RapidInputUiEvent.OnAddToBoxClick -> addToStaging(event.forceSave)
             is RapidInputUiEvent.OnOcrResultReceived -> handleOcrResult(event.metadata)
             is RapidInputUiEvent.OnDeleteStagedDoc -> viewModelScope.launch { stagingRepository.deleteFromStaging(event.id) }
             is RapidInputUiEvent.OnEditStagedDoc -> startEditing(event.doc)
@@ -497,7 +497,7 @@ class RapidInputViewModel @Inject constructor(
         }
     }
 
-    private fun addToStaging() {
+    private fun addToStaging(forceSave: Boolean = false) {
         viewModelScope.launch {
             if (!validateInput()) return@launch
 
@@ -512,6 +512,18 @@ class RapidInputViewModel @Inject constructor(
             if (errors.isNotEmpty()) {
                 _uiState.update { it.copy(validationErrors = errors) }
                 return@launch
+            }
+
+            // Check for potential duplicate if not forced
+            if (!forceSave && state.copyType == DocCopyType.ORIGINAL) {
+                val exists = archiveRepository.checkDocumentNumberAndTypeExists(
+                    state.documentNumber, 
+                    state.copyType.name
+                )
+                if (exists) {
+                    _uiState.update { it.copy(showDuplicateWarning = true) }
+                    return@launch
+                }
             }
 
             val bundleId = if (state.isAutoBundleEnabled || state.docType == DocType.SPJ) {

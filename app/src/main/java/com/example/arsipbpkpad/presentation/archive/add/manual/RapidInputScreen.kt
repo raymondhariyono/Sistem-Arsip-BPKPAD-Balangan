@@ -280,7 +280,7 @@ fun RapidInputScreen(
                                     if (uiState.editingId != null && sessionId.isEmpty()) {
                                         showEditConfirmDialog = true
                                     } else {
-                                        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
+                                        viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
                                     }
                                 },
                                 onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }
@@ -342,7 +342,7 @@ fun RapidInputScreen(
                             if (uiState.editingId != null && sessionId.isEmpty()) {
                                 showEditConfirmDialog = true
                             } else {
-                                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick)
+                                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick())
                             }
                         },
                         onCancelEditClick = { viewModel.onEvent(RapidInputUiEvent.CancelEditing) }

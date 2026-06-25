@@ -28,7 +28,7 @@ data class BoxWithDetailsDto(
     val name: String,
     val shelf_id: String,
     val shelves: ShelfWithRoomDto,
-    val archives: List<ArchiveCountDto> = emptyList()
+    val archive_documents: List<ArchiveCountDto> = emptyList()
 )
 
 @Serializable
@@ -124,7 +124,7 @@ class StorageLocationRepositoryImpl @Inject constructor(
         emit(ResultState.Loading)
         try {
             val dtos = supabaseClient.postgrest["boxes"]
-                .select(Columns.raw("*, shelves(*, rooms(*)), archives(count)"))
+                .select(Columns.raw("*, shelves(*, rooms(*)), archive_documents(count)"))
                 .decodeList<BoxWithDetailsDto>()
             emit(ResultState.Success(dtos.map { 
                 BoxDetails(
@@ -134,7 +134,7 @@ class StorageLocationRepositoryImpl @Inject constructor(
                     shelfName = it.shelves.name,
                     roomId = it.shelves.room_id,
                     roomName = it.shelves.rooms.name,
-                    itemCount = it.archives.firstOrNull()?.count ?: 0
+                    itemCount = it.archive_documents.firstOrNull()?.count ?: 0
                 )
             }))
         } catch (e: Exception) {
