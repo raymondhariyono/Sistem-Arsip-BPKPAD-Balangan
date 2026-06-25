@@ -148,13 +148,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             .insert(dto) { select() }
             .decodeSingle<RoomDto>()
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "CREATE",
                 entityType = "LOCATION_ROOM",
                 entityId = inserted.id!!,
-                details = "Created Room: $name"
+                details = "User: $userEmail | Created Room: $name"
             )
         )
         Room(inserted.id!!, inserted.name)
@@ -167,13 +169,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             filter { eq("id", id) }
         }
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "UPDATE",
                 entityType = "LOCATION_ROOM",
                 entityId = id,
-                details = "Updated Room Name to: $name"
+                details = "User: $userEmail | Updated Room Name to: $name"
             )
         )
     }
@@ -183,13 +187,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             filter { eq("id", id) }
         }
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "DELETE",
                 entityType = "LOCATION_ROOM",
                 entityId = id,
-                details = "Deleted Room ID: $id"
+                details = "User: $userEmail | Deleted Room ID: $id"
             )
         )
     }
@@ -200,13 +206,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             .insert(dto) { select() }
             .decodeSingle<ShelfDto>()
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "CREATE",
                 entityType = "LOCATION_SHELF",
                 entityId = inserted.id!!,
-                details = "Created Shelf: $name in Room ID: $roomId"
+                details = "User: $userEmail | Created Shelf: $name in Room ID: $roomId"
             )
         )
         Shelf(inserted.id!!, inserted.roomId, inserted.name)
@@ -219,13 +227,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             filter { eq("id", id) }
         }
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "UPDATE",
                 entityType = "LOCATION_SHELF",
                 entityId = id,
-                details = "Updated Shelf Name to: $name"
+                details = "User: $userEmail | Updated Shelf Name to: $name"
             )
         )
     }
@@ -235,13 +245,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             filter { eq("id", id) }
         }
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "DELETE",
                 entityType = "LOCATION_SHELF",
                 entityId = id,
-                details = "Deleted Shelf ID: $id"
+                details = "User: $userEmail | Deleted Shelf ID: $id"
             )
         )
     }
@@ -252,13 +264,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             .insert(dto) { select() }
             .decodeSingle<BoxDto>()
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "CREATE",
                 entityType = "LOCATION_BOX",
                 entityId = inserted.id!!,
-                details = "Created Box: $name in Shelf ID: $shelfId"
+                details = "User: $userEmail | Created Box: $name in Shelf ID: $shelfId"
             )
         )
         Box(inserted.id!!, inserted.shelfId, inserted.name)
@@ -271,13 +285,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             filter { eq("id", id) }
         }
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "UPDATE",
                 entityType = "LOCATION_BOX",
                 entityId = id,
-                details = "Updated Box Name to: $name"
+                details = "User: $userEmail | Updated Box Name to: $name"
             )
         )
     }
@@ -287,13 +303,15 @@ class StorageLocationRepositoryImpl @Inject constructor(
             filter { eq("id", id) }
         }
         
+        val userId = authRepository.getCurrentUserId()
+        val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
         activityLogRepository.logActivity(
             com.example.arsipbpkpad.domain.model.ActivityLog(
-                actorId = authRepository.getCurrentUserId(),
+                actorId = userId,
                 action = "DELETE",
                 entityType = "LOCATION_BOX",
                 entityId = id,
-                details = "Deleted Box ID: $id"
+                details = "User: $userEmail | Deleted Box ID: $id"
             )
         )
     }

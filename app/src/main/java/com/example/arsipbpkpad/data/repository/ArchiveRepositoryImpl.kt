@@ -90,13 +90,15 @@ class ArchiveRepositoryImpl @Inject constructor(
                 archiveDao.insertArchive(entity.copy(syncStatus = "SYNCED"))
                 
                 // Log Activity
+                val userId = authRepository.getCurrentUserId()
+                val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
                 activityLogRepository.logActivity(
                     com.example.arsipbpkpad.domain.model.ActivityLog(
-                        actorId = authRepository.getCurrentUserId(),
+                        actorId = userId,
                         action = if (isUpdate) "UPDATE" else "CREATE",
                         entityType = "ARCHIVE",
                         entityId = archive.id,
-                        details = "Document Number: ${archive.documentNumber}"
+                        details = "User: $userEmail | Doc: ${archive.documentNumber}"
                     )
                 )
             }
@@ -119,14 +121,16 @@ class ArchiveRepositoryImpl @Inject constructor(
                 archiveDao.insertArchives(syncedEntities)
 
                 // Log Activity for each document
+                val userId = authRepository.getCurrentUserId()
+                val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
                 archives.forEach { archive ->
                     activityLogRepository.logActivity(
                         com.example.arsipbpkpad.domain.model.ActivityLog(
-                            actorId = authRepository.getCurrentUserId(),
+                            actorId = userId,
                             action = "UPSERT",
                             entityType = "ARCHIVE",
                             entityId = archive.id,
-                            details = "Bulk Save/Update: ${archive.documentNumber}"
+                            details = "User: $userEmail | Bulk Doc: ${archive.documentNumber}"
                         )
                     )
                 }
@@ -147,13 +151,15 @@ class ArchiveRepositoryImpl @Inject constructor(
         }
 
         if (apiResult is DomainResult.Success) {
+            val userId = authRepository.getCurrentUserId()
+            val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
             activityLogRepository.logActivity(
                 com.example.arsipbpkpad.domain.model.ActivityLog(
-                    actorId = authRepository.getCurrentUserId(),
+                    actorId = userId,
                     action = "DELETE",
                     entityType = "ARCHIVE",
                     entityId = id,
-                    details = "Deleted Archive ID: $id"
+                    details = "User: $userEmail | Deleted ID: $id"
                 )
             )
         }
