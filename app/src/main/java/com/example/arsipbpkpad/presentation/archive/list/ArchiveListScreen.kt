@@ -170,10 +170,10 @@ fun ArchiveListScreen(
 
     if (showImportConfirm) {
         BpkpadConfirmDialog(
-            title = "Konfirmasi Import",
-            message = "Apakah Anda yakin ingin mengimpor data dari file Excel ini?",
-            confirmText = "Import",
-            dismissText = "Batal",
+            title = stringResource(R.string.title_confirm_import),
+            message = stringResource(R.string.msg_confirm_import),
+            confirmText = stringResource(R.string.btn_import),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 pendingImportUri?.let { uri ->
                     context.contentResolver.openInputStream(uri)?.let { inputStream ->
@@ -188,10 +188,10 @@ fun ArchiveListScreen(
 
     if (showExportConfirm) {
         BpkpadConfirmDialog(
-            title = "Konfirmasi Export",
-            message = "Apakah Anda yakin ingin mengekspor daftar arsip ke file Excel?",
-            confirmText = "Export",
-            dismissText = "Batal",
+            title = stringResource(R.string.title_confirm_export),
+            message = stringResource(R.string.msg_confirm_export),
+            confirmText = stringResource(R.string.btn_export),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 exportLauncher.launch("Arsip_${System.currentTimeMillis()}.xlsx")
                 showExportConfirm = false
@@ -202,7 +202,7 @@ fun ArchiveListScreen(
 
     showSuccessDialog?.let { msg ->
         StatusDialog(
-            title = "Berhasil",
+            title = stringResource(R.string.title_success),
             message = msg,
             onDismiss = { showSuccessDialog = null },
             isSuccess = true

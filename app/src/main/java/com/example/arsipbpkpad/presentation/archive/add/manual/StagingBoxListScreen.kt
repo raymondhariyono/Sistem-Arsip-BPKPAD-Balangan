@@ -66,7 +66,9 @@ import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.domain.model.canManageStaging
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
+import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.DialogType
 import com.example.arsipbpkpad.presentation.components.FormDropdownField
 import com.example.arsipbpkpad.presentation.components.HierarchicalLocationSelector
 import com.example.arsipbpkpad.presentation.components.StatusDialog
@@ -146,33 +148,31 @@ fun StagingBoxListScreen(
             }
 
             if (boxToDelete != null) {
-                DeleteBoxDialog(
+                BpkpadConfirmDialog(
+                    title = stringResource(R.string.title_delete_staging_box),
+                    message = stringResource(R.string.msg_delete_staging_box),
+                    confirmText = stringResource(R.string.btn_delete),
+                    dismissText = stringResource(R.string.btn_cancel),
                     onConfirm = {
                         boxToDelete?.let { viewModel.onEvent(RapidInputUiEvent.OnDeleteBoxSession(it)) }
                         boxToDelete = null
                     },
-                    onDismiss = { boxToDelete = null }
+                    onDismiss = { boxToDelete = null },
+                    type = DialogType.DESTRUCTIVE
                 )
             }
 
             if (showUploadConfirm) {
-                AlertDialog(
-                    onDismissRequest = { showUploadConfirm = false },
-                    title = { Text(text = "Konfirmasi Unggah") },
-                    text = { Text(text = "Apakah Anda yakin ingin mengunggah semua dokumen dari penyimpanan sementara ke penyimpanan permanen?") },
-                    confirmButton = {
-                        Button(onClick = {
-                            showUploadConfirm = false
-                            viewModel.onEvent(RapidInputUiEvent.OnConfirmAllUpload)
-                        }) {
-                            Text("Unggah")
-                        }
+                BpkpadConfirmDialog(
+                    title = stringResource(R.string.title_confirm_upload),
+                    message = stringResource(R.string.msg_confirm_upload_all),
+                    confirmText = stringResource(R.string.btn_upload),
+                    dismissText = stringResource(R.string.btn_cancel),
+                    onConfirm = {
+                        showUploadConfirm = false
+                        viewModel.onEvent(RapidInputUiEvent.OnConfirmAllUpload)
                     },
-                    dismissButton = {
-                        TextButton(onClick = { showUploadConfirm = false }) {
-                            Text("Batal")
-                        }
-                    }
+                    onDismiss = { showUploadConfirm = false }
                 )
             }
 
@@ -324,28 +324,6 @@ fun StagingBoxListContent(
             userRole = userRole
         )
     }
-}
-
-@Composable
-fun DeleteBoxDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.title_delete_staging_box)) },
-        text = { Text(stringResource(R.string.msg_delete_staging_box)) },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text(stringResource(R.string.btn_delete))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.btn_cancel))
-            }
-        }
-    )
 }
 
 @Composable

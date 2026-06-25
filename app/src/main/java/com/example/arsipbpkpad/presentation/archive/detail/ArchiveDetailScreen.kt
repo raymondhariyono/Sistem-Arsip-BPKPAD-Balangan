@@ -38,7 +38,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +59,9 @@ import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.domain.model.canMutateArchive
+import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.DialogType
 import com.example.arsipbpkpad.presentation.components.DocStatusBadge
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import java.text.NumberFormat
@@ -104,12 +105,17 @@ fun ArchiveDetailContent(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
-        DeleteArchiveConfirmDialog(
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.title_delete_archive),
+            message = stringResource(R.string.msg_delete_archive_confirm),
+            confirmText = stringResource(R.string.btn_delete),
+            dismissText = stringResource(R.string.btn_cancel),
             onConfirm = {
                 onDeleteClick()
                 showDeleteDialog = false
             },
-            onDismiss = { showDeleteDialog = false }
+            onDismiss = { showDeleteDialog = false },
+            type = DialogType.DESTRUCTIVE
         )
     }
 
@@ -136,25 +142,6 @@ fun ArchiveDetailContent(
             }
         }
     }
-}
-
-@Composable
-fun DeleteArchiveConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.btn_delete), color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.btn_cancel))
-            }
-        },
-        title = { Text(stringResource(R.string.title_delete_archive)) },
-        text = { Text(stringResource(R.string.msg_delete_archive_confirm)) }
-    )
 }
 
 @Composable

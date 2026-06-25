@@ -11,10 +11,9 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
+import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
-import io.ktor.client.network.sockets.ConnectTimeoutException
-import io.ktor.client.network.sockets.SocketTimeoutException as KtorSocketTimeoutException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +25,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
+import io.ktor.client.network.sockets.SocketTimeoutException as KtorSocketTimeoutException
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
@@ -177,13 +177,9 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getCurrentUserEmail(): String? {
-        val user = supabase.auth.currentUserOrNull()
-        val session = supabase.auth.currentSessionOrNull()
-        return user?.email ?: session?.user?.email
-    }
-
-    override fun getCurrentUserEmail(): String? {
-        return _currentUserProfile.value?.email ?: supabase.auth.currentUserOrNull()?.email
+        return _currentUserProfile.value?.email
+            ?: supabase.auth.currentUserOrNull()?.email
+            ?: supabase.auth.currentSessionOrNull()?.user?.email
     }
 
     override fun getCurrentUserFullName(): String? {

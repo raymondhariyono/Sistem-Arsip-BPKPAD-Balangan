@@ -54,6 +54,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
@@ -84,7 +85,7 @@ fun LoginScreen(
         val isNetworkError = uiState.errorMessage!!.contains("internet", ignoreCase = true) || 
                             uiState.errorMessage!!.contains("jaringan", ignoreCase = true)
         StatusDialog(
-            title = if (isNetworkError) "Kesalahan Jaringan" else "Login Gagal",
+            title = if (isNetworkError) stringResource(R.string.title_error) else "Login Gagal",
             message = uiState.errorMessage!!,
             isSuccess = false,
             onDismiss = { viewModel.clearError() }
