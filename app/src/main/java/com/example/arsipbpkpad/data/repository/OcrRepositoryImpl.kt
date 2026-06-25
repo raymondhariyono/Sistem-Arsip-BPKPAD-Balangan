@@ -3,6 +3,7 @@ package com.example.arsipbpkpad.data.repository
 import android.content.Context
 import android.net.Uri
 import com.example.arsipbpkpad.data.util.safeApiCall
+import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.OcrRepository
 import com.google.mlkit.vision.common.InputImage
@@ -31,7 +32,7 @@ class OcrRepositoryImpl @Inject constructor(
             val result = recognizer.process(image).await()
             
             if (result.text.isBlank()) {
-                throw Exception("No text detected in the image.")
+                throw java.lang.Exception(DomainConstants.ERROR_NO_TEXT_DETECTED)
             }
             result.text
         }

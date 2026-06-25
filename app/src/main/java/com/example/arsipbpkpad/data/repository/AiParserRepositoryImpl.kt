@@ -54,9 +54,12 @@ class AiParserRepositoryImpl @Inject constructor(
                   "year": integer or null,
                   "subject": "string or null",
                   "docType": "string or null",
-                  "nominal": number or null
+                  "nominal": number or null,
+                  "isArchiveDocument": boolean
                 }
                 
+                Set "isArchiveDocument" to true only if the text belongs to an SPP, SPM, SP2D, or SPJ document from BPKPAD Balangan.
+                If the text is just random words, or other type of document, set "isArchiveDocument" to false.
                 Ensure "docType" is one of: SPP, SPM, SP2D, SPJ.
                 Only return the JSON object.
             """.trimIndent()
@@ -85,7 +88,11 @@ class AiParserRepositoryImpl @Inject constructor(
             val content = groqResponse.choices.firstOrNull()?.message?.content
                 ?: throw Exception(DomainConstants.ERROR_AI_EMPTY_RESPONSE)
 
-            json.decodeFromString<ParsedMetadata>(content)
+            val parsed = json.decodeFromString<ParsedMetadata>(content)
+            if (!parsed.isArchiveDocument) {
+                throw Exception(DomainConstants.ERROR_NOT_A_DOCUMENT)
+            }
+            parsed
         }
     }
 }

@@ -11,7 +11,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
-import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CoroutineScope
@@ -20,12 +19,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.net.ConnectException
-import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
-import io.ktor.client.network.sockets.SocketTimeoutException as KtorSocketTimeoutException
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
@@ -90,9 +86,7 @@ class AuthRepositoryImpl @Inject constructor(
             sharedPreferences.edit().putBoolean("remember_me", false).apply()
 
             val message = when {
-                e is UnknownHostException || e is HttpRequestTimeoutException || 
-                e is ConnectException || e is SocketTimeoutException ||
-                e is ConnectTimeoutException || e is KtorSocketTimeoutException -> 
+                e is UnknownHostException || e is HttpRequestTimeoutException -> 
                     "Koneksi internet bermasalah. Silakan periksa jaringan Anda."
                 e is ResponseException && e.response.status.value == 400 -> 
                     "Email atau password salah."
@@ -172,14 +166,13 @@ class AuthRepositoryImpl @Inject constructor(
     override fun getCurrentUserId(): String? {
         val user = supabase.auth.currentUserOrNull()
         val session = supabase.auth.currentSessionOrNull()
-        val userId = user?.id ?: session?.user?.id
-        return userId
+        return user?.id ?: session?.user?.id
     }
 
     override fun getCurrentUserEmail(): String? {
-        return _currentUserProfile.value?.email
-            ?: supabase.auth.currentUserOrNull()?.email
-            ?: supabase.auth.currentSessionOrNull()?.user?.email
+        val user = supabase.auth.currentUserOrNull()
+        val session = supabase.auth.currentSessionOrNull()
+        return user?.email ?: session?.user?.email ?: _currentUserProfile.value?.email
     }
 
     override fun getCurrentUserFullName(): String? {
@@ -207,9 +200,7 @@ class AuthRepositoryImpl @Inject constructor(
             DomainResult.Success(profileDto.toDomain())
         } catch (e: Exception) {
             val message = when {
-                e is UnknownHostException || e is HttpRequestTimeoutException ||
-                e is ConnectException || e is SocketTimeoutException ||
-                e is ConnectTimeoutException || e is KtorSocketTimeoutException ->
+                e is UnknownHostException || e is HttpRequestTimeoutException -> 
                     "Gagal memuat profil pengguna. Periksa koneksi internet Anda."
                 else -> "Gagal memuat profil pengguna. Silakan coba lagi nanti."
             }

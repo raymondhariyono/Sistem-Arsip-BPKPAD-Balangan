@@ -2,6 +2,7 @@ package com.example.arsipbpkpad.data.repository
 
 import com.example.arsipbpkpad.data.local.dao.ArchiveDao
 import com.example.arsipbpkpad.data.local.dao.ClassificationCodeDao
+import com.example.arsipbpkpad.data.local.dao.ClassificationBudget
 import com.example.arsipbpkpad.data.mapper.toDomain
 import com.example.arsipbpkpad.data.mapper.toDto
 import com.example.arsipbpkpad.data.mapper.toEntity
@@ -9,12 +10,12 @@ import com.example.arsipbpkpad.data.remote.dto.ArchiveDto
 import com.example.arsipbpkpad.data.remote.dto.ClassificationCodeDto
 import com.example.arsipbpkpad.data.util.safeApiCall
 import com.example.arsipbpkpad.data.util.safeDbCall
-import com.example.arsipbpkpad.domain.model.AnalyticsData
+import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.ClassificationCode
-import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.model.YearStats
+import com.example.arsipbpkpad.domain.model.AnalyticsData
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -37,7 +38,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     private val supabaseClient: SupabaseClient,
     private val activityLogRepository: com.example.arsipbpkpad.domain.repository.ActivityLogRepository,
     private val authRepository: com.example.arsipbpkpad.domain.repository.AuthRepository,
-    @Named("ioDispatcher") private val ioDispatcher: CoroutineDispatcher,
+    @Named("ioDispatcher") private val ioDispatcher: CoroutineDispatcher
 ) : ArchiveRepository {
 
     private val tableName = "archive_documents"
@@ -76,6 +77,7 @@ class ArchiveRepositoryImpl @Inject constructor(
 
     override suspend fun saveArchive(archive: ArchiveDocument): DomainResult<Boolean> {
         return safeDbCall(ioDispatcher) {
+            var isSynced = false
             val isUpdate = archiveDao.getArchiveByIdSync(archive.id) != null
             val entity = archive.toEntity(syncStatus = "DRAFT")
             archiveDao.insertArchive(entity)
@@ -86,6 +88,7 @@ class ArchiveRepositoryImpl @Inject constructor(
             }
             
             if (apiResult is DomainResult.Success) {
+                isSynced = true
                 archiveDao.insertArchive(entity.copy(syncStatus = "SYNCED"))
                 
                 // Log Activity
@@ -101,8 +104,8 @@ class ArchiveRepositoryImpl @Inject constructor(
                     )
                 )
             }
-            // We return Success(true) if local save worked, even if remote is pending sync
-            true
+            // We return Success(Boolean) if local save worked, Boolean tells if remote sync worked
+            isSynced
         }
     }
 
@@ -115,7 +118,9 @@ class ArchiveRepositoryImpl @Inject constructor(
                 supabaseClient.postgrest[tableName].upsert(archives.map { it.toDto() })
             }
 
+            var isSynced = false
             if (apiResult is DomainResult.Success) {
+                isSynced = true
                 val syncedEntities = entities.map { it.copy(syncStatus = "SYNCED") }
                 archiveDao.insertArchives(syncedEntities)
 
@@ -134,14 +139,13 @@ class ArchiveRepositoryImpl @Inject constructor(
                     )
                 }
             }
-            true
+            isSynced
         }
     }
 
     override suspend fun deleteArchive(id: String): DomainResult<Unit> {
-        safeDbCall(ioDispatcher) { archiveDao.deleteArchiveById(id) }.let {
-            if (it is DomainResult.Error) return it
-        }
+        val dbResult = safeDbCall(ioDispatcher) { archiveDao.deleteArchiveById(id) }
+        if (dbResult is DomainResult.Error) return dbResult
 
         val apiResult = safeApiCall(ioDispatcher) {
             supabaseClient.postgrest[tableName].delete {
@@ -222,7 +226,7 @@ class ArchiveRepositoryImpl @Inject constructor(
             DomainResult.Success(
                 AnalyticsData(
                     totalBudget = total ?: 0.0,
-                    budgetByClassification = classificationBudgets.associateBy({ it.classificationCode }, { it.total })
+                    budgetByClassification = classificationBudgets.associate { it.classificationCode to it.total }
                 )
             )
         }
@@ -236,7 +240,7 @@ class ArchiveRepositoryImpl @Inject constructor(
             DomainResult.Success(
                 AnalyticsData(
                     totalBudget = total ?: 0.0,
-                    budgetByClassification = classificationBudgets.associateBy({ it.classificationCode }, { it.total })
+                    budgetByClassification = classificationBudgets.associate { it.classificationCode to it.total }
                 )
             )
         }

@@ -14,6 +14,7 @@ data class ParsedMetadata(
     val year: Int? = null,
     val subject: String? = null,
     val docType: String? = null,
-    val nominal: Double? = null
+    val nominal: Double? = null,
+    val isArchiveDocument: Boolean = true
 ) : Parcelable
 

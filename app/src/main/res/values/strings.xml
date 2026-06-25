@@ -106,6 +106,10 @@
     <string name="label_scan_doc">Scan Dokumen</string>
     <string name="msg_processing_ocr">Memproses OCR...</string>
     <string name="msg_camera_permission_required">Izin kamera diperlukan.</string>
+    <string name="msg_error_no_text">Tidak ada teks yang terdeteksi pada gambar.</string>
+    <string name="msg_error_not_document">Teks terdeteksi, namun tidak menyerupai dokumen arsip (SP2D/SPM/SPP/SPJ) yang valid.</string>
+    <string name="msg_error_api">Terjadi kesalahan pada server AI. Silakan coba lagi.</string>
+    <string name="msg_error_network">Koneksi internet bermasalah. Periksa jaringan Anda.</string>
     <string name="btn_add_to_staging">Tambah ke Staging</string>
     <string name="label_manual_input">Input Manual</string>
     <string name="label_scan_ocr">Scan OCR</string>
@@ -228,5 +232,14 @@
     <string name="msg_import_empty">File Excel kosong, tidak ada data untuk diimpor</string>
     <string name="msg_import_failed">Gagal mengimpor Excel: %1$s</string>
     <string name="msg_export_failed">Gagal mengekspor Excel: %1$s</string>
+
+    <!-- Additional Excel/Staging Strings -->
+    <string name="title_confirm_upload">Konfirmasi Unggah</string>
+    <string name="msg_confirm_upload_all">Apakah Anda yakin ingin mengunggah semua box yang ada di penyimpanan sementara ke penyimpanan permanen?</string>
+    <string name="title_confirm_import">Konfirmasi Impor</string>
+    <string name="msg_confirm_import">Apakah Anda yakin ingin mengimpor data dari file Excel ini?</string>
+    <string name="btn_import">Impor</string>
+    <string name="title_confirm_export">Konfirmasi Ekspor</string>
+    <string name="msg_confirm_export">Apakah Anda yakin ingin mengekspor daftar arsip ke file Excel?</string>
 
 </resources>

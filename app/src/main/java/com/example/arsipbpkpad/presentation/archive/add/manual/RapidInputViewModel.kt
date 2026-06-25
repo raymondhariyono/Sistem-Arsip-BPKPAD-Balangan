@@ -357,27 +357,6 @@ class RapidInputViewModel @Inject constructor(
             errors.remove("docNumber")
         }
 
-        if (state.subject.isBlank()) {
-            errors["subject"] = "Uraian dokumen wajib diisi"
-            isValid = false
-        } else {
-            errors.remove("subject")
-        }
-
-        if (state.isAutoBundleEnabled && state.spmDocumentNumber.isBlank()) {
-            errors["spmDocNumber"] = "Nomor SPM wajib diisi"
-            isValid = false
-        } else {
-            errors.remove("spmDocNumber")
-        }
-
-        if (state.copyType == DocCopyType.COPY && (state.copyCount.toIntOrNull() ?: 0) < 1) {
-            errors["copyCount"] = "Jumlah salinan minimal 1"
-            isValid = false
-        } else {
-            errors.remove("copyCount")
-        }
-
         val nominalValue = state.nominal.toDoubleOrNull() ?: 0.0
         val isNominalRequired = when (state.docType) {
             DocType.SP2D, DocType.SPM -> true
@@ -385,11 +364,11 @@ class RapidInputViewModel @Inject constructor(
             else -> false
         }
 
-        if (nominalValue < 0) {
-            errors["nominal"] = "Nominal tidak boleh kurang dari nol"
-            isValid = false
-        } else if (isNominalRequired && (state.nominal.isBlank() || nominalValue == 0.0)) {
+        if (isNominalRequired && (state.nominal.isBlank() || nominalValue <= 0)) {
             errors["nominal"] = "Nominal harus berupa angka lebih dari 0"
+            isValid = false
+        } else if (nominalValue < 0) {
+            errors["nominal"] = "Nominal tidak boleh kurang dari nol"
             isValid = false
         } else {
             errors.remove("nominal")
@@ -540,6 +519,16 @@ class RapidInputViewModel @Inject constructor(
             val state = _uiState.value
             val sessionId = state.currentSessionId ?: return@launch
             
+            val errors = state.validationErrors.toMutableMap()
+            if (state.subject.isBlank()) errors["subject"] = "Uraian dokumen wajib diisi"
+            if (state.isAutoBundleEnabled && state.spmDocumentNumber.isBlank()) errors["spmDocNumber"] = "Nomor SPM wajib diisi"
+            if (state.copyType == DocCopyType.COPY && (state.copyCount.toIntOrNull() ?: 0) < 1) errors["copyCount"] = "Jumlah salinan minimal 1"
+            
+            if (errors.isNotEmpty()) {
+                _uiState.update { it.copy(validationErrors = errors) }
+                return@launch
+            }
+
             // Check for potential duplicate if not forced
             if (!forceSave && state.copyType == DocCopyType.ORIGINAL) {
                 val exists = archiveRepository.checkDocumentNumberAndTypeExists(

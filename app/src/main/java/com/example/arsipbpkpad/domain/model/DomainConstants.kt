@@ -18,10 +18,12 @@ object DomainConstants {
     const val ERROR_UNKNOWN = "Terjadi kesalahan yang tidak diketahui"
 
     // Repository Errors
-    const val ERROR_ARCHIVE_NOT_FOUND = "Archive not found"
-    const val ERROR_API_GENERAL = "Network error"
-    const val ERROR_DB_GENERAL = "Database error"
-    const val ERROR_AI_EMPTY_RESPONSE = "AI returned an empty response"
+    const val ERROR_ARCHIVE_NOT_FOUND = "Arsip tidak ditemukan"
+    const val ERROR_API_GENERAL = "Terjadi kesalahan pada layanan AI"
+    const val ERROR_DB_GENERAL = "Terjadi kesalahan pada database"
+    const val ERROR_AI_EMPTY_RESPONSE = "AI tidak memberikan respon, silakan coba lagi"
+    const val ERROR_NOT_A_DOCUMENT = "Teks terdeteksi, namun tidak menyerupai dokumen arsip yang valid"
+    const val ERROR_NO_TEXT_DETECTED = "Tidak ada teks yang terdeteksi pada gambar"
 
     // Validation Messages
     const val VAL_DUPLICATE_DOC = "Nomor dokumen ini sudah ada dengan status yang sama."
