@@ -21,6 +21,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canManageStaging
+import com.example.arsipbpkpad.domain.model.canManageStorage
+import com.example.arsipbpkpad.domain.model.canMutateArchive
+import com.example.arsipbpkpad.domain.model.canViewAnalytics
 
 enum class BottomNavItem(val route: String) {
     HOME("home"),
@@ -42,9 +46,11 @@ fun BpkpadBottomNavigation(
     val items = remember(userRole) {
         BottomNavItem.entries.filter { item ->
             when (item) {
-                BottomNavItem.ADD -> userRole != UserRole.KASSUBAG
-                BottomNavItem.ANALYTICS -> userRole != UserRole.ARSIPARIS
-                else -> true
+                BottomNavItem.HOME -> userRole != UserRole.UNKNOWN
+                BottomNavItem.ARCHIVE -> userRole != UserRole.UNKNOWN
+                BottomNavItem.STORAGE -> userRole.canManageStorage()
+                BottomNavItem.ADD -> userRole.canMutateArchive() || userRole.canManageStaging()
+                BottomNavItem.ANALYTICS -> userRole.canViewAnalytics()
             }
         }
     }

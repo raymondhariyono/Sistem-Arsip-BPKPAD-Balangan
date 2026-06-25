@@ -87,6 +87,7 @@ import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
@@ -223,7 +224,9 @@ fun RapidInputScreen(
             )
         },
         floatingActionButton = {
-            ScanFAB(onClick = onNavigateToScan)
+            if (userRole.canMutateArchive()) {
+                ScanFAB(onClick = onNavigateToScan)
+            }
         },
         bottomBar = {
             RapidInputBottomBar(
@@ -307,7 +310,8 @@ fun RapidInputScreen(
                             StagedItemRow(
                                 doc = doc,
                                 onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteStagedDoc(doc.id)) },
-                                onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) }
+                                onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) },
+                                userRole = userRole
                             )
                         }
                         
@@ -358,7 +362,8 @@ fun RapidInputScreen(
                         StagedItemRow(
                             doc = doc,
                             onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteStagedDoc(doc.id)) },
-                            onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) }
+                            onEdit = { viewModel.onEvent(RapidInputUiEvent.OnEditStagedDoc(doc)) },
+                            userRole = userRole
                         )
                     }
                 }
@@ -431,7 +436,7 @@ fun RapidInputBottomBar(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                if (stagedCount > 0) {
+                if (stagedCount > 0 && userRole.canMutateArchive()) {
                     Button(
                         onClick = onUploadClick,
                         enabled = !isLoading,
@@ -1149,7 +1154,8 @@ fun ClassificationItem(
 fun StagedItemRow(
     doc: ArchiveDocument,
     onDelete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1169,7 +1175,9 @@ fun StagedItemRow(
                 )
             },
             trailingContent = {
-                StagedItemActions(onEdit = onEdit, onDelete = onDelete)
+                if (userRole.canMutateArchive()) {
+                    StagedItemActions(onEdit = onEdit, onDelete = onDelete)
+                }
             },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
         )

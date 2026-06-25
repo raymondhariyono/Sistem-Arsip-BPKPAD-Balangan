@@ -3,6 +3,7 @@ package com.example.arsipbpkpad.data.repository
 import com.example.arsipbpkpad.data.remote.dto.TransactionBundleDto
 import com.example.arsipbpkpad.data.util.safeApiCall
 import com.example.arsipbpkpad.domain.model.DomainResult
+import com.example.arsipbpkpad.domain.repository.AuthRepository
 import com.example.arsipbpkpad.domain.repository.TransactionBundleRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -15,6 +16,7 @@ import javax.inject.Named
  */
 class TransactionBundleRepositoryImpl @Inject constructor(
     private val supabaseClient: SupabaseClient,
+    private val authRepository: AuthRepository,
     @Named("ioDispatcher") private val ioDispatcher: CoroutineDispatcher
 ) : TransactionBundleRepository {
 
@@ -27,7 +29,8 @@ class TransactionBundleRepositoryImpl @Inject constructor(
             val bundle = TransactionBundleDto(
                 bundleName = name,
                 description = description,
-                year = year
+                year = year,
+                createdBy = authRepository.getCurrentUserId()
             )
 
             val inserted = supabaseClient.postgrest["transaction_bundles"]

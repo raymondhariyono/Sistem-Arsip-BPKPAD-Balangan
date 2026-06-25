@@ -143,7 +143,10 @@ class StorageLocationRepositoryImpl @Inject constructor(
     }.flowOn(ioDispatcher)
 
     override suspend fun createRoom(name: String): Result<Room> = runCatching {
-        val dto = RoomDto(name = name)
+        val dto = RoomDto(
+            name = name,
+            createdBy = authRepository.getCurrentUserId()
+        )
         val inserted = supabaseClient.postgrest["rooms"]
             .insert(dto) { select() }
             .decodeSingle<RoomDto>()
@@ -201,7 +204,11 @@ class StorageLocationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createShelf(roomId: String, name: String): Result<Shelf> = runCatching {
-        val dto = ShelfDto(roomId = roomId, name = name)
+        val dto = ShelfDto(
+            roomId = roomId,
+            name = name,
+            createdBy = authRepository.getCurrentUserId()
+        )
         val inserted = supabaseClient.postgrest["shelves"]
             .insert(dto) { select() }
             .decodeSingle<ShelfDto>()
@@ -259,7 +266,11 @@ class StorageLocationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createBox(shelfId: String, name: String): Result<Box> = runCatching {
-        val dto = BoxDto(shelfId = shelfId, name = name)
+        val dto = BoxDto(
+            shelfId = shelfId,
+            name = name,
+            createdBy = authRepository.getCurrentUserId()
+        )
         val inserted = supabaseClient.postgrest["boxes"]
             .insert(dto) { select() }
             .decodeSingle<BoxDto>()

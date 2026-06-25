@@ -24,7 +24,10 @@ interface ArchiveDao {
     @Query("""
         SELECT * FROM archives 
         WHERE (:isYearEmpty OR year IN (:years))
-        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%')
+        AND (:query IS NULL OR :query = '' 
+            OR documentNumber LIKE '%' || :query || '%'
+            OR description LIKE '%' || :query || '%'
+        )
         ORDER BY createdAt DESC
     """)
     fun getArchives(query: String?, years: List<Int>, isYearEmpty: Boolean): PagingSource<Int, ArchiveEntity>
@@ -32,7 +35,10 @@ interface ArchiveDao {
     @Query("""
         SELECT * FROM archives 
         WHERE (:isYearEmpty OR year IN (:years))
-        AND (:query IS NULL OR :query = '' OR documentNumber LIKE '%' || :query || '%')
+        AND (:query IS NULL OR :query = '' 
+            OR documentNumber LIKE '%' || :query || '%'
+            OR description LIKE '%' || :query || '%'
+        )
         ORDER BY createdAt DESC
     """)
     fun getArchivesList(query: String?, years: List<Int>, isYearEmpty: Boolean): Flow<List<ArchiveEntity>>

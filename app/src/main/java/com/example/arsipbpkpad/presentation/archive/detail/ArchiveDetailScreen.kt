@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -57,6 +58,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.components.DocStatusBadge
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
@@ -66,7 +69,7 @@ import java.util.Locale
 @Composable
 fun ArchiveDetailScreen(
     archiveId: String,
-    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN,
+    userRole: UserRole = UserRole.UNKNOWN,
     onNavigateBack: () -> Unit,
     onNavigateToArchive: (String) -> Unit,
     onNavigateToEdit: (String) -> Unit,
@@ -92,7 +95,7 @@ fun ArchiveDetailScreen(
 @Composable
 fun ArchiveDetailContent(
     state: ArchiveDetailState,
-    userRole: com.example.arsipbpkpad.domain.model.UserRole,
+    userRole: UserRole,
     onNavigateBack: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -219,11 +222,12 @@ fun ArchiveDetailMainList(
             }
         }
 
-        if (userRole == com.example.arsipbpkpad.domain.model.UserRole.ARSIPARIS) {
+        if (userRole.canMutateArchive()) {
             item {
                 DetailActionButtons(
                     onEditClick = onEditClick,
-                    onDeleteClick = onDeleteClick
+                    onDeleteClick = onDeleteClick,
+                    userRole = userRole
                 )
             }
         }
@@ -441,8 +445,11 @@ fun RelatedArchiveItem(related: ArchiveDocument, onClick: () -> Unit) {
 @Composable
 fun DetailActionButtons(
     onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
 ) {
+    if (!userRole.canMutateArchive()) return
+
     Column(
         modifier = Modifier
             .fillMaxWidth()

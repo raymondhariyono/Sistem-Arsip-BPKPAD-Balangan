@@ -39,14 +39,24 @@ class ArchiveDaoSearchTest {
     @Test
     fun testSearchByKeyword() = runBlocking {
         val archives = listOf(
-            createArchive("1", "SP2D-001"),
-            createArchive("2", "SPM-002"),
-            createArchive("3", "SP2D-003")
+            createArchive("1", "SP2D-001", description = "Belanja ATK"),
+            createArchive("2", "SPM-002", description = "Gaji Pegawai"),
+            createArchive("3", "SP2D-003", description = "Belanja Modal")
         )
         archiveDao.insertArchives(archives)
 
-        val result = archiveDao.getArchivesList("SP2D", emptyList(), true).first()
-        assertEquals(2, result.size)
+        // Search by document number
+        val resultDoc = archiveDao.getArchivesList("SP2D", emptyList(), true).first()
+        assertEquals(2, resultDoc.size)
+
+        // Search by description
+        val resultDesc = archiveDao.getArchivesList("ATK", emptyList(), true).first()
+        assertEquals(1, resultDesc.size)
+        assertEquals("SP2D-001", resultDesc[0].documentNumber)
+
+        // Search by description part
+        val resultDescPart = archiveDao.getArchivesList("Belanja", emptyList(), true).first()
+        assertEquals(2, resultDescPart.size)
     }
 
     @Test
@@ -78,14 +88,14 @@ class ArchiveDaoSearchTest {
         assertTrue(result.isEmpty())
     }
 
-    private fun createArchive(id: String, docNumber: String, year: Int = 2026): ArchiveEntity {
+    private fun createArchive(id: String, docNumber: String, year: Int = 2026, description: String = "Test"): ArchiveEntity {
         return ArchiveEntity(
             id = id,
             type = DocType.SP2D,
             copyType = DocCopyType.ORIGINAL,
             copyCount = 1,
             documentNumber = docNumber,
-            description = "Test",
+            description = description,
             nominal = 1000.0,
             year = year,
             condition = DocCondition.GOOD,

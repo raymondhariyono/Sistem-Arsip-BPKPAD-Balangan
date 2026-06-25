@@ -83,7 +83,13 @@ class ArchiveRepositoryImpl @Inject constructor(
             
             // Try to push to remote
             val apiResult = safeApiCall(ioDispatcher) {
-                supabaseClient.postgrest[tableName].upsert(archive.toDto())
+                val dto = archive.toDto().let {
+                    // Set createdBy if it's a new record and not already set
+                    if (!isUpdate && it.createdBy == null) {
+                        it.copy(createdBy = authRepository.getCurrentUserId())
+                    } else it
+                }
+                supabaseClient.postgrest[tableName].upsert(dto)
             }
             
             if (apiResult is DomainResult.Success) {
@@ -113,7 +119,16 @@ class ArchiveRepositoryImpl @Inject constructor(
             archiveDao.insertArchives(entities)
 
             val apiResult = safeApiCall(ioDispatcher) {
-                supabaseClient.postgrest[tableName].upsert(archives.map { it.toDto() })
+                val currentUserId = authRepository.getCurrentUserId()
+                val dtos = archives.map { archive ->
+                    archive.toDto().let {
+                        // Check if it already exists in DB to determine if it's an update
+                        // For bulk, we might just set it if null
+                        if (it.createdBy == null) it.copy(createdBy = currentUserId)
+                        else it
+                    }
+                }
+                supabaseClient.postgrest[tableName].upsert(dtos)
             }
 
             if (apiResult is DomainResult.Success) {

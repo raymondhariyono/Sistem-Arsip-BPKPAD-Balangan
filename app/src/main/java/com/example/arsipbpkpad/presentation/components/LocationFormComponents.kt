@@ -128,7 +128,7 @@ fun <T> LocationDropdown(
             ExposedDropdownMenu(
                 expanded = expanded && enabled && (filteredOptions.isNotEmpty() || showAddNew),
                 onDismissRequest = { expanded = false },
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ) {
                 filteredOptions.forEach { option ->
                     DropdownMenuItem(

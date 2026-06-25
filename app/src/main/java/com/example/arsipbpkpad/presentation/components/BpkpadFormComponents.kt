@@ -124,7 +124,7 @@ fun FormDropdownField(
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(

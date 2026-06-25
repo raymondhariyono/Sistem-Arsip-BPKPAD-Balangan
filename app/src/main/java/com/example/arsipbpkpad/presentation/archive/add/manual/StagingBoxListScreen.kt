@@ -55,24 +55,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.StagedBox
+import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canManageStaging
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.components.FormDropdownField
 import com.example.arsipbpkpad.presentation.components.HierarchicalLocationSelector
 import com.example.arsipbpkpad.presentation.components.StatusDialog
+import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StagingBoxListScreen(
     viewModel: RapidInputViewModel,
-    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN,
+    userRole: UserRole = UserRole.UNKNOWN,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit
@@ -99,14 +103,17 @@ fun StagingBoxListScreen(
             StagingBoxListTopBar(
                 isLoading = uiState.isLoading,
                 onBackClick = onNavigateBack,
-                onSyncClick = { viewModel.onEvent(RapidInputUiEvent.TriggerSync) }
+                onSyncClick = { viewModel.onEvent(RapidInputUiEvent.TriggerSync) },
+                userRole = userRole
             )
         },
         floatingActionButton = {
-            AddBoxFAB(onClick = { 
-                viewModel.onEvent(RapidInputUiEvent.CreateNewSession)
-                showAddBoxDialog = true 
-            })
+            if (userRole.canManageStaging()) {
+                AddBoxFAB(onClick = { 
+                    viewModel.onEvent(RapidInputUiEvent.CreateNewSession)
+                    showAddBoxDialog = true 
+                })
+            }
         },
         bottomBar = {
             BpkpadBottomNavigation(
@@ -133,7 +140,8 @@ fun StagingBoxListScreen(
                     },
                     onBoxDelete = { boxToDelete = it },
                     onPushAllClick = { showUploadConfirm = true },
-                    uiState = uiState
+                    uiState = uiState,
+                    userRole = userRole
                 )
             }
 
@@ -219,7 +227,8 @@ fun StagingBoxListScreen(
 fun StagingBoxListTopBar(
     isLoading: Boolean,
     onBackClick: () -> Unit,
-    onSyncClick: () -> Unit
+    onSyncClick: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
 ) {
     BpkpadTopAppBar(
         navigationIcon = {
@@ -243,28 +252,30 @@ fun StagingBoxListTopBar(
                     text = stringResource(R.string.staging_status_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         },
         actions = {
-            TextButton(
-                onClick = onSyncClick,
-                enabled = !isLoading
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = stringResource(R.string.btn_sync),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+            if (userRole.canManageStaging()) {
+                TextButton(
+                    onClick = onSyncClick,
+                    enabled = !isLoading
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.btn_sync),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         containerColor = Color.Transparent
@@ -289,7 +300,8 @@ fun StagingBoxListContent(
     onBoxClick: (String) -> Unit,
     onBoxDelete: (String) -> Unit,
     onPushAllClick: () -> Unit,
-    uiState: RapidInputUiState
+    uiState: RapidInputUiState,
+    userRole: UserRole
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -301,13 +313,15 @@ fun StagingBoxListContent(
                 DashboardStagedBoxCard(
                     box = box,
                     onContinue = { onBoxClick(box.sessionId) },
-                    onDelete = { onBoxDelete(box.sessionId) }
+                    onDelete = { onBoxDelete(box.sessionId) },
+                    userRole = userRole
                 )
             }
         }
         DashboardSummary(
             uiState = uiState,
-            onPushAllClick = onPushAllClick
+            onPushAllClick = onPushAllClick,
+            userRole = userRole
         )
     }
 }
@@ -338,58 +352,90 @@ fun DeleteBoxDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
 fun DashboardStagedBoxCard(
     box: StagedBox,
     onContinue: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
 ) {
+    val hasDocuments = box.itemCount > 0
+
+    // Solid colors using primary for a stronger "green" look
+    val containerColor = if (hasDocuments) 
+        MaterialTheme.colorScheme.primary 
+    else 
+        MaterialTheme.colorScheme.surfaceVariant
+
+    val contentColor = if (hasDocuments)
+        MaterialTheme.colorScheme.onPrimary
+    else
+        MaterialTheme.colorScheme.onSurfaceVariant
+
+    val borderColor = if (hasDocuments) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+
+    val iconBackgroundColor = if (hasDocuments) {
+        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onContinue() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        shape = RoundedCornerShape(32.dp), 
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        shape = RoundedCornerShape(24.dp), 
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    .size(48.dp)
+                    .background(iconBackgroundColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.List,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(28.dp)
+                    tint = contentColor,
+                    modifier = Modifier.size(24.dp)
                 )
             }
             
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.label_box_number, box.box),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = contentColor
                 )
                 Text(
                     text = stringResource(R.string.label_waiting_upload, box.itemCount),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                    color = contentColor.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "${box.warehouse} - Rak ${box.rack}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
+                    color = contentColor.copy(alpha = 0.6f)
                 )
             }
 
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+            if (userRole.canManageStaging()) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                }
             }
         }
     }
@@ -398,7 +444,8 @@ fun DashboardStagedBoxCard(
 @Composable
 fun DashboardSummary(
     uiState: RapidInputUiState,
-    onPushAllClick: () -> Unit
+    onPushAllClick: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
 ) {
     val filledBoxes = uiState.existingStagedBoxes.count { it.itemCount > 0 }
     val totalItems = uiState.existingStagedBoxes.sumOf { it.itemCount }
@@ -449,19 +496,21 @@ fun DashboardSummary(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = onPushAllClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty(),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                if (uiState.isLoading) {
-                    Text(stringResource(R.string.btn_processing))
-                } else {
-                    Text(stringResource(R.string.btn_push_to_db))
+            if (userRole.canManageStaging()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(
+                    onClick = onPushAllClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (uiState.isLoading) {
+                        Text(stringResource(R.string.btn_processing))
+                    } else {
+                        Text(stringResource(R.string.btn_push_to_db))
+                    }
                 }
             }
         }
@@ -602,6 +651,39 @@ fun AddBoxDialog(
                     }
                 }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DashboardStagedBoxCardPreview() {
+    ArsipBPKPADTheme {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            DashboardStagedBoxCard(
+                box = StagedBox(
+                    sessionId = "1",
+                    warehouse = "Gudang Utama",
+                    rack = "R-1",
+                    box = "B-01",
+                    year = "2023",
+                    itemCount = 10
+                ),
+                onContinue = {},
+                onDelete = {}
+            )
+            DashboardStagedBoxCard(
+                box = StagedBox(
+                    sessionId = "2",
+                    warehouse = "Gudang Arsip",
+                    rack = "R-2",
+                    box = "B-02",
+                    year = "2023",
+                    itemCount = 0
+                ),
+                onContinue = {},
+                onDelete = {}
+            )
         }
     }
 }

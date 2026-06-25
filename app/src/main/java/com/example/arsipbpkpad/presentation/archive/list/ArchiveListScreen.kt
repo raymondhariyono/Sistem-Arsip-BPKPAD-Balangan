@@ -71,6 +71,8 @@ import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canExport
+import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.ArchiveListItemCard
 import com.example.arsipbpkpad.presentation.components.ArchiveTableHeader
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
@@ -225,7 +227,7 @@ fun ArchiveListScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface,
         floatingActionButton = {
-            if (uiState.isFilterConfirmed && userRole == UserRole.ARSIPARIS) {
+            if (uiState.isFilterConfirmed && userRole.canMutateArchive()) {
                 BpkpadExpandableFAB(
                     onManualInputClick = { 
                         onNavigateToBottomNav(BottomNavItem.ADD)
@@ -503,7 +505,7 @@ fun ExcelActionButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (userRole == UserRole.ARSIPARIS) {
+        if (userRole.canMutateArchive()) {
             OutlinedButton(
                 onClick = onImportClick,
                 modifier = Modifier.weight(1f),
@@ -518,8 +520,8 @@ fun ExcelActionButtons(
         }
         Button(
             onClick = onExportClick,
-            enabled = isExportEnabled,
-            modifier = if (userRole == UserRole.ARSIPARIS) Modifier.weight(1f) else Modifier.fillMaxWidth(),
+            enabled = isExportEnabled && userRole.canExport(),
+            modifier = if (userRole.canMutateArchive()) Modifier.weight(1f) else Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
