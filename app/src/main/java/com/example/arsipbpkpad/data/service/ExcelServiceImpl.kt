@@ -6,6 +6,7 @@ import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.service.ExcelService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -73,14 +74,24 @@ class ExcelServiceImpl @Inject constructor(
 
             // Start from row 1 (index 1) as exported by this service
             // Official template might have data starting at index 2 (row 3)
-            val startRow = 1 
-            for (i in startRow..sheet.lastRowNum) {
+            for (i in 1..sheet.lastRowNum) {
                 val row = sheet.getRow(i) ?: continue
-                
-                val classificationCode = getCellStringValue(row.getCell(1)) ?: "000.1.2.1"
+
+                // Skip header rows by checking if the first cell is "No." or similar
+                val firstCellVal = getCellStringValue(row.getCell(0))
+                if (firstCellVal?.equals("No.", ignoreCase = true) == true) continue
+
+                // Skip empty rows
+                if (isRowEmpty(row)) continue
+
+                val classificationCode = getCellStringValue(row.getCell(1)) ?: DomainConstants.DEFAULT_CLASSIFICATION_CODE
                 val docNumber = getCellStringValue(row.getCell(2))
                 val description = getCellStringValue(row.getCell(3))
-                val year = getCellNumericValue(row.getCell(4))?.toInt() ?: 2024
+
+                // Avoid importing rows where both document number and description are blank
+                if (docNumber.isNullOrBlank() && description.isNullOrBlank()) continue
+
+                val year = getCellNumericValue(row.getCell(4))?.toInt() ?: DomainConstants.DEFAULT_YEAR
                 val copyTypeStr = getCellStringValue(row.getCell(5))?.lowercase()
                 val copyType = if (copyTypeStr == "asli") DocCopyType.ORIGINAL else DocCopyType.COPY
                 
@@ -123,6 +134,16 @@ class ExcelServiceImpl @Inject constructor(
             workbook.close()
             archives
         }
+    }
+
+    private fun isRowEmpty(row: Row): Boolean {
+        for (c in row.firstCellNum until row.lastCellNum) {
+            val cell = row.getCell(c.toInt())
+            if (cell != null && cell.cellType != CellType.BLANK) {
+                return false
+            }
+        }
+        return true
     }
 
     private fun getCellStringValue(cell: Cell?): String? {

@@ -6,6 +6,7 @@ import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
+import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import com.example.arsipbpkpad.domain.usecase.BulkInsertArchivesUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchiveDetailUseCase
 import io.mockk.coEvery
@@ -32,6 +33,7 @@ class RapidInputViewModelTest {
 
     private val stagingRepository = mockk<StagingRepository>(relaxed = true)
     private val archiveRepository = mockk<ArchiveRepository>(relaxed = true)
+    private val storageLocationRepository = mockk<StorageLocationRepository>(relaxed = true)
     private val bulkInsertArchivesUseCase = mockk<BulkInsertArchivesUseCase>()
     private val getArchiveDetailUseCase = mockk<GetArchiveDetailUseCase>(relaxed = true)
     private val savedStateHandle = SavedStateHandle()
@@ -49,6 +51,7 @@ class RapidInputViewModelTest {
         viewModel = RapidInputViewModel(
             stagingRepository,
             archiveRepository,
+            storageLocationRepository,
             bulkInsertArchivesUseCase,
             getArchiveDetailUseCase,
             savedStateHandle
