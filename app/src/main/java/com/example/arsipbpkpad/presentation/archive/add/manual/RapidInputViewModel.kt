@@ -69,6 +69,7 @@ data class RapidInputUiState(
     val error: String? = null,
     val validationErrors: Map<String, String> = emptyMap(),
     val isUploadSuccess: Boolean = false,
+    val showDuplicateWarning: Boolean = false,
     val editingId: String? = null,
     val classificationCode: String = DomainConstants.DEFAULT_CLASSIFICATION_CODE,
     val availableCodes: List<ClassificationCode> = emptyList(),
@@ -136,6 +137,7 @@ sealed class RapidInputUiEvent {
     data object DismissSuccess : RapidInputUiEvent()
     data object DismissError : RapidInputUiEvent()
     data object DismissWarning : RapidInputUiEvent()
+    data object DismissDuplicateWarning : RapidInputUiEvent()
 }
 
 @HiltViewModel
@@ -267,6 +269,7 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.DismissSuccess -> handleDismissSuccess()
             is RapidInputUiEvent.DismissError -> _uiState.update { it.copy(error = null) }
             is RapidInputUiEvent.DismissWarning -> _uiState.update { it.copy(warningMessage = null) }
+            is RapidInputUiEvent.DismissDuplicateWarning -> _uiState.update { it.copy(showDuplicateWarning = false) }
         }
     }
 

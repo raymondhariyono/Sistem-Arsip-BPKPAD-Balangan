@@ -148,6 +148,20 @@ fun RapidInputScreen(
         )
     }
 
+    if (uiState.showDuplicateWarning) {
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.title_duplicate_warning),
+            message = stringResource(R.string.msg_duplicate_warning_confirm),
+            confirmText = stringResource(R.string.btn_keep_save),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = {
+                viewModel.onEvent(RapidInputUiEvent.OnAddToBoxClick(forceSave = true))
+                viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning)
+            },
+            onDismiss = { viewModel.onEvent(RapidInputUiEvent.DismissDuplicateWarning) }
+        )
+    }
+
     uiState.successMessage?.let { msg ->
         StatusDialog(
             title = stringResource(R.string.title_success),

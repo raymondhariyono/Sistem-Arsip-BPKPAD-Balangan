@@ -193,6 +193,8 @@
     <string name="val_invalid_year_format">Format tahun tidak valid (4 digit)</string>
     <string name="val_min_copy">Jumlah salinan minimal 1</string>
     <string name="val_duplicate_doc">Nomor dokumen ini sudah ada dengan status yang sama.</string>
+    <string name="title_duplicate_warning">Dokumen Duplikat</string>
+    <string name="msg_duplicate_warning_confirm">Dokumen dengan nomor ini sudah terdaftar di sistem. Apakah Anda yakin ingin tetap menambahkannya sebagai entri baru?</string>
     <string name="val_retention_warning">Peringatan: Arsip tahun %1$d sudah melewati batas 10 tahun dan berpotensi masuk masa retensi/pemusnahan.</string>
 
     <!-- Analytics page -->

@@ -22,4 +22,7 @@ object DomainConstants {
     const val ERROR_API_GENERAL = "Network error"
     const val ERROR_DB_GENERAL = "Database error"
     const val ERROR_AI_EMPTY_RESPONSE = "AI returned an empty response"
+
+    // Validation Messages
+    const val VAL_DUPLICATE_DOC = "Nomor dokumen ini sudah ada dengan status yang sama."
 }
