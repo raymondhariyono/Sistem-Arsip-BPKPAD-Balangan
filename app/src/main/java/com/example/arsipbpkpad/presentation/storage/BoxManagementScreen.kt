@@ -265,7 +265,7 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.label_box_number, box.name),
                     style = MaterialTheme.typography.titleMedium,
@@ -286,6 +286,13 @@ fun BoxCard(box: BoxDetails, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                Text(
+                    text = "${box.itemCount} Arsip",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
         }
     }

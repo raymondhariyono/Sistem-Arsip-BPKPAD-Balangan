@@ -66,6 +66,7 @@ import java.util.Locale
 @Composable
 fun ArchiveDetailScreen(
     archiveId: String,
+    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN,
     onNavigateBack: () -> Unit,
     onNavigateToArchive: (String) -> Unit,
     onNavigateToEdit: (String) -> Unit,
@@ -78,6 +79,7 @@ fun ArchiveDetailScreen(
 
     ArchiveDetailContent(
         state = state,
+        userRole = userRole,
         onNavigateBack = onNavigateBack,
         onEditClick = { onNavigateToEdit(archiveId) },
         onDeleteClick = {
@@ -90,6 +92,7 @@ fun ArchiveDetailScreen(
 @Composable
 fun ArchiveDetailContent(
     state: ArchiveDetailState,
+    userRole: com.example.arsipbpkpad.domain.model.UserRole,
     onNavigateBack: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -120,6 +123,7 @@ fun ArchiveDetailContent(
                     ArchiveDetailMainList(
                         archive = state.archive,
                         relatedDocs = state.relatedBundleDocuments,
+                        userRole = userRole,
                         onEditClick = onEditClick,
                         onDeleteClick = { showDeleteDialog = true },
                         onNavigateToArchive = onNavigateToArchive
@@ -194,6 +198,7 @@ fun ErrorState(message: String, modifier: Modifier = Modifier) {
 fun ArchiveDetailMainList(
     archive: ArchiveDocument,
     relatedDocs: List<ArchiveDocument>,
+    userRole: com.example.arsipbpkpad.domain.model.UserRole,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onNavigateToArchive: (String) -> Unit
@@ -214,11 +219,13 @@ fun ArchiveDetailMainList(
             }
         }
 
-        item {
-            DetailActionButtons(
-                onEditClick = onEditClick,
-                onDeleteClick = onDeleteClick
-            )
+        if (userRole == com.example.arsipbpkpad.domain.model.UserRole.ARSIPARIS) {
+            item {
+                DetailActionButtons(
+                    onEditClick = onEditClick,
+                    onDeleteClick = onDeleteClick
+                )
+            }
         }
 
         item { Spacer(modifier = Modifier.height(32.dp)) }
@@ -436,22 +443,57 @@ fun DetailActionButtons(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        IconButton(
+        androidx.compose.material3.Button(
             onClick = onEditClick,
-            modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
         ) {
-            Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Edit Arsip",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
         }
 
-        IconButton(
+        androidx.compose.material3.OutlinedButton(
             onClick = onDeleteClick,
-            modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(12.dp))
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
         ) {
-            Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Hapus Arsip",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
         }
     }
 }
@@ -537,6 +579,7 @@ fun ArchiveDetailPreview() {
             state = ArchiveDetailState(
                 archive = mockArchive
             ),
+            userRole = com.example.arsipbpkpad.domain.model.UserRole.ARSIPARIS,
             onNavigateBack = {},
             onEditClick = {},
             onDeleteClick = {},

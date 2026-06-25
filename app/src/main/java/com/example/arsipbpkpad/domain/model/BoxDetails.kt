@@ -6,5 +6,6 @@ data class BoxDetails(
     val shelfId: String,
     val shelfName: String,
     val roomId: String,
-    val roomName: String
+    val roomName: String,
+    val itemCount: Int = 0
 )
