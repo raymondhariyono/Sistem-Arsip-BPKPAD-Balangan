@@ -133,10 +133,25 @@ fun ArchiveListScreen(
 
     LaunchedEffect(uiState.excelOperationMessage) {
         uiState.excelOperationMessage?.let { message ->
-            if (message.contains("Successful")) {
-                showSuccessDialog = message
+            val resolvedMessage = when {
+                message == "IMPORT_SUCCESS_SYNCED" -> context.getString(R.string.msg_import_success_synced)
+                message == "IMPORT_SUCCESS_LOCAL" -> context.getString(R.string.msg_import_success_local)
+                message == "EXPORT_SUCCESS" -> context.getString(R.string.msg_export_success)
+                message.startsWith("ERROR_IMPORT:") -> {
+                    val detail = message.removePrefix("ERROR_IMPORT:")
+                    context.getString(R.string.msg_import_failed, detail)
+                }
+                message.startsWith("ERROR_EXPORT:") -> {
+                    val detail = message.removePrefix("ERROR_EXPORT:")
+                    context.getString(R.string.msg_export_failed, detail)
+                }
+                else -> message
+            }
+            
+            if (message.startsWith("IMPORT_SUCCESS") || message == "EXPORT_SUCCESS") {
+                showSuccessDialog = resolvedMessage
             } else {
-                snackbarHostState.showSnackbar(message)
+                snackbarHostState.showSnackbar(resolvedMessage)
             }
         }
     }

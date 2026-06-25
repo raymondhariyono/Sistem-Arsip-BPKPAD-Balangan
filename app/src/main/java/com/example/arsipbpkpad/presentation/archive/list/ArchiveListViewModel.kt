@@ -163,10 +163,12 @@ class ArchiveListViewModel @Inject constructor(
                     val result = importArchivesUseCase(event.inputStream)
                     when (result) {
                         is com.example.arsipbpkpad.domain.model.DomainResult.Success -> {
-                            _uiState.update { it.copy(isLoading = false, excelOperationMessage = "Import Successful") }
+                            val isSynced = result.data
+                            val msgKey = if (isSynced) "IMPORT_SUCCESS_SYNCED" else "IMPORT_SUCCESS_LOCAL"
+                            _uiState.update { it.copy(isLoading = false, excelOperationMessage = msgKey) }
                         }
                         is com.example.arsipbpkpad.domain.model.DomainResult.Error -> {
-                            _uiState.update { it.copy(isLoading = false, excelOperationMessage = result.message) }
+                            _uiState.update { it.copy(isLoading = false, excelOperationMessage = "ERROR_IMPORT:${result.message}") }
                         }
                     }
                 }
@@ -179,9 +181,9 @@ class ArchiveListViewModel @Inject constructor(
                 viewModelScope.launch {
                     try {
                         exportArchivesUseCase(event.outputStream, _selectedYears.value.toList())
-                        _uiState.update { it.copy(isLoading = false, excelOperationMessage = "Export Successful") }
+                        _uiState.update { it.copy(isLoading = false, excelOperationMessage = "EXPORT_SUCCESS") }
                     } catch (e: Exception) {
-                        _uiState.update { it.copy(isLoading = false, excelOperationMessage = e.message) }
+                        _uiState.update { it.copy(isLoading = false, excelOperationMessage = "ERROR_EXPORT:${e.message}") }
                     }
                 }
             }

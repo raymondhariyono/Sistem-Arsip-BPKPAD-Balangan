@@ -25,8 +25,8 @@ interface ArchiveRepository {
     suspend fun checkDocumentNumberAndTypeExists(docNumber: String, copyType: String): Boolean
     suspend fun checkDocumentNumberExists(docNumber: String): Boolean
     
-    suspend fun saveArchive(archive: ArchiveDocument): DomainResult<Unit>
-    suspend fun saveArchives(archives: List<ArchiveDocument>): DomainResult<Unit>
+    suspend fun saveArchive(archive: ArchiveDocument): DomainResult<Boolean>
+    suspend fun saveArchives(archives: List<ArchiveDocument>): DomainResult<Boolean>
     suspend fun deleteArchive(id: String): DomainResult<Unit>
     
     suspend fun syncArchives(): DomainResult<Unit>

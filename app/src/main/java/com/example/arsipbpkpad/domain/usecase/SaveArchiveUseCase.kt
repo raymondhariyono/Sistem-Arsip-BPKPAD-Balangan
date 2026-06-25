@@ -11,7 +11,7 @@ import javax.inject.Inject
 class SaveArchiveUseCase @Inject constructor(
     private val repository: ArchiveRepository
 ) {
-    suspend operator fun invoke(archive: ArchiveDocument): DomainResult<Unit> {
+    suspend operator fun invoke(archive: ArchiveDocument): DomainResult<Boolean> {
         return repository.saveArchive(archive)
     }
 }

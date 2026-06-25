@@ -221,4 +221,12 @@
     <string name="header_type">TIPE</string>
     <string name="header_status">STATUS</string>
 
+    <!-- Excel Import/Export Messages -->
+    <string name="msg_import_success_synced">Import berhasil dan data sudah tersinkron ke server.</string>
+    <string name="msg_import_success_local">Import berhasil disimpan. Data akan disinkronkan ke server.</string>
+    <string name="msg_export_success">Export Excel berhasil.</string>
+    <string name="msg_import_empty">File Excel kosong, tidak ada data untuk diimpor</string>
+    <string name="msg_import_failed">Gagal mengimpor Excel: %1$s</string>
+    <string name="msg_export_failed">Gagal mengekspor Excel: %1$s</string>
+
 </resources>

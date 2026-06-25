@@ -13,7 +13,7 @@ class ImportArchivesUseCase @Inject constructor(
     private val excelService: ExcelService,
     private val storageLocationRepository: StorageLocationRepository
 ) {
-    suspend operator fun invoke(inputStream: InputStream): DomainResult<Unit> {
+    suspend operator fun invoke(inputStream: InputStream): DomainResult<Boolean> {
         return try {
             val archives = excelService.importFromExcel(inputStream)
             if (archives.isEmpty()) {
@@ -51,9 +51,9 @@ class ImportArchivesUseCase @Inject constructor(
                 }
             }
 
-            repository.saveArchives(finalArchives)
+            return repository.saveArchives(finalArchives)
         } catch (e: Exception) {
-            DomainResult.Error("Failed to import Excel: ${e.message}")
+            DomainResult.Error("Gagal mengimpor Excel: ${e.message}")
         }
     }
 }

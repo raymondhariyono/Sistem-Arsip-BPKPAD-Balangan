@@ -20,7 +20,7 @@ class BulkInsertArchivesUseCase @Inject constructor(
     private val storageLocationRepository: StorageLocationRepository,
     private val transactionBundleRepository: TransactionBundleRepository
 ) {
-    suspend operator fun invoke(sessionId: String): DomainResult<Unit> {
+    suspend operator fun invoke(sessionId: String): DomainResult<Boolean> {
         return try {
             val stagedBox = stagingRepository.getStagedBoxById(sessionId)
                 ?: return DomainResult.Error(DomainConstants.ERROR_SESSION_NOT_FOUND)
@@ -76,13 +76,15 @@ class BulkInsertArchivesUseCase @Inject constructor(
             // 4. Save and cleanup
             val saveResult = archiveRepository.saveArchives(finalDocs)
             
-            if (saveResult is DomainResult.Success) {
-                stagingRepository.deleteStagedBox(sessionId)
-                DomainResult.Success(Unit)
-            } else {
-                // Keep staging if it failed
-                saveResult as DomainResult.Error
-                DomainResult.Error(saveResult.message)
+            when (saveResult) {
+                is DomainResult.Success -> {
+                    stagingRepository.deleteStagedBox(sessionId)
+                    DomainResult.Success(saveResult.data)
+                }
+                is DomainResult.Error -> {
+                    // Keep staging if it failed
+                    DomainResult.Error(saveResult.message)
+                }
             }
         } catch (e: Exception) {
             DomainResult.Error(e.message ?: DomainConstants.ERROR_BULK_INSERT_FAILED)
