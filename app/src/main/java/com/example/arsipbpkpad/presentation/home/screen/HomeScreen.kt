@@ -170,7 +170,7 @@ fun HomeMainList(
     ) {
         item { HeaderSection() }
 
-        if (userRole != UserRole.KASSUBAG && uiState.activeStagingBoxes.isNotEmpty()) {
+        if (userRole == UserRole.ARSIPARIS && uiState.activeStagingBoxes.isNotEmpty()) {
             item {
                 val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
                 val totalBoxes = uiState.activeStagingBoxes.size

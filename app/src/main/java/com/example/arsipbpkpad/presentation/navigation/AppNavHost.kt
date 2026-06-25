@@ -74,12 +74,12 @@ fun AppNavHost(
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                 },
                 onNavigateToStagingBoxList = {
-                    if (currentUserRole != UserRole.KASSUBAG) {
+                    if (currentUserRole == UserRole.ARSIPARIS) {
                         navController.navigate(Screen.StagingBoxList.route)
                     }
                 },
                 onNavigateToRapidInput = { sessionId ->
-                    if (currentUserRole != UserRole.KASSUBAG) {
+                    if (currentUserRole == UserRole.ARSIPARIS) {
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     }
                 },
@@ -89,7 +89,7 @@ fun AppNavHost(
                     }
                 },
                 onNavigateToScan = {
-                    if (currentUserRole != UserRole.KASSUBAG) {
+                    if (currentUserRole == UserRole.ARSIPARIS) {
                         navController.navigate(Screen.Scan.route)
                     }
                 },
@@ -129,12 +129,12 @@ fun AppNavHost(
                         navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                     },
                     onNavigateToRapidInput = {
-                        if (currentUserRole != UserRole.KASSUBAG) {
+                        if (currentUserRole == UserRole.ARSIPARIS) {
                             navController.navigate(Screen.RapidInput.route)
                         }
                     },
                     onNavigateToScan = {
-                        if (currentUserRole != UserRole.KASSUBAG) {
+                        if (currentUserRole == UserRole.ARSIPARIS) {
                             navController.navigate(Screen.Scan.route)
                         }
                     },
@@ -147,7 +147,7 @@ fun AppNavHost(
                             navArchiveId -> { /* Already here */ }
                             navStorageId -> navController.navigate(Screen.BoxManagement.route)
                             navAddId -> {
-                                if (currentUserRole != UserRole.KASSUBAG) {
+                                if (currentUserRole == UserRole.ARSIPARIS) {
                                     navController.navigate(Screen.StagingBoxList.route)
                                 }
                             }
@@ -165,6 +165,7 @@ fun AppNavHost(
                 val archiveId = entry.arguments?.getString(archiveIdKey) ?: ""
                 ArchiveDetailScreen(
                     archiveId = archiveId,
+                    userRole = currentUserRole,
                     onNavigateBack = {
                         navController.navigate(Screen.ArchiveList.route) {
                             popUpTo(Screen.ArchiveList.route) {
@@ -176,7 +177,7 @@ fun AppNavHost(
                         navController.navigate(Screen.ArchiveDetail.createRoute(id))
                     },
                     onNavigateToEdit = { id ->
-                        if (currentUserRole != UserRole.KASSUBAG) {
+                        if (currentUserRole == UserRole.ARSIPARIS) {
                             navController.navigate(Screen.EditArchive.createRoute(id))
                         }
                     }
@@ -184,7 +185,7 @@ fun AppNavHost(
             }
 
             composable(Screen.StagingBoxList.route) { entry ->
-                if (currentUserRole == UserRole.KASSUBAG) {
+                if (currentUserRole != UserRole.ARSIPARIS) {
                     navController.popBackStack()
                     return@composable
                 }
@@ -216,7 +217,7 @@ fun AppNavHost(
             }
 
             composable(Screen.RapidInput.route) { entry ->
-                if (currentUserRole == UserRole.KASSUBAG) {
+                if (currentUserRole != UserRole.ARSIPARIS) {
                     navController.popBackStack()
                     return@composable
                 }
@@ -275,7 +276,7 @@ fun AppNavHost(
                     }
                 )
             ) { entry ->
-                if (currentUserRole == UserRole.KASSUBAG) {
+                if (currentUserRole != UserRole.ARSIPARIS) {
                     navController.popBackStack()
                     return@composable
                 }
@@ -317,7 +318,7 @@ fun AppNavHost(
         }
 
         composable(Screen.Scan.route) {
-            if (currentUserRole == UserRole.KASSUBAG) {
+            if (currentUserRole != UserRole.ARSIPARIS) {
                 navController.popBackStack()
                 return@composable
             }
@@ -355,7 +356,7 @@ fun AppNavHost(
                         navArchiveId -> navController.navigate(archiveFlowRoute)
                         navStorageId -> navController.navigate(Screen.BoxManagement.route)
                         navAddId -> {
-                            if (currentUserRole != UserRole.KASSUBAG) {
+                            if (currentUserRole == UserRole.ARSIPARIS) {
                                 navController.navigate(Screen.StagingBoxList.route)
                             }
                         }
@@ -374,7 +375,7 @@ fun AppNavHost(
                         navArchiveId -> navController.navigate(archiveFlowRoute)
                         navStorageId -> { /* Already here */ }
                         navAddId -> {
-                            if (currentUserRole != UserRole.KASSUBAG) {
+                            if (currentUserRole == UserRole.ARSIPARIS) {
                                 navController.navigate(Screen.StagingBoxList.route)
                             }
                         }

@@ -197,6 +197,7 @@ fun ArchiveListScreen(
             ArchiveListTopBar(
                 isFilterConfirmed = uiState.isFilterConfirmed,
                 isExportEnabled = archives.isNotEmpty(),
+                userRole = userRole,
                 onBackClick = {
                     if (uiState.isFilterConfirmed) {
                         viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
@@ -223,7 +224,7 @@ fun ArchiveListScreen(
             )
         },
         floatingActionButton = {
-            if (uiState.isFilterConfirmed && userRole != UserRole.KASSUBAG) {
+            if (uiState.isFilterConfirmed && userRole == UserRole.ARSIPARIS) {
                 BpkpadExpandableFAB(
                     onManualInputClick = { 
                         onNavigateToBottomNav(BottomNavItem.ADD)
@@ -261,6 +262,7 @@ fun ArchiveListScreen(
                         }
                     },
                     isExportEnabled = archives.isNotEmpty(),
+                    userRole = userRole,
                     paddingValues = paddingValues
                 )
             }
@@ -276,6 +278,7 @@ fun ArchiveListScreen(
 fun ArchiveListTopBar(
     isFilterConfirmed: Boolean,
     isExportEnabled: Boolean,
+    userRole: UserRole = UserRole.UNKNOWN,
     onBackClick: () -> Unit,
     onImportClick: () -> Unit,
     onExportClick: () -> Unit
@@ -295,25 +298,6 @@ fun ArchiveListTopBar(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
                     tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onImportClick) {
-                Icon(
-                    imageVector = Icons.Default.FileUpload,
-                    contentDescription = "Import Excel",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            IconButton(
-                onClick = onExportClick,
-                enabled = isExportEnabled
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FileDownload,
-                    contentDescription = "Export Excel",
-                    tint = if (isExportEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                 )
             }
         }
@@ -478,6 +462,7 @@ fun ArchiveListContentOnly(
     onImportClick: () -> Unit,
     onExportClick: () -> Unit,
     isExportEnabled: Boolean = true,
+    userRole: UserRole = UserRole.UNKNOWN,
     paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -489,7 +474,12 @@ fun ArchiveListContentOnly(
             Spacer(modifier = Modifier.height(12.dp))
             DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
             Spacer(modifier = Modifier.height(12.dp))
-            ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick, isExportEnabled = isExportEnabled)
+            ExcelActionButtons(
+                onImportClick = onImportClick,
+                onExportClick = onExportClick,
+                isExportEnabled = isExportEnabled,
+                userRole = userRole
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -502,26 +492,33 @@ fun ArchiveListContentOnly(
 }
 
 @Composable
-fun ExcelActionButtons(onImportClick: () -> Unit, onExportClick: () -> Unit, isExportEnabled: Boolean = true) {
+fun ExcelActionButtons(
+    onImportClick: () -> Unit,
+    onExportClick: () -> Unit,
+    isExportEnabled: Boolean = true,
+    userRole: UserRole = UserRole.UNKNOWN
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OutlinedButton(
-            onClick = onImportClick,
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-        ) {
-            Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Import Excel", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        if (userRole == UserRole.ARSIPARIS) {
+            OutlinedButton(
+                onClick = onImportClick,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Import Excel", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
         }
         Button(
             onClick = onExportClick,
             enabled = isExportEnabled,
-            modifier = Modifier.weight(1f),
+            modifier = if (userRole == UserRole.ARSIPARIS) Modifier.weight(1f) else Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -733,7 +730,8 @@ fun ArchiveListScreenPreview() {
             onFilterChange = {},
             onArchiveClick = {},
             onImportClick = {},
-            onExportClick = {}
+            onExportClick = {},
+            userRole = UserRole.ARSIPARIS
         )
     }
 }
