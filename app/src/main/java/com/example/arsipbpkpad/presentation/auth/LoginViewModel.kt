@@ -50,7 +50,9 @@ class LoginViewModel @Inject constructor(
             return
         }
 
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        // Use a standard regex that works in unit tests
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-z]+$"
+        if (!email.matches(emailRegex.toRegex())) {
             _uiState.update { it.copy(errorMessage = "Format email tidak valid.") }
             return
         }
