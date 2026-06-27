@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
@@ -132,6 +133,8 @@ fun ArchiveDetailContent(
                     ArchiveDetailMainList(
                         archive = state.archive,
                         relatedDocs = state.relatedBundleDocuments,
+                        activityLogs = state.activityLogs,
+                        activityLogsErrorMessage = state.activityLogsErrorMessage,
                         userRole = userRole,
                         onEditClick = onEditClick,
                         onDeleteClick = { showDeleteDialog = true },
@@ -188,6 +191,8 @@ fun ErrorState(message: String, modifier: Modifier = Modifier) {
 fun ArchiveDetailMainList(
     archive: ArchiveDocument,
     relatedDocs: List<ArchiveDocument>,
+    activityLogs: List<com.example.arsipbpkpad.domain.model.ActivityLog>,
+    activityLogsErrorMessage: String?,
     userRole: com.example.arsipbpkpad.domain.model.UserRole,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -216,6 +221,36 @@ fun ArchiveDetailMainList(
                     onDeleteClick = onDeleteClick,
                     userRole = userRole
                 )
+            }
+        }
+
+        item { ActivityHistoryHeader() }
+        
+        when {
+            activityLogsErrorMessage != null -> {
+                item {
+                    Text(
+                        text = "Gagal memuat riwayat: $activityLogsErrorMessage",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
+            }
+            activityLogs.isEmpty() -> {
+                item {
+                    Text(
+                        text = "Belum ada riwayat aktivitas yang tercatat untuk dokumen ini.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
+            }
+            else -> {
+                items(activityLogs) { log ->
+                    ActivityLogTimelineItem(log)
+                }
             }
         }
 
@@ -546,6 +581,77 @@ fun LocationBlock(modifier: Modifier = Modifier, label: String, value: String, i
         Text(text = label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = labelColor)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = textColor)
+    }
+}
+
+@Composable
+fun ActivityHistoryHeader() {
+    Text(
+        text = "Riwayat Aktivitas",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.ExtraBold,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+    )
+}
+
+@Composable
+fun ActivityLogTimelineItem(log: com.example.arsipbpkpad.domain.model.ActivityLog) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                val icon = when (log.action) {
+                    "CREATE" -> Icons.Default.Add
+                    "UPDATE" -> Icons.Default.Edit
+                    "DELETE" -> Icons.Default.Delete
+                    else -> Icons.Default.Info
+                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = log.action,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = log.details ?: "No details provided",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                log.timestamp?.let {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = com.example.arsipbpkpad.utils.DateUtils.formatDateTime(it),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        }
     }
 }
 

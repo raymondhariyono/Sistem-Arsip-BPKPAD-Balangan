@@ -94,11 +94,13 @@ class ArchiveRepositoryImpl @Inject constructor(
                 // Log Activity
                 val userId = authRepository.getCurrentUserId()
                 val userEmail = authRepository.getCurrentUserEmail() ?: "Unknown User"
+                android.util.Log.i("ArchiveRepo", "LOGGING: userId=$userId, email=$userEmail, docId=${archive.id}")
+
                 activityLogRepository.logActivity(
                     com.example.arsipbpkpad.domain.model.ActivityLog(
                         actorId = userId,
                         action = if (isUpdate) "UPDATE" else "CREATE",
-                        entityType = "ARCHIVE",
+                        entityType = "archive_documents",
                         entityId = archive.id,
                         details = "User: $userEmail | Doc: ${archive.documentNumber}"
                     )
@@ -132,7 +134,7 @@ class ArchiveRepositoryImpl @Inject constructor(
                         com.example.arsipbpkpad.domain.model.ActivityLog(
                             actorId = userId,
                             action = "UPSERT",
-                            entityType = "ARCHIVE",
+                            entityType = "archive_documents",
                             entityId = archive.id,
                             details = "User: $userEmail | Bulk Doc: ${archive.documentNumber}"
                         )
@@ -161,7 +163,7 @@ class ArchiveRepositoryImpl @Inject constructor(
                 com.example.arsipbpkpad.domain.model.ActivityLog(
                     actorId = userId,
                     action = "DELETE",
-                    entityType = "ARCHIVE",
+                    entityType = "archive_documents",
                     entityId = id,
                     details = "User: $userEmail | Deleted ID: $id"
                 )

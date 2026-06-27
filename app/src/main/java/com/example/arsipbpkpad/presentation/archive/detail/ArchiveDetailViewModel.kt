@@ -23,6 +23,7 @@ import javax.inject.Inject
 class ArchiveDetailViewModel @Inject constructor(
     private val getArchiveDetailUseCase: GetArchiveDetailUseCase,
     private val deleteArchiveUseCase: DeleteArchiveUseCase,
+    private val getActivityLogsForEntityUseCase: com.example.arsipbpkpad.domain.usecase.GetActivityLogsForEntityUseCase,
     private val archiveRepository: ArchiveRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -71,6 +72,8 @@ class ArchiveDetailViewModel @Inject constructor(
                     when (result) {
                         is DomainResult.Success -> {
                             val (archive, related) = result.data
+                            // Also fetch activity logs for this archive
+                            fetchActivityLogs(archive.id)
                             state.copy(
                                 isLoading = false,
                                 archive = archive,
@@ -86,11 +89,36 @@ class ArchiveDetailViewModel @Inject constructor(
             }
         }
     }
+
+    private fun fetchActivityLogs(id: String) {
+        android.util.Log.i("ArchiveDetailVM", "Requesting logs for ID: $id")
+        viewModelScope.launch {
+            getActivityLogsForEntityUseCase(id).collect { result ->
+                when (result) {
+                    is DomainResult.Success -> {
+                        android.util.Log.i("ArchiveDetailVM", "Received ${result.data.size} logs")
+                        _uiState.update { it.copy(
+                            activityLogs = result.data,
+                            activityLogsErrorMessage = null
+                        ) }
+                    }
+                    is DomainResult.Error -> {
+                        android.util.Log.e("ArchiveDetailVM", "Log error: ${result.message}")
+                        _uiState.update { it.copy(
+                            activityLogsErrorMessage = result.message
+                        ) }
+                    }
+                }
+            }
+        }
+    }
 }
 
 data class ArchiveDetailState(
     val isLoading: Boolean = false,
     val archive: ArchiveDocument? = null,
     val relatedBundleDocuments: List<ArchiveDocument> = emptyList(),
+    val activityLogs: List<com.example.arsipbpkpad.domain.model.ActivityLog> = emptyList(),
+    val activityLogsErrorMessage: String? = null,
     val errorMessage: String? = null
 )

@@ -22,7 +22,7 @@ class BulkInsertArchivesUseCaseTest {
     private val stagingRepository = mockk<StagingRepository>()
     private val storageLocationRepository = mockk<StorageLocationRepository>()
     private val transactionBundleRepository = mockk<TransactionBundleRepository>()
-    
+
     private lateinit var useCase: BulkInsertArchivesUseCase
 
     @Before
@@ -38,9 +38,9 @@ class BulkInsertArchivesUseCaseTest {
     @Test
     fun `BULK_001 - returns error if session not found`() = runTest {
         coEvery { stagingRepository.getStagedBoxById("invalid") } returns null
-        
+
         val result = useCase("invalid")
-        
+
         assertTrue(result is DomainResult.Error)
         assertEquals(DomainConstants.ERROR_SESSION_NOT_FOUND, (result as DomainResult.Error).message)
     }
@@ -50,9 +50,9 @@ class BulkInsertArchivesUseCaseTest {
         val sessionId = "session-123"
         coEvery { stagingRepository.getStagedBoxById(sessionId) } returns StagedBox(sessionId, "Gedung A", "R1", "B1", "2026")
         coEvery { stagingRepository.getStagingArchivesBySession(sessionId) } returns flowOf(emptyList())
-        
+
         val result = useCase(sessionId)
-        
+
         assertTrue(result is DomainResult.Error)
         assertEquals(DomainConstants.ERROR_STAGING_EMPTY, (result as DomainResult.Error).message)
     }
@@ -63,9 +63,9 @@ class BulkInsertArchivesUseCaseTest {
         coEvery { stagingRepository.getStagedBoxById(sessionId) } returns StagedBox(sessionId, "Gedung A", "R1", "B1", "2026")
         coEvery { stagingRepository.getStagingArchivesBySession(sessionId) } returns flowOf(listOf(mockk(relaxed = true)))
         coEvery { storageLocationRepository.getOrCreateLocation(any(), any(), any(), any()) } returns DomainResult.Error("Network Error")
-        
+
         val result = useCase(sessionId)
-        
+
         assertTrue(result is DomainResult.Error)
         assertTrue((result as DomainResult.Error).message.contains(DomainConstants.ERROR_LOCATION_INIT_FAILED))
     }
@@ -85,20 +85,20 @@ class BulkInsertArchivesUseCaseTest {
             status = DocStatus.UNVERIFIED,
             metadata = null
         )
-        
+
         coEvery { stagingRepository.getStagedBoxById(sessionId) } returns StagedBox(sessionId, "Gedung A", "R1", "B1", "2026")
         coEvery { stagingRepository.getStagingArchivesBySession(sessionId) } returns flowOf(listOf(stagedDoc))
         coEvery { storageLocationRepository.getOrCreateLocation(any(), any(), any(), any()) } returns DomainResult.Success(storageId)
         coEvery { archiveRepository.saveArchives(any()) } returns DomainResult.Success(Unit)
         coEvery { stagingRepository.deleteStagedBox(sessionId) } returns Unit
-        
+
         val result = useCase(sessionId)
-        
+
         assertTrue(result is DomainResult.Success)
-        coVerify { 
-            archiveRepository.saveArchives(match { 
+        coVerify {
+            archiveRepository.saveArchives(match {
                 it.size == 1 && it[0].idStorageLocation == storageId && it[0].status == DocStatus.AVAILABLE
-            }) 
+            })
         }
         coVerify { stagingRepository.deleteStagedBox(sessionId) }
     }
@@ -108,7 +108,7 @@ class BulkInsertArchivesUseCaseTest {
         val sessionId = "session-123"
         val localBundleId = "local-b-1"
         val remoteBundleId = "remote-b-uuid"
-        
+
         val stagedDoc = ArchiveDocument(
             id = "doc-1",
             type = DocType.SP2D,
@@ -121,21 +121,21 @@ class BulkInsertArchivesUseCaseTest {
             metadata = null,
             bundleId = localBundleId
         )
-        
+
         coEvery { stagingRepository.getStagedBoxById(sessionId) } returns StagedBox(sessionId, "Gedung A", "R1", "B1", "2026")
         coEvery { stagingRepository.getStagingArchivesBySession(sessionId) } returns flowOf(listOf(stagedDoc))
         coEvery { storageLocationRepository.getOrCreateLocation(any(), any(), any(), any()) } returns DomainResult.Success("loc-1")
         coEvery { transactionBundleRepository.createBundle(any(), any(), any()) } returns DomainResult.Success(remoteBundleId)
         coEvery { archiveRepository.saveArchives(any()) } returns DomainResult.Success(Unit)
         coEvery { stagingRepository.deleteStagedBox(sessionId) } returns Unit
-        
+
         val result = useCase(sessionId)
-        
+
         assertTrue(result is DomainResult.Success)
-        coVerify { 
-            archiveRepository.saveArchives(match { 
-                it[0].bundleId == remoteBundleId 
-            }) 
+        coVerify {
+            archiveRepository.saveArchives(match {
+                it[0].bundleId == remoteBundleId
+            })
         }
     }
 }
