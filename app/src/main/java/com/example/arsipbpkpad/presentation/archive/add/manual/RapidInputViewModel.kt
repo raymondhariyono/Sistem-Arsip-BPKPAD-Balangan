@@ -344,7 +344,29 @@ class RapidInputViewModel @Inject constructor(
     private fun observeDocumentTypes() {
         viewModelScope.launch {
             documentTypeRepository.observeDocumentTypes().collect { types ->
-                _uiState.update { it.copy(availableDocTypes = types) }
+                val defaultTypes = listOf(
+                    DocumentTypeDefaults.SP2D,
+                    DocumentTypeDefaults.SPM,
+                    DocumentTypeDefaults.SPJ
+                )
+                
+                // 1. Sort the incoming types: Defaults first (in specified order), then others alphabetically
+                val sortedTypes = types.sortedWith { t1, t2 ->
+                    val n1 = normalizeDocumentType(t1.name)
+                    val n2 = normalizeDocumentType(t2.name)
+                    
+                    val idx1 = defaultTypes.indexOf(n1)
+                    val idx2 = defaultTypes.indexOf(n2)
+                    
+                    when {
+                        idx1 != -1 && idx2 != -1 -> idx1.compareTo(idx2)
+                        idx1 != -1 -> -1
+                        idx2 != -1 -> 1
+                        else -> n1.compareTo(n2)
+                    }
+                }
+
+                _uiState.update { it.copy(availableDocTypes = sortedTypes) }
             }
         }
     }

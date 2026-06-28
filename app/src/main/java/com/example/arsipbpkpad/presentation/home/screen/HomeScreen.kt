@@ -250,8 +250,8 @@ fun HomeSecondaryStats(uiState: HomeUiState) {
         ) {
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
-                count = uiState.sppCount,
-                label = stringResource(R.string.type_spp)
+                count = uiState.sp2dCount,
+                label = stringResource(R.string.type_sp2d)
             )
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
@@ -265,13 +265,13 @@ fun HomeSecondaryStats(uiState: HomeUiState) {
         ) {
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
-                count = uiState.sp2dCount,
-                label = stringResource(R.string.type_sp2d)
+                count = uiState.spjCount,
+                label = stringResource(R.string.type_spj)
             )
             SecondaryStatCard(
                 modifier = Modifier.weight(1f),
-                count = uiState.spjCount,
-                label = stringResource(R.string.type_spj)
+                count = uiState.otherTypeCount,
+                label = stringResource(R.string.type_other)
             )
         }
     }

@@ -76,15 +76,21 @@ class HomeViewModel @Inject constructor(
                         val archives = result.data
                         val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
                         
+                        val primaryTypes = setOf(
+                            DocumentTypeDefaults.SP2D,
+                            DocumentTypeDefaults.SPM,
+                            DocumentTypeDefaults.SPJ
+                        )
+
                         _uiState.update { state ->
                             state.copy(
                                 isLoading = false,
                                 totalDocuments = archives.size.toString(),
                                 expiredDocuments = archives.count { (currentYear - it.year) > 10 }.toString(),
-                                sppCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SPP }.toString(),
-                                spmCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SPM }.toString(),
                                 sp2dCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SP2D }.toString(),
+                                spmCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SPM }.toString(),
                                 spjCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SPJ }.toString(),
+                                otherTypeCount = archives.count { normalizeDocumentType(it.type) !in primaryTypes }.toString(),
                                 recentItems = archives.take(5)
                             )
                         }

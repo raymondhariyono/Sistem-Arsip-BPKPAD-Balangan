@@ -48,6 +48,7 @@
     <string name="type_spp">SPP</string>
     <string name="type_sp3b">SP3B</string>
     <string name="type_spj">SPJ</string>
+    <string name="type_other">Lainnya</string>
     <string name="type_dsb">DSB</string>
     <string name="type_damaged">Rusak (Damaged)</string>
     <string name="type_lost">Hilang (Lost)</string>
