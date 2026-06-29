@@ -29,15 +29,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -100,11 +103,16 @@ fun ArchiveListScreen(
     val archives by viewModel.archivesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val context = LocalContext.current
+    val resources = context.resources
     val snackbarHostState = remember { SnackbarHostState() }
     
     // Intercept system back button to go back to year selection if a filter is confirmed
-    BackHandler(enabled = uiState.isFilterConfirmed) {
-        viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+    BackHandler(enabled = uiState.isFilterConfirmed || uiState.isSelectionMode) {
+        if (uiState.isSelectionMode) {
+            viewModel.onEvent(ArchiveListUiEvent.ToggleSelectionMode())
+        } else {
+            viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+        }
     }
 
     var showImportConfirm by remember { mutableStateOf(false) }
@@ -134,16 +142,16 @@ fun ArchiveListScreen(
     LaunchedEffect(uiState.excelOperationMessage) {
         uiState.excelOperationMessage?.let { message ->
             val resolvedMessage = when {
-                message == "IMPORT_SUCCESS_SYNCED" -> context.getString(R.string.msg_import_success_synced)
-                message == "IMPORT_SUCCESS_LOCAL" -> context.getString(R.string.msg_import_success_local)
-                message == "EXPORT_SUCCESS" -> context.getString(R.string.msg_export_success)
+                message == "IMPORT_SUCCESS_SYNCED" -> resources.getString(R.string.msg_import_success_synced)
+                message == "IMPORT_SUCCESS_LOCAL" -> resources.getString(R.string.msg_import_success_local)
+                message == "EXPORT_SUCCESS" -> resources.getString(R.string.msg_export_success)
                 message.startsWith("ERROR_IMPORT:") -> {
                     val detail = message.removePrefix("ERROR_IMPORT:")
-                    context.getString(R.string.msg_import_failed, detail)
+                    resources.getString(R.string.msg_import_failed, detail)
                 }
                 message.startsWith("ERROR_EXPORT:") -> {
                     val detail = message.removePrefix("ERROR_EXPORT:")
-                    context.getString(R.string.msg_export_failed, detail)
+                    resources.getString(R.string.msg_export_failed, detail)
                 }
                 else -> message
             }
@@ -200,6 +208,36 @@ fun ArchiveListScreen(
         )
     }
 
+    if (uiState.showDeleteConfirmDialog) {
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.title_delete_selected_archives),
+            message = stringResource(R.string.msg_delete_selected_archives, uiState.selectedArchiveIds.size),
+            confirmText = stringResource(R.string.btn_delete),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = { viewModel.onEvent(ArchiveListUiEvent.ConfirmDeleteSelected) },
+            onDismiss = { viewModel.onEvent(ArchiveListUiEvent.DismissDeleteConfirm) },
+            type = com.example.arsipbpkpad.presentation.components.DialogType.DESTRUCTIVE
+        )
+    }
+
+    uiState.successMessage?.let { msg ->
+        StatusDialog(
+            title = stringResource(R.string.title_success),
+            message = msg,
+            onDismiss = { viewModel.onEvent(ArchiveListUiEvent.DismissSuccess) },
+            isSuccess = true
+        )
+    }
+
+    uiState.errorMessage?.let { msg ->
+        StatusDialog(
+            title = stringResource(R.string.title_error),
+            message = msg,
+            onDismiss = { viewModel.onEvent(ArchiveListUiEvent.DismissError) },
+            isSuccess = false
+        )
+    }
+
     showSuccessDialog?.let { msg ->
         StatusDialog(
             title = stringResource(R.string.title_success),
@@ -211,26 +249,23 @@ fun ArchiveListScreen(
 
     Scaffold(
         topBar = {
-            ArchiveListTopBar(
-                isFilterConfirmed = uiState.isFilterConfirmed,
-                isExportEnabled = archives.isNotEmpty(),
-                userRole = userRole,
-                onBackClick = {
-                    if (uiState.isFilterConfirmed) {
-                        viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
-                    } else {
-                        onNavigateBack()
+            if (uiState.isSelectionMode) {
+                SelectionTopBar(
+                    selectedCount = uiState.selectedArchiveIds.size,
+                    onClearSelection = { viewModel.onEvent(ArchiveListUiEvent.ToggleSelectionMode()) }
+                )
+            } else {
+                ArchiveListTopBar(
+                    isFilterConfirmed = uiState.isFilterConfirmed,
+                    onBackClick = {
+                        if (uiState.isFilterConfirmed) {
+                            viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
+                        } else {
+                            onNavigateBack()
+                        }
                     }
-                },
-                onImportClick = {
-                    importLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                },
-                onExportClick = {
-                    if (archives.isNotEmpty()) {
-                        showExportConfirm = true
-                    }
-                }
-            )
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -242,7 +277,17 @@ fun ArchiveListScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface,
         floatingActionButton = {
-            if (uiState.isFilterConfirmed && userRole.canMutateArchive()) {
+            if (uiState.isSelectionMode) {
+                SelectionFABs(
+                    selectedCount = uiState.selectedArchiveIds.size,
+                    onClearSelection = { viewModel.onEvent(ArchiveListUiEvent.ToggleSelectionMode()) },
+                    onSelectAll = { 
+                        viewModel.onEvent(ArchiveListUiEvent.SelectAllArchives(archives.map { it.id })) 
+                    },
+                    onDeleteSelected = { viewModel.onEvent(ArchiveListUiEvent.RequestDeleteSelected) },
+                    userRole = userRole
+                )
+            } else if (uiState.isFilterConfirmed && userRole.canMutateArchive()) {
                 BpkpadExpandableFAB(
                     onManualInputClick = { 
                         onNavigateToBottomNav(BottomNavItem.ADD)
@@ -270,7 +315,20 @@ fun ArchiveListScreen(
                     onFilterChange = { type ->
                         viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
                     },
-                    onArchiveClick = onNavigateToDetail,
+                    onArchiveClick = { id ->
+                        if (uiState.isSelectionMode) {
+                            viewModel.onEvent(ArchiveListUiEvent.ToggleArchiveSelection(id))
+                        } else {
+                            onNavigateToDetail(id)
+                        }
+                    },
+                    onArchiveLongClick = { id ->
+                        if (!uiState.isSelectionMode && userRole.canMutateArchive()) {
+                            viewModel.onEvent(ArchiveListUiEvent.ToggleSelectionMode(id))
+                        }
+                    },
+                    isSelectionMode = uiState.isSelectionMode,
+                    selectedArchiveIds = uiState.selectedArchiveIds,
                     onImportClick = {
                         importLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     },
@@ -295,11 +353,7 @@ fun ArchiveListScreen(
 @Composable
 fun ArchiveListTopBar(
     isFilterConfirmed: Boolean,
-    isExportEnabled: Boolean,
-    userRole: UserRole = UserRole.UNKNOWN,
-    onBackClick: () -> Unit,
-    onImportClick: () -> Unit,
-    onExportClick: () -> Unit
+    onBackClick: () -> Unit
 ) {
     com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
         title = {
@@ -320,6 +374,79 @@ fun ArchiveListTopBar(
             }
         }
     )
+}
+
+@Composable
+fun SelectionTopBar(
+    selectedCount: Int,
+    onClearSelection: () -> Unit
+) {
+    com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
+        title = {
+            Text(
+                text = stringResource(R.string.label_selected_count, selectedCount),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onClearSelection) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.btn_clear_selection),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun SelectionFABs(
+    selectedCount: Int,
+    onClearSelection: () -> Unit,
+    onSelectAll: () -> Unit,
+    onDeleteSelected: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN
+) {
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Select All FAB
+        ExtendedFloatingActionButton(
+            onClick = onSelectAll,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            shape = RoundedCornerShape(16.dp),
+            icon = { Icon(Icons.Default.SelectAll, contentDescription = null) },
+            text = { Text(stringResource(R.string.btn_select_all)) }
+        )
+
+        // Cancel FAB
+        ExtendedFloatingActionButton(
+            onClick = onClearSelection,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            shape = RoundedCornerShape(16.dp),
+            icon = { Icon(Icons.Default.Close, contentDescription = null) },
+            text = { Text(stringResource(R.string.btn_clear_selection)) }
+        )
+
+        // Delete/Confirm FAB
+        if (userRole.canMutateArchive()) {
+            ExtendedFloatingActionButton(
+                onClick = onDeleteSelected,
+                expanded = true,
+                containerColor = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                contentColor = if (selectedCount > 0) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface,
+                shape = RoundedCornerShape(16.dp),
+                icon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                text = { Text(stringResource(R.string.btn_confirm)) }
+            )
+        }
+    }
 }
 
 @Composable
@@ -477,6 +604,9 @@ fun ArchiveListContentOnly(
     onSearchQueryChange: (String) -> Unit,
     onFilterChange: (String) -> Unit,
     onArchiveClick: (String) -> Unit,
+    onArchiveLongClick: (String) -> Unit = {},
+    isSelectionMode: Boolean = false,
+    selectedArchiveIds: Set<String> = emptySet(),
     onImportClick: () -> Unit,
     onExportClick: () -> Unit,
     isExportEnabled: Boolean = true,
@@ -504,6 +634,9 @@ fun ArchiveListContentOnly(
         ArchiveResultList(
             archives = archives,
             onArchiveClick = onArchiveClick,
+            onArchiveLongClick = onArchiveLongClick,
+            isSelectionMode = isSelectionMode,
+            selectedArchiveIds = selectedArchiveIds,
             paddingValues = paddingValues
         )
     }
@@ -654,12 +787,15 @@ fun DocTypeFilterRow(selectedFilter: String, onFilterChange: (String) -> Unit) {
 fun ArchiveResultList(
     archives: List<ArchiveDocument>,
     onArchiveClick: (String) -> Unit,
+    onArchiveLongClick: (String) -> Unit = {},
+    isSelectionMode: Boolean = false,
+    selectedArchiveIds: Set<String> = emptySet(),
     paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
     val scrollState = rememberScrollState()
     
     androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val minTableWidth = 632.dp // Total of min widths from ArchiveTableHeader
+        val minTableWidth = (if (isSelectionMode) 48.dp else 0.dp) + 632.dp // Total of min widths from ArchiveTableHeader
         val tableWidth = maxOf(maxWidth, minTableWidth)
 
         Column(
@@ -668,7 +804,7 @@ fun ArchiveResultList(
                 .horizontalScroll(scrollState)
         ) {
             Column(modifier = Modifier.width(tableWidth)) {
-                ArchiveTableHeader()
+                ArchiveTableHeader(isSelectionMode = isSelectionMode)
                 
                 if (archives.isNotEmpty()) {
                     LazyColumn(
@@ -682,7 +818,10 @@ fun ArchiveResultList(
                             ArchiveListItemCard(
                                 no = index + 1,
                                 archive = archive,
-                                onClick = { onArchiveClick(archive.id) }
+                                onClick = { onArchiveClick(archive.id) },
+                                onLongClick = { onArchiveLongClick(archive.id) },
+                                isSelected = selectedArchiveIds.contains(archive.id),
+                                isSelectionMode = isSelectionMode
                             )
                         }
                     }

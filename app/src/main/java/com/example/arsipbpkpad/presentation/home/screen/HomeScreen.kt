@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,6 +54,7 @@ import com.example.arsipbpkpad.presentation.home.component.PrimaryStatCard
 import com.example.arsipbpkpad.presentation.home.component.RecentArchiveTable
 import com.example.arsipbpkpad.presentation.home.component.SecondaryStatCard
 import com.example.arsipbpkpad.presentation.home.component.SectionHeader
+import com.example.arsipbpkpad.presentation.components.BpkpadLogoutButton
 
 @Composable
 fun HomeScreen(
@@ -102,13 +102,10 @@ fun HomeContent(
         topBar = { 
             BpkpadTopAppBar(
                 actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(
-                            imageVector = Icons.Default.Logout,
-                            contentDescription = "Logout",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                    BpkpadLogoutButton(
+                        onClick = onLogout,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
                 }
             ) 
         },

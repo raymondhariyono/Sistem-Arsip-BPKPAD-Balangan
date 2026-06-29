@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -930,43 +928,83 @@ fun ClassificationBottomSheet(
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = stringResource(R.string.title_select_classification),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            item {
+                Text(
+                    text = stringResource(R.string.title_select_classification),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            ClassificationSearchBar(
-                query = uiState.searchQuery,
-                onQueryChanged = onSearchQueryChanged
-            )
+                ClassificationSearchBar(
+                    query = uiState.searchQuery,
+                    onQueryChanged = onSearchQueryChanged
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            QuickCategorySection(
-                categories = uiState.quickCategories,
-                selectedCategoryCode = uiState.selectedQuickCategory,
-                onCategorySelected = onQuickCategorySelected
-            )
+                Text(
+                    text = stringResource(R.string.label_quick_category),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Quick Category Section - Chunked Vertical Grid
+            val chunkedCategories = uiState.quickCategories.chunked(2)
+            items(chunkedCategories) { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowItems.forEach { category ->
+                        val isSelected = uiState.selectedQuickCategory == category.code
+                        QuickCategoryItem(
+                            category = category,
+                            isSelected = isSelected,
+                            onClick = { onQuickCategorySelected(if (isSelected) null else category.code) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (rowItems.size < 2) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
 
-            ClassificationResultsList(
-                codes = filteredCodes,
-                isSyncing = uiState.isSyncingClassifications && uiState.availableCodes.isEmpty(),
-                onCodeSelected = onCodeSelected
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
+            item { Spacer(modifier = Modifier.height(0.dp)) }
+
+            // Classification Results
+            if (uiState.isSyncingClassifications && uiState.availableCodes.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            } else if (filteredCodes.isEmpty()) {
+                item {
+                    EmptyClassificationResults()
+                }
+            } else {
+                items(filteredCodes, key = { it.code }) { classification ->
+                    ClassificationItem(
+                        classification = classification,
+                        onClick = { onCodeSelected(classification.code) }
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 }
@@ -982,45 +1020,6 @@ fun BottomSheetDragHandle() {
                 .size(32.dp, 4.dp)
                 .background(MaterialTheme.colorScheme.outlineVariant, CircleShape)
         )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun QuickCategorySection(
-    categories: List<ClassificationCode>,
-    selectedCategoryCode: String?,
-    onCategorySelected: (String?) -> Unit
-) {
-    Text(
-        text = stringResource(R.string.label_quick_category),
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    
-    Spacer(modifier = Modifier.height(8.dp))
-
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        maxItemsInEachRow = 2
-    ) {
-        categories.forEach { category ->
-            val isSelected = selectedCategoryCode == category.code
-            QuickCategoryItem(
-                category = category,
-                isSelected = isSelected,
-                onClick = { onCategorySelected(if (isSelected) null else category.code) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        
-        // Add spacers if odd number of items to keep grid alignment
-        if (categories.size % 2 != 0) {
-            Spacer(modifier = Modifier.weight(1f))
-        }
     }
 }
 
@@ -1102,37 +1101,6 @@ fun ClassificationSearchBar(query: String, onQueryChanged: (String) -> Unit) {
             unfocusedContainerColor = MaterialTheme.colorScheme.surface
         )
     )
-}
-
-@Composable
-fun ClassificationResultsList(
-    codes: List<ClassificationCode>,
-    isSyncing: Boolean,
-    onCodeSelected: (String) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        if (isSyncing) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            }
-        } else if (codes.isEmpty()) {
-            item {
-                EmptyClassificationResults()
-            }
-        } else {
-            items(codes, key = { it.code }) { classification ->
-                ClassificationItem(
-                    classification = classification,
-                    onClick = { onCodeSelected(classification.code) }
-                )
-            }
-        }
-    }
 }
 
 @Composable

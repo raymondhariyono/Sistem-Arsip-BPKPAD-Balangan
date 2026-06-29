@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.usecase.DeleteArchiveUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
 import com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase
@@ -29,6 +30,7 @@ class ArchiveListViewModel @Inject constructor(
     private val getArchivesUseCase: GetArchivesUseCase,
     private val getArchivedYearsUseCase: GetArchivedYearsUseCase,
     private val getYearStatsUseCase: GetYearStatsUseCase,
+    private val deleteArchiveUseCase: DeleteArchiveUseCase,
     private val importArchivesUseCase: com.example.arsipbpkpad.domain.usecase.ImportArchivesUseCase,
     private val exportArchivesUseCase: com.example.arsipbpkpad.domain.usecase.ExportArchivesUseCase,
     savedStateHandle: SavedStateHandle
@@ -187,7 +189,77 @@ class ArchiveListViewModel @Inject constructor(
                     }
                 }
             }
+            is ArchiveListUiEvent.ToggleSelectionMode -> {
+                _uiState.update { state ->
+                    val newMode = !state.isSelectionMode
+                    state.copy(
+                        isSelectionMode = newMode,
+                        selectedArchiveIds = if (newMode && event.archiveId != null) setOf(event.archiveId) else emptySet()
+                    )
+                }
+            }
+            is ArchiveListUiEvent.ToggleArchiveSelection -> {
+                _uiState.update { state ->
+                    val current = state.selectedArchiveIds
+                    val updated = if (current.contains(event.archiveId)) current - event.archiveId else current + event.archiveId
+                    state.copy(selectedArchiveIds = updated)
+                }
+            }
+            is ArchiveListUiEvent.SelectAllArchives -> {
+                _uiState.update { it.copy(selectedArchiveIds = event.archiveIds.toSet()) }
+            }
+            is ArchiveListUiEvent.ClearSelection -> {
+                _uiState.update { it.copy(selectedArchiveIds = emptySet()) }
+            }
+            is ArchiveListUiEvent.RequestDeleteSelected -> {
+                if (_uiState.value.selectedArchiveIds.isNotEmpty()) {
+                    _uiState.update { it.copy(showDeleteConfirmDialog = true) }
+                }
+            }
+            is ArchiveListUiEvent.ConfirmDeleteSelected -> {
+                deleteSelectedArchives()
+            }
+            is ArchiveListUiEvent.DismissDeleteConfirm -> {
+                _uiState.update { it.copy(showDeleteConfirmDialog = false) }
+            }
+            is ArchiveListUiEvent.DismissSuccess -> {
+                _uiState.update { it.copy(successMessage = null) }
+            }
+            is ArchiveListUiEvent.DismissError -> {
+                _uiState.update { it.copy(errorMessage = null) }
+            }
             else -> {}
+        }
+    }
+
+    private fun deleteSelectedArchives() {
+        val idsToDelete = _uiState.value.selectedArchiveIds
+        if (idsToDelete.isEmpty()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true, showDeleteConfirmDialog = false) }
+            
+            var successCount = 0
+            var failCount = 0
+            
+            idsToDelete.forEach { id ->
+                val result = deleteArchiveUseCase(id)
+                if (result is com.example.arsipbpkpad.domain.model.DomainResult.Success) {
+                    successCount++
+                } else {
+                    failCount++
+                }
+            }
+
+            _uiState.update { state ->
+                state.copy(
+                    isDeleting = false,
+                    isSelectionMode = false,
+                    selectedArchiveIds = emptySet(),
+                    successMessage = if (failCount == 0) "$successCount arsip berhasil dihapus." else null,
+                    errorMessage = if (failCount > 0) "Sebagian arsip gagal dihapus ($failCount gagal, $successCount berhasil)." else null
+                )
+            }
         }
     }
 

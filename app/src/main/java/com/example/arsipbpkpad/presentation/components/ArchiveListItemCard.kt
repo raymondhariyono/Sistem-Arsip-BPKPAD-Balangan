@@ -1,7 +1,8 @@
 package com.example.arsipbpkpad.presentation.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,10 +33,11 @@ fun ArchiveTableHeader(
     showCondition: Boolean = true,
     showStatus: Boolean = true,
     showYear: Boolean = true,
+    isSelectionMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // Calculate a reasonable min width based on visible columns
-    val minWidth = 48.dp + 100.dp + 200.dp + 
+    val minWidth = (if (isSelectionMode) 48.dp else 0.dp) + 48.dp + 100.dp + 200.dp + 
                   (if (showYear) 64.dp else 0.dp) + 
                   (if (showCondition) 100.dp else 0.dp) + 
                   (if (showStatus) 120.dp else 0.dp)
@@ -46,6 +50,10 @@ fun ArchiveTableHeader(
             modifier = Modifier.height(48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (isSelectionMode) {
+                HeaderCell(text = "", modifier = Modifier.width(48.dp))
+                VerticalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f))
+            }
             HeaderCell(text = "No", modifier = Modifier.width(48.dp))
             VerticalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f))
             HeaderCell(text = "Kode", modifier = Modifier.width(100.dp))
@@ -87,23 +95,27 @@ fun HeaderCell(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArchiveListItemCard(
     no: Int,
     archive: ArchiveDocument,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
     showCondition: Boolean = true,
     showStatus: Boolean = true,
     showYear: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = if (no % 2 == 0) {
-        MaterialTheme.colorScheme.surface
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    val backgroundColor = when {
+        isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        no % 2 == 0 -> MaterialTheme.colorScheme.surface
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
 
-    val minWidth = 48.dp + 100.dp + 200.dp + 
+    val minWidth = (if (isSelectionMode) 48.dp else 0.dp) + 48.dp + 100.dp + 200.dp + 
                   (if (showYear) 64.dp else 0.dp) + 
                   (if (showCondition) 100.dp else 0.dp) + 
                   (if (showStatus) 120.dp else 0.dp)
@@ -112,10 +124,31 @@ fun ArchiveListItemCard(
         Row(
             modifier = Modifier
                 .background(backgroundColor)
-                .clickable { onClick() }
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
                 .height(56.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 0. Checkbox (Selection Mode only)
+            if (isSelectionMode) {
+                Box(
+                    modifier = Modifier.width(48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = null, // Handled by combinedClickable
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = MaterialTheme.colorScheme.primary,
+                            uncheckedColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+                }
+                VerticalDivider()
+            }
+
             // 1. No
             TableCell(text = "$no.", modifier = Modifier.width(48.dp))
             VerticalDivider()

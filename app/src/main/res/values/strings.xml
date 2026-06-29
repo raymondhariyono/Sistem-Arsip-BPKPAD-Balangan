@@ -9,6 +9,7 @@
     <string name="nav_add">Tambah</string>
     <string name="nav_analytics">Analitik</string>
     <string name="nav_profile">Profil</string>
+    <string name="logout">Keluar</string>
     <string name="back">Kembali</string>
     <string name="nav_back_content_desc">Kembali ke halaman sebelumnya</string>
 
@@ -157,7 +158,7 @@
 
     <!-- Classification Sheet -->
     <string name="title_select_classification">Pilih Kode Klasifikasi</string>
-    <string name="label_quick_category">Kategori Cepat (Level 3)</string>
+    <string name="label_quick_category">Kategori Cepat</string>
     <string name="search_classification_hint">Cari kode atau nama...</string>
     <string name="msg_no_classification_found">Tidak ada kode yang cocok dengan pencarian.</string>
     <string name="label_parent_code">Induk: %1$s</string>
@@ -243,5 +244,14 @@
     <string name="btn_import">Impor</string>
     <string name="title_confirm_export">Konfirmasi Ekspor</string>
     <string name="msg_confirm_export">Apakah Anda yakin ingin mengekspor daftar arsip ke file Excel?</string>
+
+    <!-- Multi-select Delete -->
+    <string name="title_delete_selected_archives">Hapus Arsip Terpilih</string>
+    <string name="msg_delete_selected_archives">Apakah Anda yakin ingin menghapus %1$d arsip yang dipilih? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="label_selected_count">%1$d dipilih</string>
+    <string name="btn_select_all">Pilih Semua</string>
+    <string name="btn_clear_selection">Batal</string>
+    <string name="msg_delete_success">%1$d arsip berhasil dihapus.</string>
+    <string name="msg_delete_partial_failed">Sebagian arsip gagal dihapus. Silakan coba lagi.</string>
 
 </resources>

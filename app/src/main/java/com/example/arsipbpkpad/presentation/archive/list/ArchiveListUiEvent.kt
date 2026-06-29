@@ -11,4 +11,15 @@ sealed class ArchiveListUiEvent {
     data object OnResetFilter : ArchiveListUiEvent()
     data class ImportExcel(val inputStream: java.io.InputStream) : ArchiveListUiEvent()
     data class ExportExcel(val outputStream: java.io.OutputStream) : ArchiveListUiEvent()
+
+    // Multi-select delete events
+    data class ToggleSelectionMode(val archiveId: String? = null) : ArchiveListUiEvent()
+    data class ToggleArchiveSelection(val archiveId: String) : ArchiveListUiEvent()
+    data class SelectAllArchives(val archiveIds: List<String>) : ArchiveListUiEvent()
+    data object ClearSelection : ArchiveListUiEvent()
+    data object RequestDeleteSelected : ArchiveListUiEvent()
+    data object ConfirmDeleteSelected : ArchiveListUiEvent()
+    data object DismissDeleteConfirm : ArchiveListUiEvent()
+    data object DismissSuccess : ArchiveListUiEvent()
+    data object DismissError : ArchiveListUiEvent()
 }

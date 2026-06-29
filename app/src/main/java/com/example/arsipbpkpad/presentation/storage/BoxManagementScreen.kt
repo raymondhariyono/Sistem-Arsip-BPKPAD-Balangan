@@ -21,7 +21,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -138,7 +141,8 @@ fun BoxManagementContent(
                         value = uiState.selectedFilterRoom?.name ?: "",
                         options = uiState.rooms,
                         onOptionSelected = { onFilterRoomSelected(it) },
-                        getItemName = { it.name }
+                        getItemName = { it.name },
+                        leadingIcon = Icons.Default.Warehouse
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -149,7 +153,8 @@ fun BoxManagementContent(
                         options = uiState.filterShelves,
                         onOptionSelected = { onFilterShelfSelected(it) },
                         getItemName = { it.name },
-                        enabled = uiState.selectedFilterRoom != null
+                        enabled = uiState.selectedFilterRoom != null,
+                        leadingIcon = Icons.Default.Inventory2
                     )
                 }
             }
@@ -215,6 +220,7 @@ fun <T> ReadOnlyLocationDropdown(
     options: List<T>,
     onOptionSelected: (T) -> Unit,
     getItemName: (T) -> String,
+    leadingIcon: ImageVector? = null,
     enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -230,6 +236,9 @@ fun <T> ReadOnlyLocationDropdown(
             label = { Text(label) },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
             enabled = enabled,
+            leadingIcon = leadingIcon?.let {
+                { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary) }
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -256,6 +265,9 @@ fun <T> ReadOnlyLocationDropdown(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
+                    leadingIcon = leadingIcon?.let {
+                        { Icon(it, contentDescription = null, modifier = Modifier.size(20.dp)) }
+                    },
                     text = { Text(getItemName(option), color = MaterialTheme.colorScheme.onSurface) },
                     onClick = {
                         onOptionSelected(option)
