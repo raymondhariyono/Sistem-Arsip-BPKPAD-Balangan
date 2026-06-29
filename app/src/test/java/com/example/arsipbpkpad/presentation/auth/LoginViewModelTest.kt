@@ -1,9 +1,8 @@
 package com.example.arsipbpkpad.presentation.auth
 
-import com.example.arsipbpkpad.domain.repository.AuthRepository
 import com.example.arsipbpkpad.domain.model.DomainResult
-import io.mockk.coEvery
-import io.mockk.mockk
+import com.example.arsipbpkpad.domain.repository.AuthRepository
+import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -20,7 +19,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
 
-    private val authRepository = mockk<AuthRepository>()
+    private val authRepository = mockk<AuthRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: LoginViewModel
 
@@ -75,5 +74,23 @@ class LoginViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals("Email dan password tidak boleh kosong.", state.errorMessage)
+    }
+
+    @Test
+    fun `LGN_007 - logout resets UI state`() = runTest {
+        viewModel.onEmailChange("test@example.com")
+        viewModel.onPasswordChange("password")
+        viewModel.onRememberMeChange(true)
+
+        coEvery { authRepository.logout() } returns DomainResult.Success(Unit)
+
+        viewModel.logout()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("", state.email)
+        assertEquals("", state.password)
+        assertEquals(false, state.rememberMe)
+        assertEquals(false, state.isLoginSuccessful)
     }
 }

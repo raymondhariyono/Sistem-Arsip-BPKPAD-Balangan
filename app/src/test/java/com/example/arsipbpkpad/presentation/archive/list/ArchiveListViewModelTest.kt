@@ -1,9 +1,10 @@
 package com.example.arsipbpkpad.presentation.archive.list
 
 import androidx.lifecycle.SavedStateHandle
+import com.example.arsipbpkpad.domain.usecase.DeleteArchiveUseCase
 import com.example.arsipbpkpad.domain.usecase.ExportArchivesUseCase
-import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
+import com.example.arsipbpkpad.domain.usecase.GetArchivesUseCase
 import com.example.arsipbpkpad.domain.usecase.GetYearStatsUseCase
 import com.example.arsipbpkpad.domain.usecase.ImportArchivesUseCase
 import io.mockk.coVerify
@@ -26,6 +27,7 @@ class ArchiveListViewModelTest {
     private val getArchivesUseCase = mockk<GetArchivesUseCase>(relaxed = true)
     private val getArchivedYearsUseCase = mockk<GetArchivedYearsUseCase>(relaxed = true)
     private val getYearStatsUseCase = mockk<GetYearStatsUseCase>(relaxed = true)
+    private val deleteArchiveUseCase = mockk<DeleteArchiveUseCase>(relaxed = true)
     private val importArchivesUseCase = mockk<ImportArchivesUseCase>(relaxed = true)
     private val exportArchivesUseCase = mockk<ExportArchivesUseCase>(relaxed = true)
     private val savedStateHandle = SavedStateHandle()
@@ -39,6 +41,7 @@ class ArchiveListViewModelTest {
             getArchivesUseCase,
             getArchivedYearsUseCase,
             getYearStatsUseCase,
+            deleteArchiveUseCase,
             importArchivesUseCase,
             exportArchivesUseCase,
             savedStateHandle

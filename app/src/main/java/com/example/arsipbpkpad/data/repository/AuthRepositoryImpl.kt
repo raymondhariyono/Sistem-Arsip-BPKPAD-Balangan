@@ -14,6 +14,7 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,7 +44,11 @@ class AuthRepositoryImpl @Inject constructor(
     private val _isSessionChecked = MutableStateFlow(false)
     override val isSessionChecked: StateFlow<Boolean> = _isSessionChecked.asStateFlow()
 
-    private val repositoryScope = CoroutineScope(Dispatchers.Main)
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        android.util.Log.e("AuthRepository", "Unhandled exception in background task: ${throwable.message}", throwable)
+    }
+    
+    private val repositoryScope = CoroutineScope(Dispatchers.Main + exceptionHandler)
 
     init {
         // Check session on initialization
@@ -139,61 +144,78 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun checkSession(): Boolean {
-        // Wait for session initialization
-        supabase.auth.sessionStatus.first { it !is SessionStatus.Initializing }
-
-        val rememberMe = sharedPreferences.getBoolean("remember_me", false)
-        val session = supabase.auth.currentSessionOrNull()
-        val user = supabase.auth.currentUserOrNull() ?: session?.user
-
-        if (!rememberMe) {
-            if (session != null) {
-                try {
-                    supabase.auth.signOut()
-                } catch (e: Exception) {}
-            }
-            clearLocalAuth()
-            _isSessionChecked.value = true
-            return false
-        }
-
-        if (session == null || user == null) {
-            clearLocalAuth()
-            _isSessionChecked.value = true
-            return false
-        }
-
-        // Try to load profile
-        val profileResult = loadUserProfile(user.id)
-        val isValid = if (profileResult is DomainResult.Success) {
-            val profile = profileResult.data
-            _currentUserProfile.value = profile
-            _currentUserRole.value = profile.role
-            _isUserLoggedIn.value = true
-            true
-        } else if (profileResult is DomainResult.Error) {
-            val isNetworkError = profileResult.message.contains("koneksi", ignoreCase = true) || 
-                                profileResult.message.contains("internet", ignoreCase = true)
+        return try {
+            android.util.Log.d("AuthRepository", "Checking session...")
             
-            if (isNetworkError) {
-                // Keep session if it's just a network error
-                // We assume user is logged in but profile is pending
-                _isUserLoggedIn.value = true
-                true
-            } else {
-                // Profile missing or inactive, sign out
-                try {
-                    supabase.auth.signOut()
-                } catch (e: Exception) {}
+            // Wait for session initialization
+            supabase.auth.sessionStatus.first { it !is SessionStatus.Initializing }
+
+            val rememberMe = sharedPreferences.getBoolean("remember_me", false)
+            val session = supabase.auth.currentSessionOrNull()
+            val user = supabase.auth.currentUserOrNull() ?: session?.user
+
+            android.util.Log.d("AuthRepository", "Session found: ${session != null}, User found: ${user != null}, RememberMe: $rememberMe")
+
+            if (!rememberMe) {
+                if (session != null) {
+                    android.util.Log.i("AuthRepository", "RememberMe is disabled but session exists. Signing out.")
+                    try {
+                        supabase.auth.signOut()
+                    } catch (e: Exception) {
+                        android.util.Log.w("AuthRepository", "SignOut failed during session check: ${e.message}")
+                    }
+                }
                 clearLocalAuth()
+                _isSessionChecked.value = true
+                return false
+            }
+
+            if (session == null || user == null) {
+                android.util.Log.d("AuthRepository", "No active session or user found for RememberMe.")
+                clearLocalAuth()
+                _isSessionChecked.value = true
+                return false
+            }
+
+            // Try to load profile
+            val profileResult = loadUserProfile(user.id)
+            val isValid = if (profileResult is DomainResult.Success) {
+                val profile = profileResult.data
+                _currentUserProfile.value = profile
+                _currentUserRole.value = profile.role
+                _isUserLoggedIn.value = true
+                android.util.Log.i("AuthRepository", "Session validated successfully for ${profile.email}")
+                true
+            } else if (profileResult is DomainResult.Error) {
+                val isNetworkError = profileResult.message.contains("koneksi", ignoreCase = true) || 
+                                    profileResult.message.contains("internet", ignoreCase = true)
+                
+                if (isNetworkError) {
+                    // Keep session if it's just a network error
+                    // We assume user is logged in but profile is pending
+                    _isUserLoggedIn.value = true
+                    android.util.Log.w("AuthRepository", "Network error during profile load, keeping session.")
+                    true
+                } else {
+                    // Profile missing or inactive, sign out
+                    android.util.Log.e("AuthRepository", "Profile validation failed: ${profileResult.message}. Signing out.")
+                    try {
+                        supabase.auth.signOut()
+                    } catch (e: Exception) {}
+                    clearLocalAuth()
+                    false
+                }
+            } else {
                 false
             }
-        } else {
+
+            _isSessionChecked.value = true
+            isValid
+        } catch (e: Exception) {
+            android.util.Log.e("AuthRepository", "Critical error in checkSession: ${e.message}", e)
+            _isSessionChecked.value = true
             false
         }
-
-        _isSessionChecked.value = true
-        return isValid
     }
 
     override fun getCurrentUserId(): String? {

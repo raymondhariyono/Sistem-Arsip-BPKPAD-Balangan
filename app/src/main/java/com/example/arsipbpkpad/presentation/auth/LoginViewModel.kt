@@ -63,7 +63,8 @@ class LoginViewModel @Inject constructor(
             return
         }
 
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+        if (!email.matches(emailRegex)) {
             _uiState.update { it.copy(errorMessage = "Format email tidak valid.") }
             return
         }
@@ -90,6 +91,8 @@ class LoginViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             authRepository.logout()
+            // Reset UI state to clear input fields
+            _uiState.update { LoginUiState() }
         }
     }
 }
