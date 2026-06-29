@@ -21,7 +21,8 @@ data class ArchiveDto(
     @SerialName("bundle_id") val bundleId: String? = null,
     @SerialName("created_by") val createdBy: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("updated_at") val updatedAt: String? = null
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("deleted_at") val deletedAt: String? = null
 )
 
 @Serializable

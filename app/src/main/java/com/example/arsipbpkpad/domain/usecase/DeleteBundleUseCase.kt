@@ -5,12 +5,12 @@ import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import javax.inject.Inject
 
 /**
- * UseCase for deleting an archive document.
+ * UseCase for deleting an entire transaction bundle and its archives.
  */
-class DeleteArchiveUseCase @Inject constructor(
+class DeleteBundleUseCase @Inject constructor(
     private val repository: ArchiveRepository
 ) {
-    suspend operator fun invoke(id: String): DomainResult<Unit> {
-        return repository.deleteArchiveWithBundleCleanup(id)
+    suspend operator fun invoke(bundleId: String): DomainResult<Unit> {
+        return repository.deleteEntireBundle(bundleId)
     }
 }

@@ -9,5 +9,6 @@ data class TransactionBundleDto(
     @SerialName("bundle_name") val bundleName: String,
     @SerialName("description") val description: String? = null,
     @SerialName("year") val year: Int,
-    @SerialName("created_by") val createdBy: String? = null
+    @SerialName("created_by") val createdBy: String? = null,
+    @SerialName("deleted_at") val deletedAt: String? = null
 )

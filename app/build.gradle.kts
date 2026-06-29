@@ -133,6 +133,9 @@ dependencies {
     implementation(libs.poi)
     implementation(libs.poi.ooxml)
 
+    // Settings for Supabase persistence
+    implementation(libs.multiplatform.settings)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

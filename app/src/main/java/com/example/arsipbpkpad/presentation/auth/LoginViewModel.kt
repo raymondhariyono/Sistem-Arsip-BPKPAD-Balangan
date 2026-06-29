@@ -28,6 +28,19 @@ class LoginViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
 
+    init {
+        // Pre-fill credentials if Remember Me is enabled
+        if (authRepository.isRememberMeEnabled()) {
+            _uiState.update { 
+                it.copy(
+                    email = authRepository.getSavedEmail() ?: "",
+                    password = authRepository.getSavedPassword() ?: "",
+                    rememberMe = true
+                )
+            }
+        }
+    }
+
     fun onEmailChange(email: String) {
         _uiState.update { it.copy(email = email) }
     }

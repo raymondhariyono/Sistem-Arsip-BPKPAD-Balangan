@@ -10,6 +10,7 @@ import com.example.arsipbpkpad.domain.repository.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 import javax.inject.Inject
@@ -73,8 +75,20 @@ class AuthRepositoryImpl @Inject constructor(
 
             val profile = (profileResult as DomainResult.Success).data
             
-            // Save remember me preference
-            sharedPreferences.edit().putBoolean("remember_me", rememberMe).apply()
+            // Save remember me preference and credentials if enabled
+            if (rememberMe) {
+                sharedPreferences.edit()
+                    .putBoolean("remember_me", true)
+                    .putString("saved_email", email)
+                    .putString("saved_password", password)
+                    .apply()
+            } else {
+                sharedPreferences.edit()
+                    .putBoolean("remember_me", false)
+                    .remove("saved_email")
+                    .remove("saved_password")
+                    .apply()
+            }
             
             _currentUserProfile.value = profile
             _currentUserRole.value = profile.role
@@ -103,62 +117,81 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun logout(): DomainResult<Unit> {
         return try {
             supabase.auth.signOut()
-            // Clear remember me preference
-            sharedPreferences.edit().putBoolean("remember_me", false).apply()
-            
-            _currentUserRole.value = UserRole.UNKNOWN
-            _currentUserProfile.value = null
-            _isUserLoggedIn.value = false
+            // Clear local state
+            clearLocalAuth()
             DomainResult.Success(Unit)
         } catch (e: Exception) {
+            // Even if signout fails, clear local state
+            clearLocalAuth()
             DomainResult.Error(e.localizedMessage ?: "Logout failed")
         }
     }
 
+    private fun clearLocalAuth() {
+        sharedPreferences.edit()
+            .putBoolean("remember_me", false)
+            .remove("saved_email")
+            .remove("saved_password")
+            .apply()
+        _currentUserRole.value = UserRole.UNKNOWN
+        _currentUserProfile.value = null
+        _isUserLoggedIn.value = false
+    }
+
     override suspend fun checkSession(): Boolean {
+        // Wait for session initialization
+        supabase.auth.sessionStatus.first { it !is SessionStatus.Initializing }
+
         val rememberMe = sharedPreferences.getBoolean("remember_me", false)
         val session = supabase.auth.currentSessionOrNull()
-        val user = supabase.auth.currentUserOrNull()
-        
-        val isValid = if (session != null && user != null) {
-            if (rememberMe) {
-                val profileResult = loadUserProfile(user.id)
-                if (profileResult is DomainResult.Success) {
-                    val profile = profileResult.data
-                    _currentUserProfile.value = profile
-                    _currentUserRole.value = profile.role
-                    _isUserLoggedIn.value = true
-                    true
-                } else {
-                    // Profile missing or inactive, sign out
-                    try {
-                        supabase.auth.signOut()
-                    } catch (e: Exception) {}
-                    sharedPreferences.edit().putBoolean("remember_me", false).apply()
-                    _currentUserRole.value = UserRole.UNKNOWN
-                    _currentUserProfile.value = null
-                    _isUserLoggedIn.value = false
-                    false
-                }
-            } else {
-                // If session exists but rememberMe is false, clear it
+        val user = supabase.auth.currentUserOrNull() ?: session?.user
+
+        if (!rememberMe) {
+            if (session != null) {
                 try {
                     supabase.auth.signOut()
-                } catch (e: Exception) {
-                    // Ignore signout errors during session clearing
-                }
-                _currentUserRole.value = UserRole.UNKNOWN
-                _currentUserProfile.value = null
-                _isUserLoggedIn.value = false
+                } catch (e: Exception) {}
+            }
+            clearLocalAuth()
+            _isSessionChecked.value = true
+            return false
+        }
+
+        if (session == null || user == null) {
+            clearLocalAuth()
+            _isSessionChecked.value = true
+            return false
+        }
+
+        // Try to load profile
+        val profileResult = loadUserProfile(user.id)
+        val isValid = if (profileResult is DomainResult.Success) {
+            val profile = profileResult.data
+            _currentUserProfile.value = profile
+            _currentUserRole.value = profile.role
+            _isUserLoggedIn.value = true
+            true
+        } else if (profileResult is DomainResult.Error) {
+            val isNetworkError = profileResult.message.contains("koneksi", ignoreCase = true) || 
+                                profileResult.message.contains("internet", ignoreCase = true)
+            
+            if (isNetworkError) {
+                // Keep session if it's just a network error
+                // We assume user is logged in but profile is pending
+                _isUserLoggedIn.value = true
+                true
+            } else {
+                // Profile missing or inactive, sign out
+                try {
+                    supabase.auth.signOut()
+                } catch (e: Exception) {}
+                clearLocalAuth()
                 false
             }
         } else {
-            _currentUserRole.value = UserRole.UNKNOWN
-            _currentUserProfile.value = null
-            _isUserLoggedIn.value = false
             false
         }
-        
+
         _isSessionChecked.value = true
         return isValid
     }
@@ -178,6 +211,12 @@ class AuthRepositoryImpl @Inject constructor(
     override fun getCurrentUserFullName(): String? {
         return _currentUserProfile.value?.fullName
     }
+
+    override fun getSavedEmail(): String? = sharedPreferences.getString("saved_email", null)
+
+    override fun getSavedPassword(): String? = sharedPreferences.getString("saved_password", null)
+
+    override fun isRememberMeEnabled(): Boolean = sharedPreferences.getBoolean("remember_me", false)
 
     private suspend fun loadUserProfile(userId: String): DomainResult<UserProfile> {
         return try {

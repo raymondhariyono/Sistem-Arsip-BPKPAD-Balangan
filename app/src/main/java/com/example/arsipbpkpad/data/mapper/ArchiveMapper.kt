@@ -29,7 +29,8 @@ fun ArchiveDto.toDomain(): ArchiveDocument {
         bundleId = bundleId,
         createdBy = createdBy,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
     )
 }
 
@@ -53,7 +54,8 @@ fun ArchiveEntity.toDomain(): ArchiveDocument {
         createdBy = createdBy,
         verifiedBy = verifiedBy,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
     )
 }
 
@@ -78,6 +80,7 @@ fun ArchiveDocument.toEntity(syncStatus: String = "SYNCED"): ArchiveEntity {
         verifiedBy = verifiedBy,
         createdAt = createdAt,
         updatedAt = updatedAt,
+        deletedAt = deletedAt,
         syncStatus = syncStatus
     )
 }
@@ -100,7 +103,8 @@ fun ArchiveDocument.toDto(): ArchiveDto {
         bundleId = if (isValidUuid(bundleId)) bundleId else null,
         createdBy = createdBy,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
     )
 }
 

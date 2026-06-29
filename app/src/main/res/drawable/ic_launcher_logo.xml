@@ -4,5 +4,5 @@
         android:drawable="@drawable/logo_balangan"
         android:gravity="center"
         android:width="72dp"
-        android:height="72dp" />
+        android:height="78dp" />
 </layer-list>

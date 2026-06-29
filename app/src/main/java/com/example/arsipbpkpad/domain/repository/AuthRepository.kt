@@ -17,4 +17,7 @@ interface AuthRepository {
     fun getCurrentUserId(): String?
     fun getCurrentUserEmail(): String?
     fun getCurrentUserFullName(): String?
+    fun getSavedEmail(): String?
+    fun getSavedPassword(): String?
+    fun isRememberMeEnabled(): Boolean
 }

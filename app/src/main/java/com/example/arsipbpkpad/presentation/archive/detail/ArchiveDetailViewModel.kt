@@ -23,6 +23,7 @@ import javax.inject.Inject
 class ArchiveDetailViewModel @Inject constructor(
     private val getArchiveDetailUseCase: GetArchiveDetailUseCase,
     private val deleteArchiveUseCase: DeleteArchiveUseCase,
+    private val deleteBundleUseCase: com.example.arsipbpkpad.domain.usecase.DeleteBundleUseCase,
     private val getActivityLogsForEntityUseCase: com.example.arsipbpkpad.domain.usecase.GetActivityLogsForEntityUseCase,
     private val archiveRepository: ArchiveRepository,
     savedStateHandle: SavedStateHandle
@@ -47,6 +48,66 @@ class ArchiveDetailViewModel @Inject constructor(
                 is DomainResult.Error -> _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
             }
         }
+    }
+
+    fun onDeleteClicked() {
+        val archive = _uiState.value.archive ?: return
+        if (archive.bundleId != null) {
+            _uiState.update { it.copy(showBundleDeleteChoiceDialog = true) }
+        } else {
+            _uiState.update { it.copy(showDeleteDialog = true) }
+        }
+    }
+
+    fun onDeleteCurrentArchiveConfirmed(onSuccess: () -> Unit) {
+        _uiState.update { it.copy(showDeleteDialog = false, showBundleDeleteChoiceDialog = false, isDeleting = true) }
+        viewModelScope.launch {
+            when (val result = deleteArchiveUseCase(archiveId)) {
+                is DomainResult.Success -> {
+                    _uiState.update { it.copy(isDeleting = false, successMessage = "Arsip berhasil dihapus.") }
+                    onSuccess()
+                }
+                is DomainResult.Error -> {
+                    _uiState.update { it.copy(isDeleting = false, errorMessage = result.message) }
+                }
+            }
+        }
+    }
+
+    fun onDeleteEntireBundleRequested() {
+        _uiState.update { it.copy(showBundleDeleteChoiceDialog = false, showDeleteEntireBundleConfirmDialog = true) }
+    }
+
+    fun onDeleteEntireBundleConfirmed(onSuccess: () -> Unit) {
+        val bundleId = _uiState.value.archive?.bundleId ?: return
+        _uiState.update { it.copy(showDeleteEntireBundleConfirmDialog = false, isDeleting = true) }
+        viewModelScope.launch {
+            when (val result = deleteBundleUseCase(bundleId)) {
+                is DomainResult.Success -> {
+                    _uiState.update { it.copy(isDeleting = false, successMessage = "Seluruh bundle berhasil dihapus.") }
+                    onSuccess()
+                }
+                is DomainResult.Error -> {
+                    _uiState.update { it.copy(isDeleting = false, errorMessage = result.message) }
+                }
+            }
+        }
+    }
+
+    fun dismissDeleteDialog() {
+        _uiState.update { it.copy(
+            showDeleteDialog = false,
+            showBundleDeleteChoiceDialog = false,
+            showDeleteEntireBundleConfirmDialog = false
+        ) }
+    }
+
+    fun dismissSuccess() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
+
+    fun dismissError() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -116,9 +177,14 @@ class ArchiveDetailViewModel @Inject constructor(
 
 data class ArchiveDetailState(
     val isLoading: Boolean = false,
+    val isDeleting: Boolean = false,
     val archive: ArchiveDocument? = null,
     val relatedBundleDocuments: List<ArchiveDocument> = emptyList(),
     val activityLogs: List<com.example.arsipbpkpad.domain.model.ActivityLog> = emptyList(),
     val activityLogsErrorMessage: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val successMessage: String? = null,
+    val showDeleteDialog: Boolean = false,
+    val showBundleDeleteChoiceDialog: Boolean = false,
+    val showDeleteEntireBundleConfirmDialog: Boolean = false
 )

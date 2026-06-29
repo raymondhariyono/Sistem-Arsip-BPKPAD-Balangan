@@ -29,5 +29,6 @@ data class ArchiveEntity(
     val verifiedBy: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
+    val deletedAt: String? = null,
     val syncStatus: String = "SYNCED" // DRAFT, SYNCED, ERROR
 )

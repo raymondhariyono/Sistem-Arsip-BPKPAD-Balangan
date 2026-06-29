@@ -118,7 +118,7 @@
     <string name="status_expired">Expired</string>
     <string name="status_active">Aktif</string>
     <string name="btn_update">Perbarui</string>
-    <string name="btn_upload_docs">Upload (%1$d) Dokumen ke Penyimpanan Permanen</string>
+    <string name="btn_upload_docs">Upload (%1$d) Ke Penyimpanan Permanen</string>
     <string name="btn_finish_back">Selesai &amp; Kembali</string>
     <string name="btn_cancel_exit">Batal &amp; Keluar</string>
     <string name="label_doc_type">Tipe Dokumen</string>
@@ -254,4 +254,14 @@
     <string name="msg_delete_success">%1$d arsip berhasil dihapus.</string>
     <string name="msg_delete_partial_failed">Sebagian arsip gagal dihapus. Silakan coba lagi.</string>
 
+    <string name="title_bundle_archive_delete">Arsip Bagian dari Bundle</string>
+    <string name="msg_bundle_archive_delete_choice">Arsip ini terhubung dengan %1$d dokumen dalam satu bundle. Pilih apakah hanya arsip ini yang dihapus atau seluruh bundle.</string>
+    <string name="btn_delete_this_archive">Hapus Arsip Ini</string>
+    <string name="btn_delete_entire_bundle">Hapus Seluruh Bundle</string>
+    <string name="title_delete_entire_bundle">Hapus Seluruh Bundle</string>
+    <string name="msg_delete_entire_bundle_confirm">Tindakan ini akan menghapus %1$d arsip dalam bundle ini. Apakah Anda yakin ingin melanjutkan?</string>
+    <string name="msg_archive_delete_success">Arsip berhasil dihapus.</string>
+    <string name="msg_bundle_delete_success">Seluruh bundle berhasil dihapus.</string>
+    <string name="msg_archive_delete_error">Gagal menghapus arsip.</string>
+    <string name="msg_bundle_delete_error">Gagal menghapus bundle.</string>
 </resources>

@@ -23,5 +23,6 @@ data class ArchiveDocument(
     val createdBy: String? = null,
     val verifiedBy: String? = null,
     val createdAt: String? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    val deletedAt: String? = null
 )

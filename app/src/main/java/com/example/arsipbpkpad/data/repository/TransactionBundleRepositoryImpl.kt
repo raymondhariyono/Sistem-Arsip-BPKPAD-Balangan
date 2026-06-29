@@ -42,4 +42,16 @@ class TransactionBundleRepositoryImpl @Inject constructor(
             inserted.id!!
         }
     }
+
+    override suspend fun softDeleteBundle(bundleId: String): DomainResult<Unit> {
+        return safeApiCall(ioDispatcher) {
+            val now = java.time.OffsetDateTime.now().toString()
+            supabaseClient.postgrest["transaction_bundles"].update({
+                "deleted_at" to now
+            }) {
+                filter { eq("id", bundleId) }
+            }
+            Unit
+        }
+    }
 }

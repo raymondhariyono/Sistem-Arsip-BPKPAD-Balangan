@@ -41,9 +41,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -88,8 +85,20 @@ fun ArchiveDetailScreen(
         onNavigateBack = onNavigateBack,
         onEditClick = { onNavigateToEdit(archiveId) },
         onDeleteClick = {
-            viewModel.deleteArchive { onNavigateBack() }
+            viewModel.onDeleteClicked()
         },
+        onDeleteThisConfirmed = {
+            viewModel.onDeleteCurrentArchiveConfirmed { onNavigateBack() }
+        },
+        onDeleteBundleRequested = {
+            viewModel.onDeleteEntireBundleRequested()
+        },
+        onDeleteBundleConfirmed = {
+            viewModel.onDeleteEntireBundleConfirmed { onNavigateBack() }
+        },
+        onDismissDialog = viewModel::dismissDeleteDialog,
+        onDismissSuccess = viewModel::dismissSuccess,
+        onDismissError = viewModel::dismissError,
         onNavigateToArchive = onNavigateToArchive
     )
 }
@@ -101,22 +110,62 @@ fun ArchiveDetailContent(
     onNavigateBack: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onDeleteThisConfirmed: () -> Unit,
+    onDeleteBundleRequested: () -> Unit,
+    onDeleteBundleConfirmed: () -> Unit,
+    onDismissDialog: () -> Unit,
+    onDismissSuccess: () -> Unit,
+    onDismissError: () -> Unit,
     onNavigateToArchive: (String) -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    if (showDeleteDialog) {
+    if (state.showDeleteDialog) {
         BpkpadConfirmDialog(
             title = stringResource(R.string.title_delete_archive),
             message = stringResource(R.string.msg_delete_archive_confirm),
             confirmText = stringResource(R.string.btn_delete),
             dismissText = stringResource(R.string.btn_cancel),
-            onConfirm = {
-                onDeleteClick()
-                showDeleteDialog = false
-            },
-            onDismiss = { showDeleteDialog = false },
+            onConfirm = onDeleteThisConfirmed,
+            onDismiss = onDismissDialog,
             type = DialogType.DESTRUCTIVE
+        )
+    }
+
+    if (state.showBundleDeleteChoiceDialog) {
+        com.example.arsipbpkpad.presentation.components.BpkpadBundleDeleteDialog(
+            count = state.relatedBundleDocuments.size + 1,
+            onDeleteThis = onDeleteThisConfirmed,
+            onDeleteBundle = onDeleteBundleRequested,
+            onDismiss = onDismissDialog
+        )
+    }
+
+    if (state.showDeleteEntireBundleConfirmDialog) {
+        BpkpadConfirmDialog(
+            title = stringResource(R.string.title_delete_entire_bundle),
+            message = stringResource(R.string.msg_delete_entire_bundle_confirm, state.relatedBundleDocuments.size + 1),
+            confirmText = stringResource(R.string.btn_delete_entire_bundle),
+            dismissText = stringResource(R.string.btn_cancel),
+            onConfirm = onDeleteBundleConfirmed,
+            onDismiss = onDismissDialog,
+            type = DialogType.DESTRUCTIVE
+        )
+    }
+
+    if (state.successMessage != null) {
+        com.example.arsipbpkpad.presentation.components.StatusDialog(
+            title = stringResource(R.string.title_success),
+            message = state.successMessage,
+            onDismiss = onDismissSuccess,
+            isSuccess = true
+        )
+    }
+
+    if (state.errorMessage != null && !state.isLoading && !state.isDeleting) {
+        com.example.arsipbpkpad.presentation.components.StatusDialog(
+            title = stringResource(R.string.title_error),
+            message = state.errorMessage,
+            onDismiss = onDismissError,
+            isSuccess = false
         )
     }
 
@@ -137,7 +186,7 @@ fun ArchiveDetailContent(
                         activityLogsErrorMessage = state.activityLogsErrorMessage,
                         userRole = userRole,
                         onEditClick = onEditClick,
-                        onDeleteClick = { showDeleteDialog = true },
+                        onDeleteClick = onDeleteClick,
                         onNavigateToArchive = onNavigateToArchive
                     )
                 }
@@ -683,6 +732,12 @@ fun ArchiveDetailPreview() {
             onNavigateBack = {},
             onEditClick = {},
             onDeleteClick = {},
+            onDeleteThisConfirmed = {},
+            onDeleteBundleRequested = {},
+            onDeleteBundleConfirmed = {},
+            onDismissDialog = {},
+            onDismissSuccess = {},
+            onDismissError = {},
             onNavigateToArchive = {}
         )
     }

@@ -28,6 +28,7 @@ interface ArchiveDao {
             OR documentNumber LIKE '%' || :query || '%'
             OR description LIKE '%' || :query || '%'
         )
+        AND deletedAt IS NULL
         ORDER BY createdAt DESC
     """)
     fun getArchives(query: String?, years: List<Int>, isYearEmpty: Boolean): PagingSource<Int, ArchiveEntity>
@@ -39,35 +40,36 @@ interface ArchiveDao {
             OR documentNumber LIKE '%' || :query || '%'
             OR description LIKE '%' || :query || '%'
         )
+        AND deletedAt IS NULL
         ORDER BY createdAt DESC
     """)
     fun getArchivesList(query: String?, years: List<Int>, isYearEmpty: Boolean): Flow<List<ArchiveEntity>>
 
-    @Query("SELECT SUM(nominal) FROM archives WHERE year = :year")
+    @Query("SELECT SUM(nominal) FROM archives WHERE year = :year AND deletedAt IS NULL")
     fun getTotalBudgetByYear(year: Int): Flow<Double?>
 
-    @Query("SELECT SUM(nominal) FROM archives WHERE year BETWEEN :startYear AND :endYear")
+    @Query("SELECT SUM(nominal) FROM archives WHERE (year BETWEEN :startYear AND :endYear) AND deletedAt IS NULL")
     fun getTotalBudgetForRange(startYear: Int, endYear: Int): Flow<Double?>
 
-    @Query("SELECT classificationCode, SUM(nominal) as total FROM archives WHERE year = :year GROUP BY classificationCode")
+    @Query("SELECT classificationCode, SUM(nominal) as total FROM archives WHERE year = :year AND deletedAt IS NULL GROUP BY classificationCode")
     fun getBudgetByClassification(year: Int): Flow<List<ClassificationBudget>>
 
-    @Query("SELECT classificationCode, SUM(nominal) as total FROM archives WHERE year BETWEEN :startYear AND :endYear GROUP BY classificationCode")
+    @Query("SELECT classificationCode, SUM(nominal) as total FROM archives WHERE (year BETWEEN :startYear AND :endYear) AND deletedAt IS NULL GROUP BY classificationCode")
     fun getBudgetByClassificationForRange(startYear: Int, endYear: Int): Flow<List<ClassificationBudget>>
 
-    @Query("SELECT * FROM archives WHERE id = :id")
+    @Query("SELECT * FROM archives WHERE id = :id AND deletedAt IS NULL")
     fun getArchiveById(id: String): Flow<ArchiveEntity?>
 
-    @Query("SELECT * FROM archives WHERE id = :id")
+    @Query("SELECT * FROM archives WHERE id = :id AND deletedAt IS NULL")
     suspend fun getArchiveByIdSync(id: String): ArchiveEntity?
 
-    @Query("SELECT * FROM archives WHERE bundleId = :bundleId")
+    @Query("SELECT * FROM archives WHERE bundleId = :bundleId AND deletedAt IS NULL")
     fun getArchivesByBundleId(bundleId: String): Flow<List<ArchiveEntity>>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber AND copyType = :copyType)")
+    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber AND copyType = :copyType AND deletedAt IS NULL)")
     suspend fun existsByDocumentNumberAndType(docNumber: String, copyType: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber)")
+    @Query("SELECT EXISTS(SELECT 1 FROM archives WHERE documentNumber = :docNumber AND deletedAt IS NULL)")
     suspend fun existsByDocumentNumber(docNumber: String): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -79,15 +81,25 @@ interface ArchiveDao {
     @Query("DELETE FROM archives WHERE id = :id")
     suspend fun deleteArchiveById(id: String)
 
+    @Query("UPDATE archives SET deletedAt = :deletedAt WHERE id = :id")
+    suspend fun softDeleteArchiveById(id: String, deletedAt: String)
+
+    @Query("UPDATE archives SET deletedAt = :deletedAt WHERE bundleId = :bundleId AND deletedAt IS NULL")
+    suspend fun softDeleteArchivesByBundleId(bundleId: String, deletedAt: String)
+
+    @Query("SELECT COUNT(*) FROM archives WHERE bundleId = :bundleId AND deletedAt IS NULL")
+    suspend fun countActiveArchivesByBundleId(bundleId: String): Int
+
     @Query("SELECT * FROM archives WHERE syncStatus = 'DRAFT'")
     suspend fun getPendingArchives(): List<ArchiveEntity>
 
-    @Query("SELECT DISTINCT year FROM archives ORDER BY year DESC")
+    @Query("SELECT DISTINCT year FROM archives WHERE deletedAt IS NULL ORDER BY year DESC")
     fun getArchivedYears(): Flow<List<Int>>
 
     @Query("""
         SELECT year, COUNT(*) as count, MAX(updatedAt) as lastUpdated 
         FROM archives 
+        WHERE deletedAt IS NULL
         GROUP BY year 
         ORDER BY year DESC
     """)

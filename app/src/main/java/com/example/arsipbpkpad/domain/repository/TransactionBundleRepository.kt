@@ -11,4 +11,6 @@ interface TransactionBundleRepository {
         description: String?,
         year: Int
     ): DomainResult<String>
+
+    suspend fun softDeleteBundle(bundleId: String): DomainResult<Unit>
 }

@@ -28,6 +28,10 @@ interface ArchiveRepository {
     suspend fun saveArchive(archive: ArchiveDocument): DomainResult<Boolean>
     suspend fun saveArchives(archives: List<ArchiveDocument>): DomainResult<Boolean>
     suspend fun deleteArchive(id: String): DomainResult<Unit>
+    suspend fun softDeleteArchive(id: String): DomainResult<Unit>
+    suspend fun deleteArchiveWithBundleCleanup(id: String): DomainResult<Unit>
+    suspend fun deleteEntireBundle(bundleId: String): DomainResult<Unit>
+    suspend fun getActiveBundleArchiveCount(bundleId: String): DomainResult<Int>
     
     suspend fun syncArchives(): DomainResult<Unit>
     suspend fun syncPendingArchives(): DomainResult<Unit>
