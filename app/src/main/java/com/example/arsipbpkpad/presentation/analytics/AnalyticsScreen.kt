@@ -404,7 +404,9 @@ fun AnalyticsYearCard(
 ) {
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
     val borderThickness = if (isSelected) 2.dp else 1.dp
-    val containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface
+    // Use solid color when selected instead of alpha to avoid "patchy" look
+    val containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val labelColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
 
     Card(
         modifier = modifier
@@ -424,8 +426,10 @@ fun AnalyticsYearCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = year.toString(),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black
+                    ),
                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -433,7 +437,7 @@ fun AnalyticsYearCard(
                     text = if (isSelected) "Selected" else "Select Year",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = labelColor
                 )
             }
             
