@@ -17,7 +17,9 @@ data class LoginUiState(
     val rememberMe: Boolean = false,
     val isLoading: Boolean = false,
     val isLoginSuccessful: Boolean = false,
-    val errorMessage: String? = null
+    val emailError: String? = null,
+    val passwordError: String? = null,
+    val generalErrorMessage: String? = null
 )
 
 @HiltViewModel
@@ -42,11 +44,11 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onEmailChange(email: String) {
-        _uiState.update { it.copy(email = email) }
+        _uiState.update { it.copy(email = email, emailError = null) }
     }
 
     fun onPasswordChange(password: String) {
-        _uiState.update { it.copy(password = password) }
+        _uiState.update { it.copy(password = password, passwordError = null) }
     }
 
     fun onRememberMeChange(checked: Boolean) {
@@ -58,19 +60,31 @@ class LoginViewModel @Inject constructor(
         val password = _uiState.value.password
         val rememberMe = _uiState.value.rememberMe
 
-        if (email.isBlank() || password.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Email dan password tidak boleh kosong.") }
-            return
+        var hasError = false
+        
+        if (email.isBlank()) {
+            _uiState.update { it.copy(emailError = "Email tidak boleh kosong.") }
+            hasError = true
+        } else {
+            val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+            if (!email.matches(emailRegex)) {
+                _uiState.update { it.copy(emailError = "Format email tidak valid.") }
+                hasError = true
+            }
         }
 
-        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
-        if (!email.matches(emailRegex)) {
-            _uiState.update { it.copy(errorMessage = "Format email tidak valid.") }
-            return
+        if (password.isBlank()) {
+            _uiState.update { it.copy(passwordError = "Password tidak boleh kosong.") }
+            hasError = true
+        } else if (password.length < 6) {
+            _uiState.update { it.copy(passwordError = "Password minimal 6 karakter.") }
+            hasError = true
         }
+
+        if (hasError) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, generalErrorMessage = null) }
             val result = authRepository.login(email, password, rememberMe)
             
             when (result) {
@@ -78,21 +92,27 @@ class LoginViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, isLoginSuccessful = true) }
                 }
                 is DomainResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
+                    _uiState.update { it.copy(isLoading = false, generalErrorMessage = result.message) }
                 }
             }
         }
     }
 
     fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update { it.copy(generalErrorMessage = null) }
     }
 
     fun logout() {
         viewModelScope.launch {
             authRepository.logout()
-            // Reset UI state to clear input fields
-            _uiState.update { LoginUiState() }
+            // After logout, reset UI state but keep credentials if remember me is active
+            _uiState.update { 
+                LoginUiState(
+                    email = authRepository.getSavedEmail() ?: "",
+                    password = authRepository.getSavedPassword() ?: "",
+                    rememberMe = authRepository.isRememberMeEnabled()
+                )
+            }
         }
     }
 }

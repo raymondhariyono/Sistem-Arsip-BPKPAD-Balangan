@@ -264,4 +264,17 @@
     <string name="msg_bundle_delete_success">Seluruh bundle berhasil dihapus.</string>
     <string name="msg_archive_delete_error">Gagal menghapus arsip.</string>
     <string name="msg_bundle_delete_error">Gagal menghapus bundle.</string>
+    <string name="title_spj_detail">Detail SPJ</string>
+
+    <!-- Authentication -->
+    <string name="error_email_empty">Email tidak boleh kosong.</string>
+    <string name="error_password_empty">Password tidak boleh kosong.</string>
+    <string name="error_email_invalid">Format email tidak valid.</string>
+    <string name="error_password_too_short">Password minimal 6 karakter.</string>
+    <string name="error_login_invalid_credentials">Email atau password salah.</string>
+    <string name="error_login_too_many_attempts">Terlalu banyak percobaan masuk. Silakan tunggu beberapa saat.</string>
+    <string name="error_profile_not_found">Profil pengguna tidak ditemukan. Hubungi administrator.</string>
+    <string name="error_account_inactive">Akun tidak aktif. Hubungi administrator.</string>
+    <string name="error_login_generic">Gagal masuk. Silakan coba lagi atau hubungi admin.</string>
+    <string name="error_timeout">Koneksi timeout. Silakan coba lagi.</string>
 </resources>

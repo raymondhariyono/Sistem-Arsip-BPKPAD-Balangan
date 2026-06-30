@@ -79,12 +79,12 @@ fun LoginScreen(
         }
     }
 
-    if (uiState.errorMessage != null) {
-        val isNetworkError = uiState.errorMessage!!.contains("internet", ignoreCase = true) || 
-                            uiState.errorMessage!!.contains("jaringan", ignoreCase = true)
+    if (uiState.generalErrorMessage != null) {
+        val isNetworkError = uiState.generalErrorMessage!!.contains("internet", ignoreCase = true) || 
+                            uiState.generalErrorMessage!!.contains("jaringan", ignoreCase = true)
         StatusDialog(
             title = if (isNetworkError) stringResource(R.string.title_error) else "Login Gagal",
-            message = uiState.errorMessage!!,
+            message = uiState.generalErrorMessage!!,
             isSuccess = false,
             onDismiss = { viewModel.clearError() }
         )
@@ -181,7 +181,8 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Next
+                            imeAction = ImeAction.Next,
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
                         ),
                         keyboardActions = KeyboardActions(
                             onNext = { focusManager.moveFocus(FocusDirection.Down) }
@@ -194,7 +195,10 @@ fun LoginScreen(
                             unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         placeholder = { Text("Email Anda") },
-                        isError = uiState.errorMessage != null
+                        isError = uiState.emailError != null,
+                        supportingText = if (uiState.emailError != null) {
+                            { Text(text = uiState.emailError!!) }
+                        } else null
                     )
                 }
 
@@ -240,7 +244,10 @@ fun LoginScreen(
                             unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         placeholder = { Text("Password Anda") },
-                        isError = uiState.errorMessage != null
+                        isError = uiState.passwordError != null,
+                        supportingText = if (uiState.passwordError != null) {
+                            { Text(text = uiState.passwordError!!) }
+                        } else null
                     )
                 }
 

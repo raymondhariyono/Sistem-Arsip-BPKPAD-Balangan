@@ -79,7 +79,7 @@ interface ArchiveDao {
     suspend fun insertArchives(archives: List<ArchiveEntity>)
 
     @Query("DELETE FROM archives WHERE id = :id")
-    suspend fun deleteArchiveById(id: String)
+    suspend fun hardDeleteArchiveById(id: String)
 
     @Query("UPDATE archives SET deletedAt = :deletedAt WHERE id = :id")
     suspend fun softDeleteArchiveById(id: String, deletedAt: String)
@@ -90,7 +90,7 @@ interface ArchiveDao {
     @Query("SELECT COUNT(*) FROM archives WHERE bundleId = :bundleId AND deletedAt IS NULL")
     suspend fun countActiveArchivesByBundleId(bundleId: String): Int
 
-    @Query("SELECT * FROM archives WHERE syncStatus = 'DRAFT'")
+    @Query("SELECT * FROM archives WHERE syncStatus = 'DRAFT' AND deletedAt IS NULL")
     suspend fun getPendingArchives(): List<ArchiveEntity>
 
     @Query("SELECT DISTINCT year FROM archives WHERE deletedAt IS NULL ORDER BY year DESC")

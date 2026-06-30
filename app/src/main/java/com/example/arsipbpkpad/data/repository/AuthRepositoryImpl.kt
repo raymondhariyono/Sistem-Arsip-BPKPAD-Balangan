@@ -24,12 +24,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val supabase: SupabaseClient,
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
+    @Named("encrypted") private val encryptedPrefs: SharedPreferences
 ) : AuthRepository {
 
     private val _currentUserRole = MutableStateFlow(UserRole.UNKNOWN)
@@ -71,7 +73,6 @@ class AuthRepositoryImpl @Inject constructor(
             if (profileResult is DomainResult.Error) {
                 // If profile is missing or inactive, sign out immediately
                 supabase.auth.signOut()
-                sharedPreferences.edit().putBoolean("remember_me", false).apply()
                 _currentUserRole.value = UserRole.UNKNOWN
                 _currentUserProfile.value = null
                 _isUserLoggedIn.value = false
@@ -82,14 +83,14 @@ class AuthRepositoryImpl @Inject constructor(
             
             // Save remember me preference and credentials if enabled
             if (rememberMe) {
-                sharedPreferences.edit()
-                    .putBoolean("remember_me", true)
+                sharedPreferences.edit().putBoolean("remember_me", true).apply()
+                encryptedPrefs.edit()
                     .putString("saved_email", email)
                     .putString("saved_password", password)
                     .apply()
             } else {
-                sharedPreferences.edit()
-                    .putBoolean("remember_me", false)
+                sharedPreferences.edit().putBoolean("remember_me", false).apply()
+                encryptedPrefs.edit()
                     .remove("saved_email")
                     .remove("saved_password")
                     .apply()
@@ -101,9 +102,6 @@ class AuthRepositoryImpl @Inject constructor(
             
             DomainResult.Success(Unit)
         } catch (e: Exception) {
-            // Ensure remember me is NOT true on failure
-            sharedPreferences.edit().putBoolean("remember_me", false).apply()
-
             val message = when {
                 e is UnknownHostException || e is HttpRequestTimeoutException -> 
                     "Koneksi internet bermasalah. Silakan periksa jaringan Anda."
@@ -122,22 +120,17 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun logout(): DomainResult<Unit> {
         return try {
             supabase.auth.signOut()
-            // Clear local state
-            clearLocalAuth()
+            // Clear only session state, keep credentials if remember_me is true
+            clearSessionStateOnly()
             DomainResult.Success(Unit)
         } catch (e: Exception) {
-            // Even if signout fails, clear local state
-            clearLocalAuth()
+            // Even if signout fails, clear session state
+            clearSessionStateOnly()
             DomainResult.Error(e.localizedMessage ?: "Logout failed")
         }
     }
 
-    private fun clearLocalAuth() {
-        sharedPreferences.edit()
-            .putBoolean("remember_me", false)
-            .remove("saved_email")
-            .remove("saved_password")
-            .apply()
+    private fun clearSessionStateOnly() {
         _currentUserRole.value = UserRole.UNKNOWN
         _currentUserProfile.value = null
         _isUserLoggedIn.value = false
@@ -150,29 +143,14 @@ class AuthRepositoryImpl @Inject constructor(
             // Wait for session initialization
             supabase.auth.sessionStatus.first { it !is SessionStatus.Initializing }
 
-            val rememberMe = sharedPreferences.getBoolean("remember_me", false)
             val session = supabase.auth.currentSessionOrNull()
             val user = supabase.auth.currentUserOrNull() ?: session?.user
 
-            android.util.Log.d("AuthRepository", "Session found: ${session != null}, User found: ${user != null}, RememberMe: $rememberMe")
-
-            if (!rememberMe) {
-                if (session != null) {
-                    android.util.Log.i("AuthRepository", "RememberMe is disabled but session exists. Signing out.")
-                    try {
-                        supabase.auth.signOut()
-                    } catch (e: Exception) {
-                        android.util.Log.w("AuthRepository", "SignOut failed during session check: ${e.message}")
-                    }
-                }
-                clearLocalAuth()
-                _isSessionChecked.value = true
-                return false
-            }
+            android.util.Log.d("AuthRepository", "Session found: ${session != null}, User found: ${user != null}")
 
             if (session == null || user == null) {
-                android.util.Log.d("AuthRepository", "No active session or user found for RememberMe.")
-                clearLocalAuth()
+                android.util.Log.d("AuthRepository", "No active session or user found.")
+                clearSessionStateOnly()
                 _isSessionChecked.value = true
                 return false
             }
@@ -192,7 +170,6 @@ class AuthRepositoryImpl @Inject constructor(
                 
                 if (isNetworkError) {
                     // Keep session if it's just a network error
-                    // We assume user is logged in but profile is pending
                     _isUserLoggedIn.value = true
                     android.util.Log.w("AuthRepository", "Network error during profile load, keeping session.")
                     true
@@ -202,7 +179,7 @@ class AuthRepositoryImpl @Inject constructor(
                     try {
                         supabase.auth.signOut()
                     } catch (e: Exception) {}
-                    clearLocalAuth()
+                    clearSessionStateOnly()
                     false
                 }
             } else {
@@ -234,9 +211,9 @@ class AuthRepositoryImpl @Inject constructor(
         return _currentUserProfile.value?.fullName
     }
 
-    override fun getSavedEmail(): String? = sharedPreferences.getString("saved_email", null)
+    override fun getSavedEmail(): String? = encryptedPrefs.getString("saved_email", null)
 
-    override fun getSavedPassword(): String? = sharedPreferences.getString("saved_password", null)
+    override fun getSavedPassword(): String? = encryptedPrefs.getString("saved_password", null)
 
     override fun isRememberMeEnabled(): Boolean = sharedPreferences.getBoolean("remember_me", false)
 

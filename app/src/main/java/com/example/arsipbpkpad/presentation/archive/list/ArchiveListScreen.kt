@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -563,33 +564,104 @@ fun ArchiveListContentOnly(
     userRole: UserRole = UserRole.UNKNOWN,
     paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 8.dp))
-            ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
-            Spacer(modifier = Modifier.height(12.dp))
-            ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
-            Spacer(modifier = Modifier.height(12.dp))
-            DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
-            Spacer(modifier = Modifier.height(12.dp))
-            ExcelActionButtons(
-                onImportClick = onImportClick,
-                onExportClick = onExportClick,
-                isExportEnabled = isExportEnabled,
-                userRole = userRole
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-        ArchiveResultList(
-            archives = archives,
-            onArchiveClick = onArchiveClick,
-            onArchiveLongClick = onArchiveLongClick,
-            isSelectionMode = isSelectionMode,
-            selectedArchiveIds = selectedArchiveIds,
-            paddingValues = paddingValues,
-            modifier = Modifier.weight(1f)
-        )
+    if (isLandscape) {
+        // In landscape, we use a single LazyColumn for everything to ensure vertical scrollability
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            item {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 8.dp))
+                    ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ExcelActionButtons(
+                        onImportClick = onImportClick,
+                        onExportClick = onExportClick,
+                        isExportEnabled = isExportEnabled,
+                        userRole = userRole
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
+            item {
+                // Table part with horizontal scroll
+                val scrollState = rememberScrollState()
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val minTableWidth = (if (isSelectionMode) 48.dp else 0.dp) + 632.dp
+                    val tableWidth = maxOf(maxWidth, minTableWidth)
+
+                    Column(
+                        modifier = Modifier
+                            .horizontalScroll(scrollState)
+                            .width(tableWidth)
+                    ) {
+                        ArchiveTableHeader(isSelectionMode = isSelectionMode)
+                        
+                        if (archives.isNotEmpty()) {
+                            archives.forEachIndexed { index, archive ->
+                                ArchiveListItemCard(
+                                    no = index + 1,
+                                    archive = archive,
+                                    onClick = { onArchiveClick(archive.id) },
+                                    onLongClick = { onArchiveLongClick(archive.id) },
+                                    isSelected = selectedArchiveIds.contains(archive.id),
+                                    isSelectionMode = isSelectionMode
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (archives.isEmpty()) {
+                item {
+                    EmptyArchiveSearchResults(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp)
+                    )
+                }
+            }
+        }
+    } else {
+        // In portrait, keep the original layout where filters are fixed and only the list scrolls
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 8.dp))
+                ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
+                Spacer(modifier = Modifier.height(12.dp))
+                ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
+                Spacer(modifier = Modifier.height(12.dp))
+                DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
+                Spacer(modifier = Modifier.height(12.dp))
+                ExcelActionButtons(
+                    onImportClick = onImportClick,
+                    onExportClick = onExportClick,
+                    isExportEnabled = isExportEnabled,
+                    userRole = userRole
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            ArchiveResultList(
+                archives = archives,
+                onArchiveClick = onArchiveClick,
+                onArchiveLongClick = onArchiveLongClick,
+                isSelectionMode = isSelectionMode,
+                selectedArchiveIds = selectedArchiveIds,
+                paddingValues = paddingValues,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 

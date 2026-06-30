@@ -135,6 +135,7 @@ dependencies {
 
     // Settings for Supabase persistence
     implementation(libs.multiplatform.settings)
+    implementation(libs.androidx.security.crypto)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
